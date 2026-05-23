@@ -72,17 +72,22 @@ Before declaring an edit done, syntax-check the JS:
 
 ### Deploying
 
-**Two paths:**
+**Primary path: GitHub auto-deploy.** The Pages project is Git-connected (as of 2026-05-23). Every push to `main` on `https://github.com/nathankolk/atlas-game` triggers a production deploy automatically; pushes to other branches generate preview deploys. To ship:
+```bash
+cd "/Users/nathan.kolk/Documents/Claude/Projects/Atlas Game"
+# edit public/index.html
+git add public/index.html
+git commit -m "..."
+git push
+```
+Build finishes in ~30–60 seconds. Watch the Deployments tab in the Cloudflare dashboard, or just curl the site after a minute.
 
-1. **Manual via Wrangler** (current workflow):
-   ```bash
-   cd "/Users/nathan.kolk/Documents/Claude/Projects/Atlas Game"
-   wrangler pages deploy public --branch=main
-   ```
-   The `--branch=main` flag is **required** — Cloudflare's Production branch setting on this project is `main`. Without it, the deploy lands as Preview and the production URL doesn't update.
-
-2. **GitHub auto-deploy** (repo created 2026-05-23, Pages connection pending):
-   Repo lives at `https://github.com/nathankolk/atlas-game` (public). Every `git push origin main` will auto-deploy to production once the Cloudflare Pages project is connected to the GitHub repo via the dashboard (Workers & Pages → atlas-game → Settings → Builds & deployments → Connect to Git). Once wired, this becomes the default deploy path and eliminates the wrong-directory class of bugs (see Gotchas).
+**Escape hatch: Manual via Wrangler.** Still works on a Git-connected project, but mixing it with git pushes creates a divergent deploy history that gets confusing fast. Use only if git is unavailable or for testing.
+```bash
+cd "/Users/nathan.kolk/Documents/Claude/Projects/Atlas Game"
+wrangler pages deploy public --branch=main
+```
+The `--branch=main` flag is still required when using this path.
 
 ### Local dev
 
@@ -116,6 +121,8 @@ The token must be 32 hex chars. Anything else returns `400 invalid_token`.
 - **DNS for `atlas.nathankolk.com`** is a CNAME at Squarespace pointing to `atlas-game.pages.dev`. The root domain stays on Squarespace nameservers — we did NOT delegate the whole domain to Cloudflare. This is the cleaner setup because Nathan has email records (Resend DKIM, AWS SES MX/SPF) on `nathankolk.com` that would break if nameservers swapped without migration.
 
 - **localStorage is the source of truth.** When the sync layer is built, the API will mirror localStorage, not replace it. The game must keep working fully offline.
+
+- **Direct Upload → Git-connected is a one-way door.** We learned this on 2026-05-23: Cloudflare doesn't let you convert a Direct Upload Pages project to Git-connected in place. The original `atlas-game` Direct Upload project had to be deleted and recreated from GitHub. The KV namespace (`RECORDS_KV`, id `eda12720123441638f8261e2d19efcff`) survived because it lives at the account level, not the project level, and the `wrangler.toml` binding re-attached it on first git-triggered deploy. The Squarespace CNAME for `atlas.nathankolk.com` didn't need to change — same `atlas-game.pages.dev` target since we reused the project name. Downtime was ~3 minutes. Per Cloudflare's docs, going back the other way (Git-connected → Direct Upload) is also blocked.
 
 ---
 
@@ -153,6 +160,7 @@ The token must be 32 hex chars. Anything else returns `400 invalid_token`.
 - Git installed (Apple Git via macOS). Repo initialized on `main`, identity set locally to `Nathan Kolk <275984939+nathankolk@users.noreply.github.com>` (no-reply email — `--local` config, doesn't affect other repos).
 - GitHub CLI (`gh`) installed via Homebrew, authenticated as `nathankolk` via HTTPS.
 - GitHub repo: `https://github.com/nathankolk/atlas-game` (public). `origin/main` tracked.
+- Cloudflare Pages project is Git-connected to that repo (as of 2026-05-23). Pushes to `main` auto-deploy to production. Verified end-to-end with a test commit. See Deploying section above.
 
 ---
 
