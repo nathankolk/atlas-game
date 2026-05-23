@@ -1,0 +1,14 @@
+# Cartographer's Atlas — Cloudflare Pages config
+#
+# This file is the source of truth for the project. Bindings declared here
+# override any bindings configured in the Cloudflare dashboard. See
+# https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+
+name = "atlas-game"
+compatibility_date = "2026-04-28"
+pages_build_output_dir = "public"
+
+# Production environment (deploys with --branch=main)
+[[kv_namespaces]]
+binding = "RECORDS_KV"
+id = "eda12720123441638f8261e2d19efcff"

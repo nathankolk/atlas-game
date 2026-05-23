@@ -1,0 +1,14 @@
+# Wrangler local dev state (cache, KV mocks, build artifacts)
+.wrangler/
+
+# macOS metadata
+.DS_Store
+
+# Node (in case anything ever pulls deps in)
+node_modules/
+npm-debug.log*
+
+# Editor cruft
+.vscode/
+.idea/
+*.swp

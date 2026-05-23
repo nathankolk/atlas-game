@@ -1,0 +1,4907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Cartographer's Atlas — Learn the World</title>
+
+<!-- Description -->
+<meta name="description" content="A study in the nations of the known world. Find every country on the map, by continent or across the globe." />
+
+<!-- Favicons -->
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="favicon.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png" />
+
+<!-- Open Graph (Facebook, LinkedIn, iMessage, Slack, Discord, etc.) -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Cartographer's Atlas" />
+<meta property="og:description" content="A study in the nations of the known world. Find every country on the map, by continent or across the globe." />
+<meta property="og:image" content="og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Cartographer's Atlas — an elegant compass rose on parchment" />
+<meta property="og:site_name" content="Cartographer's Atlas" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Cartographer's Atlas" />
+<meta name="twitter:description" content="A study in the nations of the known world. Find every country on the map, by continent or across the globe." />
+<meta name="twitter:image" content="og-image.png" />
+<meta name="twitter:image:alt" content="Cartographer's Atlas — an elegant compass rose on parchment" />
+
+<!-- Theme color for mobile browser chrome -->
+<meta name="theme-color" content="#f1e7d2" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Crimson+Pro:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --parchment: #f1e7d2;
+    --parchment-deep: #e8dcc0;
+    --parchment-shadow: #d9c9a5;
+    --ink: #1f2a3a;
+    --ink-soft: #3a4a60;
+    --ink-faded: #6b6250;
+    --sepia: #6b4423;
+    --sepia-soft: #8a6239;
+    --ocean: #a7c0c9;
+    --ocean-deep: #7a9ba6;
+    --land: #f5ebd4;
+    --land-border: #b29e72;
+    --gold: #c8953c;
+    --gold-bright: #e0a84a;
+    --sienna: #a0311e;
+    --sienna-deep: #7d2515;
+    --moss: #4a6b3c;
+    --moss-bright: #5f8a4b;
+    --highlight-glow: rgba(200,149,60,0.6);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: 'Crimson Pro', Georgia, serif;
+    color: var(--ink);
+    background: var(--parchment);
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(200,149,60,0.09) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 90%, rgba(160,49,30,0.06) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(31,42,58,0.02) 0%, transparent 70%);
+    position: relative;
+  }
+
+  /* Paper grain texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0 0.15 0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    opacity: 0.5;
+    mix-blend-mode: multiply;
+  }
+
+  /* Vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(107,68,35,0.18) 100%);
+  }
+
+  #app {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    height: 100vh; /* fallback for older browsers */
+    height: 100dvh; /* accounts for mobile browser URL bars */
+    overflow: hidden;
+  }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+  }
+
+  .screen.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ---------- MENU SCREEN ---------- */
+  #menu-screen {
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    overflow-y: auto;
+  }
+
+  .menu-inner {
+    max-width: 1100px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 14px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.1s ease forwards;
+  }
+
+  .brand-line {
+    flex: 0 0 80px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--ink) 50%, transparent);
+  }
+
+  .brand-mark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--sepia);
+    font-style: italic;
+  }
+
+  .title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(48px, 8vw, 92px);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+    color: var(--ink);
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s ease forwards;
+  }
+
+  .title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--sepia);
+  }
+
+  .subtitle {
+    font-family: 'Crimson Pro', serif;
+    font-size: clamp(14px, 1.5vw, 17px);
+    font-weight: 300;
+    font-style: italic;
+    color: var(--ink-faded);
+    margin-top: 14px;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.3s ease forwards;
+  }
+
+  .compass {
+    margin: 28px auto 32px;
+    width: 52px;
+    height: 52px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.4s ease forwards, spinSlow 60s linear infinite 0.4s;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 4px 0 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.5s ease forwards;
+  }
+
+  .section-label span {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--sepia);
+  }
+
+  .section-label::before,
+  .section-label::after {
+    content: '';
+    width: 40px;
+    height: 1px;
+    background: var(--sepia);
+    opacity: 0.5;
+  }
+
+  /* Hard mode toggle */
+  .mode-toggle-row {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto 22px;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.52s ease forwards;
+  }
+
+  .mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 18px;
+    background: rgba(255, 250, 235, 0.35);
+    border: 1px dashed var(--land-border);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    user-select: none;
+    font-family: inherit;
+  }
+
+  .mode-toggle:hover {
+    background: rgba(255, 250, 235, 0.6);
+    border-color: var(--sepia);
+  }
+
+  .mode-toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .switch-box {
+    flex: 0 0 auto;
+    position: relative;
+    width: 42px;
+    height: 22px;
+    border-radius: 11px;
+    background: rgba(107, 68, 35, 0.25);
+    transition: background 0.25s ease;
+  }
+
+  .switch-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--parchment);
+    border: 1px solid var(--sepia);
+    transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+  }
+
+  .mode-toggle input:checked ~ .switch-box {
+    background: var(--ink);
+  }
+
+  .mode-toggle input:checked ~ .switch-box .switch-knob {
+    transform: translateX(20px);
+    background: var(--gold-bright);
+    border-color: var(--gold-bright);
+  }
+
+  .switch-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+  }
+
+  .switch-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    font-style: italic;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+
+  .switch-desc {
+    font-family: 'Crimson Pro', serif;
+    font-size: 12px;
+    color: var(--ink-faded);
+    letter-spacing: 0.01em;
+  }
+
+  .regions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .region-card {
+    background: rgba(255,250,235,0.35);
+    border: 1px solid var(--land-border);
+    border-radius: 2px;
+    padding: 22px 20px 20px;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.2,0.8,0.2,1);
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards;
+    font-family: inherit;
+    color: inherit;
+  }
+
+  .region-card:nth-child(1) { animation-delay: 0.55s; }
+  .region-card:nth-child(2) { animation-delay: 0.62s; }
+  .region-card:nth-child(3) { animation-delay: 0.69s; }
+  .region-card:nth-child(4) { animation-delay: 0.76s; }
+  .region-card:nth-child(5) { animation-delay: 0.83s; }
+  .region-card:nth-child(6) { animation-delay: 0.90s; }
+  .region-card:nth-child(7) { animation-delay: 0.97s; }
+
+  .region-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(200,149,60,0.12) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+
+  .region-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--sepia);
+    background: rgba(255,250,235,0.6);
+    box-shadow: 0 6px 20px rgba(107,68,35,0.15);
+  }
+
+  .region-card:hover::before {
+    opacity: 1;
+  }
+
+  .region-card.featured {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(31,42,58,0.92) 0%, rgba(58,74,96,0.92) 100%);
+    border: 1px solid var(--gold);
+    color: var(--parchment);
+    padding: 28px 28px 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .region-card.featured::before {
+    background: linear-gradient(135deg, rgba(200,149,60,0.2) 0%, transparent 60%);
+  }
+
+  .region-card.featured:hover {
+    border-color: var(--gold-bright);
+    box-shadow: 0 8px 30px rgba(31,42,58,0.3);
+  }
+
+  .featured-left {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .featured-mark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 44px;
+    font-style: italic;
+    font-weight: 500;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .region-card .r-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .region-card .r-subname {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-faded);
+    letter-spacing: 0.02em;
+  }
+
+  .region-card.featured .r-subname {
+    color: rgba(241,231,210,0.7);
+  }
+
+  .region-card .r-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--sepia);
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(107,68,35,0.3);
+  }
+
+  .region-card.featured .r-count {
+    color: var(--gold);
+    border-top: 1px dashed rgba(200,149,60,0.4);
+  }
+
+  /* Personal best badge on region cards */
+  .r-best {
+    font-family: 'Crimson Pro', serif;
+    font-size: 12px;
+    color: var(--moss);
+    margin-top: 6px;
+    font-style: italic;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .r-best::before {
+    content: '★';
+    color: var(--gold);
+    font-style: normal;
+    font-size: 11px;
+  }
+
+  .region-card.featured .r-best {
+    color: var(--gold-bright);
+  }
+
+  .region-card.featured .r-best::before {
+    color: var(--gold-bright);
+  }
+
+  .featured-cta {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-style: italic;
+    color: var(--gold);
+    white-space: nowrap;
+    transition: transform 0.3s ease;
+  }
+
+  .region-card.featured:hover .featured-cta {
+    transform: translateX(6px);
+  }
+
+  .loading-state {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--sepia);
+    margin: 40px 0;
+    font-size: 18px;
+  }
+
+  .loading-state::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    text-align: left;
+    animation: dots 1.4s steps(4) infinite;
+  }
+
+  @keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+  }
+
+  .error-state {
+    font-family: 'Crimson Pro', serif;
+    color: var(--sienna);
+    padding: 20px;
+    border: 1px solid var(--sienna);
+    border-radius: 2px;
+    max-width: 520px;
+    margin: 40px auto;
+    background: rgba(160,49,30,0.05);
+  }
+
+  /* ---------- GAME SCREEN ---------- */
+  #game-screen {
+    padding: 0;
+  }
+
+  .game-header {
+    flex: 0 0 auto;
+    padding: calc(14px + env(safe-area-inset-top)) 28px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    border-bottom: 1px solid rgba(107,68,35,0.22);
+    background: linear-gradient(to bottom, rgba(241,231,210,0.9), rgba(241,231,210,0.5));
+    position: relative;
+    z-index: 5;
+  }
+
+  .hdr-left, .hdr-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .hdr-right {
+    justify-content: flex-end;
+  }
+
+  .back-btn {
+    background: none;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    padding: 7px 14px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-radius: 1px;
+  }
+
+  .back-btn:hover {
+    background: var(--ink);
+    color: var(--parchment);
+  }
+
+  .region-tag {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--sepia);
+    letter-spacing: 0.02em;
+  }
+
+  .stat {
+    text-align: center;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-family: 'Crimson Pro', serif;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .stat-value.correct-color { color: var(--moss); }
+  .stat-value.wrong-color { color: var(--sienna); }
+  .stat-value.score-color { color: var(--sepia); }
+
+  .stat.stat-primary .stat-value {
+    font-size: 26px;
+    font-weight: 600;
+  }
+
+  .stat-value.score-flash {
+    animation: scoreFlash 0.6s ease;
+  }
+
+  @keyframes scoreFlash {
+    0% { color: var(--gold-bright); transform: scale(1.25); }
+    100% { color: var(--sepia); transform: scale(1); }
+  }
+
+  /* Prompt panel */
+  .prompt-panel {
+    flex: 0 0 auto;
+    padding: 14px 28px 16px;
+    text-align: center;
+    position: relative;
+    z-index: 4;
+    background: linear-gradient(to bottom, rgba(241,231,210,0.5), transparent);
+  }
+
+  .prompt-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--sepia);
+    font-style: italic;
+  }
+
+  .prompt-country {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    line-height: 1.1;
+    margin-top: 4px;
+    transition: transform 0.3s ease;
+  }
+
+  .prompt-country.shake {
+    animation: shake 0.4s ease;
+  }
+
+  .prompt-country.pulse {
+    animation: pulsePrompt 0.6s ease;
+  }
+
+  @keyframes pulsePrompt {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-10px); }
+    40% { transform: translateX(10px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+
+  /* Map */
+  .map-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(167,192,201,0.2) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 70%, rgba(167,192,201,0.15) 0%, transparent 55%);
+  }
+
+  #world-map {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+  }
+
+  #world-map:active {
+    cursor: grabbing;
+  }
+
+  .country {
+    fill: var(--land);
+    stroke: var(--land-border);
+    stroke-width: 0.5;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    transition: fill 0.2s ease;
+    cursor: pointer;
+  }
+
+  .country.eligible:hover {
+    fill: #f0dfb0;
+  }
+
+  .country.ineligible {
+    fill: #ede3cc;
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  /* Invisible click target for tiny island nations.
+     Rendered BELOW visible polygons so larger countries take precedence at
+     borders, but small features (Antigua, Grenada, etc.) get a 22px-wide
+     stroke around them that catches clicks even when the polygon itself is
+     only a few pixels across. */
+  .country-hitzone {
+    fill: none;
+    stroke: rgba(0, 0, 0, 0);
+    stroke-width: 22;
+    vector-effect: non-scaling-stroke;
+    pointer-events: stroke;
+    cursor: pointer;
+  }
+
+  .country.target-correct {
+    fill: var(--moss-bright) !important;
+    stroke: var(--moss);
+    stroke-width: 1;
+    animation: flashCorrect 0.7s ease;
+  }
+
+  .country.target-wrong {
+    fill: var(--sienna) !important;
+    stroke: var(--sienna-deep);
+    stroke-width: 1;
+    animation: flashWrong 0.7s ease;
+  }
+
+  .country.reveal {
+    fill: var(--gold-bright) !important;
+    stroke: var(--ink);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 10px rgba(224, 168, 74, 0.9))
+            drop-shadow(0 0 4px rgba(31, 42, 58, 0.5));
+    animation: flashReveal 1.2s ease infinite;
+  }
+
+  /* Pulsing marker drawn at the centroid of a revealed country */
+  .reveal-marker .pulse-ring {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 3;
+    vector-effect: non-scaling-stroke;
+    animation: revealPulse 1.4s ease-out infinite;
+  }
+
+  .reveal-marker .pulse-ring.delayed {
+    animation-delay: 0.45s;
+    stroke: var(--gold-bright);
+  }
+
+  .reveal-marker .center-dot {
+    fill: var(--ink);
+    stroke: var(--gold-bright);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  @keyframes revealPulse {
+    0%   { r: 6;  opacity: 0.95; }
+    100% { r: 42; opacity: 0; }
+  }
+
+  /* Persistent completed states */
+  .country.completed-correct {
+    fill: var(--moss-bright) !important;
+    stroke: var(--moss);
+    cursor: default;
+  }
+
+  .country.completed-correct:hover {
+    fill: #6f9c59 !important;
+  }
+
+  .country.completed-wrong {
+    fill: var(--sienna) !important;
+    stroke: var(--sienna-deep);
+    cursor: default;
+  }
+
+  .country.completed-wrong:hover {
+    fill: #b23d28 !important;
+  }
+
+  @keyframes flashCorrect {
+    0% { fill: #9ec97f; transform: scale(1); }
+    50% { fill: var(--moss-bright); }
+    100% { fill: var(--moss-bright); }
+  }
+
+  @keyframes flashWrong {
+    0% { fill: #c94f3c; }
+    100% { fill: var(--sienna); }
+  }
+
+  @keyframes flashReveal {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .graticule {
+    fill: none;
+    stroke: rgba(122,155,166,0.25);
+    stroke-width: 0.4;
+    stroke-dasharray: 2 2;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+  }
+
+  .sphere-bg {
+    fill: #dde8ed;
+    stroke: var(--ocean-deep);
+    stroke-width: 0.5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* Zoom controls */
+  .zoom-controls {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    z-index: 11;
+    background: rgba(31,42,58,0.92);
+    border-radius: 1px;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  }
+
+  .zoom-btn {
+    width: 38px;
+    height: 38px;
+    background: transparent;
+    border: none;
+    color: var(--parchment);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid rgba(200,149,60,0.2);
+  }
+
+  .zoom-btn:last-child { border-bottom: none; }
+
+  .zoom-btn:hover {
+    background: rgba(200,149,60,0.25);
+    color: var(--gold-bright);
+  }
+
+  .zoom-btn:active {
+    background: rgba(200,149,60,0.4);
+  }
+
+  .zoom-btn svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .zoom-hint {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--ink-faded);
+    background: rgba(241,231,210,0.75);
+    padding: 5px 12px;
+    border-radius: 1px;
+    pointer-events: none;
+    border: 1px solid rgba(107,68,35,0.2);
+    letter-spacing: 0.03em;
+    opacity: 0;
+    animation: hintFade 5s ease forwards;
+  }
+
+  @keyframes hintFade {
+    0%, 10% { opacity: 0; }
+    20%, 75% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Controls */
+  .controls {
+    flex: 0 0 auto;
+    padding: 12px 28px calc(18px + env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: linear-gradient(to top, rgba(241,231,210,0.9), transparent);
+  }
+
+  .ctrl-btn {
+    background: none;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    padding: 9px 22px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-radius: 1px;
+  }
+
+  .ctrl-btn:hover:not(:disabled) {
+    background: var(--ink);
+    color: var(--parchment);
+  }
+
+  .ctrl-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .ctrl-btn.primary {
+    background: var(--ink);
+    color: var(--parchment);
+    border-color: var(--ink);
+  }
+
+  .ctrl-btn.primary:hover:not(:disabled) {
+    background: var(--sepia);
+    border-color: var(--sepia);
+  }
+
+  .ctrl-btn.share {
+    background: var(--gold);
+    color: var(--ink);
+    border-color: var(--sepia);
+    font-weight: 600;
+    letter-spacing: 0.16em;
+  }
+
+  .ctrl-btn.share:hover:not(:disabled) {
+    background: var(--gold-bright);
+    border-color: var(--sepia);
+    color: var(--ink);
+  }
+
+  .ctrl-btn.share.copied {
+    background: var(--moss-bright);
+    border-color: var(--moss);
+    color: #fff;
+  }
+
+  .ctrl-kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faded);
+    margin-left: 8px;
+    opacity: 0.7;
+  }
+
+  /* Toast feedback */
+  .toast {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: var(--ink);
+    color: var(--parchment);
+    padding: 12px 22px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+    border-radius: 1px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s ease;
+    z-index: 20;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    border-left: 3px solid var(--gold);
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .toast.correct { border-left-color: var(--moss-bright); }
+  .toast.wrong { border-left-color: var(--sienna); }
+
+  .toast em {
+    font-style: italic;
+    color: var(--gold-bright);
+  }
+  .toast.correct em { color: var(--moss-bright); }
+  .toast.wrong em { color: #d47d6a; }
+
+  /* ---------- RESULTS SCREEN ---------- */
+  #results-screen {
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    overflow-y: auto;
+  }
+
+  .results-inner {
+    max-width: 760px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .results-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .results-title em {
+    font-style: italic;
+    color: var(--sepia);
+  }
+
+  .results-region {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink-faded);
+    margin-top: 8px;
+    letter-spacing: 0.04em;
+  }
+
+  .results-grade {
+    margin: 30px 0 26px;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .grade-big {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(76px, 14vw, 128px);
+    font-weight: 500;
+    line-height: 1;
+    color: var(--sepia);
+    letter-spacing: -0.03em;
+  }
+
+  .grade-unit {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 24px;
+    color: var(--ink-faded);
+  }
+
+  .results-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 620px;
+    margin: 0 auto 30px;
+    gap: 16px;
+  }
+
+  .r-stat {
+    padding: 16px 6px;
+    border-top: 1px solid var(--land-border);
+    border-bottom: 1px solid var(--land-border);
+  }
+
+  .r-stat-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .r-stat-value.good { color: var(--moss); }
+  .r-stat-value.bad { color: var(--sienna); }
+  .r-stat-value.score { color: var(--sepia); }
+
+  .r-stat-label {
+    font-family: 'Crimson Pro', serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--ink-faded);
+    margin-top: 6px;
+  }
+
+  .missed-section {
+    margin-top: 26px;
+    padding: 20px;
+    background: rgba(255,250,235,0.4);
+    border: 1px dashed var(--land-border);
+    text-align: left;
+  }
+
+  /* New Record banner */
+  .new-record-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin: 22px auto 6px;
+    padding: 14px 28px;
+    max-width: 520px;
+    background: linear-gradient(135deg, rgba(31,42,58,0.96) 0%, rgba(58,74,96,0.96) 100%);
+    border: 1px solid var(--gold);
+    box-shadow: 0 6px 22px rgba(31,42,58,0.25), inset 0 0 40px rgba(200,149,60,0.15);
+    animation: recordFadeIn 0.7s ease;
+  }
+
+  .record-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--gold-bright);
+    letter-spacing: 0.02em;
+  }
+
+  .record-laurel {
+    font-size: 26px;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .record-laurel.flipped {
+    transform: scaleX(-1);
+  }
+
+  @keyframes recordFadeIn {
+    0% { opacity: 0; transform: scale(0.9) translateY(-8px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* Personal Bests panel */
+  .bests-section {
+    margin-top: 26px;
+    padding: 22px 20px 20px;
+    background: rgba(255,250,235,0.55);
+    border: 1px solid var(--land-border);
+    border-radius: 2px;
+  }
+
+  .bests-heading {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--sepia);
+    text-align: center;
+    letter-spacing: 0.04em;
+    margin-bottom: 16px;
+  }
+
+  .bests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+  }
+
+  .best-item {
+    text-align: center;
+    padding: 10px 6px;
+    position: relative;
+    transition: background 0.3s ease;
+  }
+
+  .best-item.broken {
+    background: rgba(200, 149, 60, 0.12);
+    border: 1px dashed var(--gold);
+    border-radius: 2px;
+    animation: brokenGlow 1.8s ease-in-out infinite;
+  }
+
+  @keyframes brokenGlow {
+    0%, 100% { box-shadow: 0 0 0 rgba(200,149,60,0); }
+    50% { box-shadow: 0 0 18px rgba(200,149,60,0.35); }
+  }
+
+  .best-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+
+  .best-item.broken .best-value {
+    color: var(--sepia);
+  }
+
+  .best-star {
+    color: var(--gold);
+    font-size: 16px;
+  }
+
+  .best-label {
+    font-family: 'Crimson Pro', serif;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+    margin-top: 4px;
+  }
+
+  .missed-heading {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--sepia);
+    margin-bottom: 10px;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+
+  .missed-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    justify-content: center;
+  }
+
+  .missed-item {
+    font-family: 'Crimson Pro', serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  .results-actions {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spinSlow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* US mode - choices panel for state → capital */
+  .choices-panel {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    max-width: 520px;
+    margin: 12px auto 0;
+  }
+
+  .choice-btn {
+    background: rgba(255,250,235,0.65);
+    border: 1px solid var(--land-border);
+    color: var(--ink);
+    padding: 11px 14px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 1px;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .choice-btn:hover:not(:disabled):not(.choice-correct):not(.choice-wrong) {
+    background: rgba(200,149,60,0.18);
+    border-color: var(--sepia);
+    transform: translateY(-1px);
+  }
+
+  .choice-btn.choice-correct {
+    background: var(--moss-bright);
+    border-color: var(--moss);
+    color: #fff;
+    animation: choicePop 0.4s ease;
+  }
+
+  .choice-btn.choice-wrong {
+    background: var(--sienna);
+    border-color: var(--sienna-deep);
+    color: #fff;
+    opacity: 0.75;
+    cursor: default;
+  }
+
+  .choice-btn.choice-reveal {
+    background: var(--gold-bright);
+    border-color: var(--sepia);
+    color: var(--ink);
+    animation: choiceReveal 0.8s ease infinite;
+  }
+
+  @keyframes choicePop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes choiceReveal {
+    0%, 100% { box-shadow: 0 0 0 rgba(200,149,60,0); }
+    50% { box-shadow: 0 0 14px rgba(200,149,60,0.6); }
+  }
+
+  /* Prompted-state highlight on the map (state-to-capital mode) */
+  .country.prompt-highlight {
+    fill: #d0dcc4 !important;
+    stroke: var(--moss);
+    stroke-width: 2;
+  }
+
+  /* US mode backdrop */
+  .us-ocean {
+    fill: #dde8ed;
+  }
+
+  /* Section divider between world and US sections on menu */
+  .section-divider {
+    grid-column: 1 / -1;
+    margin: 18px 0 6px;
+  }
+
+  .us-section-label {
+    margin: 4px 0 !important;
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .us-section-label span {
+    color: var(--ink) !important;
+    font-size: 12px !important;
+  }
+
+  /* Hierarchical menu: when in a sub-view (continents/us), the big
+     title and compass collapse to give the sub-content room to breathe. */
+  #menu-screen.view-sub .menu-header {
+    transform: scale(0.6);
+    transform-origin: top center;
+    margin-bottom: -90px;
+    opacity: 0.55;
+    transition: all 0.4s ease;
+    pointer-events: none;
+  }
+
+  #menu-screen .menu-header {
+    transition: all 0.4s ease;
+  }
+
+  /* Sub-menu header strip: back arrow + section title */
+  .submenu-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin: 8px auto 24px;
+    max-width: 980px;
+    padding: 0 4px;
+    text-align: left;
+    animation: fadeUp 0.5s ease;
+  }
+
+  .back-link {
+    background: none;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    padding: 8px 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-radius: 1px;
+    flex: 0 0 auto;
+  }
+
+  .back-link:hover {
+    background: var(--ink);
+    color: var(--parchment);
+  }
+
+  .submenu-title-block {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .submenu-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .submenu-subtitle {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-faded);
+    margin-top: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  /* Daily Five card — the headline, top-of-menu offering */
+  .daily-card {
+    grid-column: 1 / -1;
+    text-align: left;
+    background: linear-gradient(135deg, rgba(31,42,58,0.94) 0%, rgba(58,74,96,0.94) 100%) !important;
+    border: 1px solid var(--gold) !important;
+    color: var(--parchment);
+    padding: 22px 26px !important;
+    box-shadow: 0 6px 24px rgba(31,42,58,0.2), inset 0 0 50px rgba(200,149,60,0.08);
+  }
+
+  .daily-card:hover {
+    border-color: var(--gold-bright) !important;
+    box-shadow: 0 8px 32px rgba(31,42,58,0.3), inset 0 0 50px rgba(200,149,60,0.15);
+  }
+
+  .daily-card .r-name {
+    color: var(--parchment);
+    font-size: 32px;
+    margin-top: 6px;
+  }
+
+  .daily-card .r-subname {
+    color: rgba(241,231,210,0.7);
+    font-size: 15px;
+  }
+
+  .daily-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .daily-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--gold);
+    color: var(--ink);
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    border-radius: 1px;
+  }
+
+  .daily-streak {
+    font-family: 'Crimson Pro', serif;
+    font-size: 13px;
+    color: var(--gold-bright);
+    letter-spacing: 0.04em;
+  }
+
+  .daily-cta {
+    margin-top: 14px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--gold-bright);
+    text-align: right;
+    transition: transform 0.25s ease;
+  }
+
+  .daily-card.daily-fresh:hover .daily-cta {
+    transform: translateX(4px);
+  }
+
+  /* Already-played state */
+  .daily-card.daily-done {
+    cursor: default;
+  }
+
+  .daily-done-msg {
+    margin-top: 14px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 19px;
+    color: var(--gold-bright);
+    text-align: center;
+  }
+
+  .daily-result-grid {
+    margin: 12px 0 8px;
+    text-align: center;
+    font-size: 28px;
+    letter-spacing: 4px;
+    line-height: 1;
+  }
+
+  .daily-result-stats {
+    text-align: center;
+    font-family: 'Crimson Pro', serif;
+    font-size: 14px;
+    color: rgba(241,231,210,0.85);
+    letter-spacing: 0.04em;
+  }
+
+  .daily-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 16px 0 10px;
+    flex-wrap: wrap;
+  }
+
+  .daily-actions .ctrl-btn {
+    background: rgba(241,231,210,0.1);
+    color: var(--parchment);
+    border-color: rgba(200,149,60,0.6);
+  }
+
+  .daily-actions .ctrl-btn:hover:not(:disabled) {
+    background: rgba(200,149,60,0.2);
+    border-color: var(--gold-bright);
+    color: var(--gold-bright);
+  }
+
+  .daily-actions .ctrl-btn.share {
+    background: var(--gold);
+    color: var(--ink);
+    border-color: var(--gold);
+  }
+
+  .daily-actions .ctrl-btn.share:hover:not(:disabled) {
+    background: var(--gold-bright);
+    border-color: var(--gold-bright);
+    color: var(--ink);
+  }
+
+  .daily-actions .ctrl-btn.copied {
+    background: var(--moss-bright) !important;
+    border-color: var(--moss) !important;
+    color: #fff !important;
+  }
+
+  .daily-next {
+    text-align: center;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: rgba(241,231,210,0.55);
+    letter-spacing: 0.06em;
+    margin-top: 6px;
+  }
+
+  .daily-next [data-countdown] {
+    font-family: 'JetBrains Mono', monospace;
+    font-style: normal;
+    color: var(--gold-bright);
+  }
+
+  /* Folder cards on the main menu - they open sub-views rather than playing */
+  .folder-card {
+    grid-column: 1 / -1;
+    display: flex !important;
+    align-items: center !important;
+    gap: 22px;
+    padding: 22px 24px !important;
+    background: linear-gradient(135deg, rgba(255,250,235,0.55), rgba(248,238,214,0.4)) !important;
+    border-left: 3px solid var(--sepia) !important;
+  }
+
+  .folder-card:hover {
+    background: linear-gradient(135deg, rgba(255,250,235,0.85), rgba(248,238,214,0.7)) !important;
+    border-left-color: var(--gold) !important;
+  }
+
+  .folder-icon {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 38px;
+    color: var(--gold);
+    line-height: 1;
+    flex: 0 0 auto;
+  }
+
+  .folder-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .folder-arrow {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px;
+    color: var(--sepia);
+    line-height: 1;
+    flex: 0 0 auto;
+    transition: transform 0.25s ease, color 0.25s ease;
+  }
+
+  .folder-card:hover .folder-arrow {
+    transform: translateX(4px);
+    color: var(--gold);
+  }
+
+  .us-card {
+    background: linear-gradient(135deg, rgba(255,250,235,0.5), rgba(248,238,214,0.4)) !important;
+    border-left: 3px solid var(--sepia) !important;
+  }
+
+  .us-card:hover {
+    background: linear-gradient(135deg, rgba(255,250,235,0.8), rgba(248,238,214,0.7)) !important;
+    border-left-color: var(--gold) !important;
+  }
+
+  /* Loading overlay for lazy-loaded datasets */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(241,231,210,0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .loading-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .loading-inner {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 24px;
+    color: var(--sepia);
+    letter-spacing: 0.04em;
+  }
+
+  .loading-dots::after {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    text-align: left;
+    animation: dots 1.4s steps(4) infinite;
+  }
+
+  /* ===== Sync entry button (main menu) ===== */
+  .sync-entry-row {
+    display: flex;
+    justify-content: center;
+    margin: -10px auto 22px;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.58s ease forwards;
+  }
+  .sync-entry-btn {
+    background: none;
+    border: 1px dashed transparent;
+    color: var(--ink-faded);
+    font-family: 'Crimson Pro', serif;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    padding: 5px 12px;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sync-entry-btn:hover {
+    color: var(--ink);
+    border-color: var(--sepia);
+    background: rgba(255, 250, 235, 0.4);
+  }
+  .sync-entry-btn .sync-glyph { font-size: 14px; }
+  .sync-entry-btn .sync-status-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--moss);
+    box-shadow: 0 0 4px rgba(74, 107, 60, 0.4);
+  }
+  .sync-entry-btn.error .sync-status-dot { background: #b85a5a; box-shadow: 0 0 4px rgba(184, 90, 90, 0.4); }
+  .sync-entry-btn.never .sync-status-dot { display: none; }
+
+  /* ===== Sync modal ===== */
+  .sync-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 15, 5, 0.5);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: syncFadeIn 0.18s ease;
+  }
+  .sync-modal-overlay.show { display: flex; }
+  @keyframes syncFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .sync-modal {
+    background: var(--parchment);
+    border: 1px solid var(--sepia);
+    border-radius: 2px;
+    width: min(460px, calc(100vw - 40px));
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    position: relative;
+  }
+  .sync-modal-header {
+    padding: 22px 26px 14px;
+    border-bottom: 1px dashed var(--sepia);
+    position: relative;
+  }
+  .sync-modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--ink);
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+  .sync-modal-subtitle {
+    font-family: 'Crimson Pro', serif;
+    font-size: 13px;
+    color: var(--ink-faded);
+    margin: 4px 36px 0 0;
+    line-height: 1.4;
+  }
+  .sync-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: none;
+    border: none;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    color: var(--ink-faded);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sync-modal-close:hover { color: var(--ink); background: rgba(0,0,0,0.05); }
+
+  .sync-modal-body { padding: 18px 26px 22px; }
+
+  .sync-section { margin-bottom: 16px; }
+  .sync-section:last-child { margin-bottom: 0; }
+
+  .sync-label {
+    display: block;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink);
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+  }
+
+  .sync-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--sepia);
+    border-radius: 2px;
+    background: rgba(255, 250, 235, 0.5);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+    box-sizing: border-box;
+  }
+  .sync-input.text {
+    font-family: 'Crimson Pro', serif;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+  }
+  .sync-input:focus {
+    outline: none;
+    border-color: var(--gold);
+    background: rgba(255, 250, 235, 0.85);
+  }
+
+  .sync-key-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    word-break: break-all;
+    background: rgba(255, 250, 235, 0.5);
+    padding: 10px 12px;
+    border: 1px dashed var(--sepia);
+    border-radius: 2px;
+    color: var(--ink);
+    line-height: 1.5;
+    transition: color 0.15s ease, text-shadow 0.15s ease;
+  }
+  .sync-key-display.hidden {
+    color: transparent;
+    text-shadow: 0 0 7px var(--ink-soft);
+    user-select: none;
+  }
+
+  .sync-key-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .sync-mini-btn {
+    background: none;
+    border: 1px solid var(--sepia);
+    font-family: 'Crimson Pro', serif;
+    font-size: 12px;
+    color: var(--ink-faded);
+    padding: 5px 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+    letter-spacing: 0.02em;
+  }
+  .sync-mini-btn:hover {
+    color: var(--ink);
+    border-color: var(--ink);
+    background: rgba(255, 250, 235, 0.5);
+  }
+
+  .sync-btn {
+    width: 100%;
+    padding: 12px 18px;
+    background: var(--ink);
+    color: var(--parchment);
+    border: 1px solid var(--ink);
+    border-radius: 2px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 17px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .sync-btn:hover { background: var(--ink-soft); border-color: var(--ink-soft); }
+  .sync-btn:disabled { opacity: 0.55; cursor: wait; }
+
+  .sync-btn.danger {
+    background: none;
+    color: #a84a3a;
+    border-color: #a84a3a;
+  }
+  .sync-btn.danger:hover { background: rgba(168, 74, 58, 0.08); }
+
+  .sync-status-line {
+    font-family: 'Crimson Pro', serif;
+    font-size: 12px;
+    color: var(--ink-faded);
+    margin: 10px 0 0;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+  .sync-status-line.error { color: #a84a3a; }
+  .sync-status-line.success { color: var(--moss); }
+
+  .sync-divider {
+    border: none;
+    border-top: 1px dashed var(--sepia);
+    margin: 18px 0;
+  }
+
+  .sync-tab-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .sync-tab {
+    flex: 1;
+    padding: 8px 10px;
+    background: none;
+    border: 1px solid var(--sepia);
+    border-radius: 2px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-faded);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .sync-tab:hover:not(.active) { color: var(--ink); }
+  .sync-tab.active {
+    background: var(--ink);
+    color: var(--parchment);
+    border-color: var(--ink);
+  }
+
+  .sync-help {
+    font-family: 'Crimson Pro', serif;
+    font-size: 12.5px;
+    color: var(--ink-faded);
+    line-height: 1.55;
+    margin: 8px 0 14px;
+    letter-spacing: 0.01em;
+  }
+
+  /* Responsive */
+  @media (max-width: 720px) {
+    .game-header {
+      padding: calc(10px + env(safe-area-inset-top)) 14px 8px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .hdr-left, .hdr-right {
+      gap: 10px;
+    }
+    .region-tag { display: none; }
+    .prompt-panel { padding: 10px 14px 12px; }
+    .controls { padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); gap: 8px; }
+    .ctrl-btn { padding: 8px 14px; font-size: 12px; letter-spacing: 0.12em; }
+    .ctrl-kbd { display: none; }
+    .stat-value { font-size: 16px; }
+    .stat.stat-primary .stat-value { font-size: 20px; }
+    .stat-label { font-size: 9px; letter-spacing: 0.2em; }
+    .hdr-right { gap: 12px; }
+    .results-stats { grid-template-columns: repeat(2, 1fr); max-width: 420px; }
+    .r-stat-value { font-size: 24px; }
+    .new-record-banner { padding: 12px 18px; gap: 12px; }
+    .record-text { font-size: 18px; }
+    .record-laurel { font-size: 22px; }
+    .bests-grid { grid-template-columns: 1fr 1fr; }
+    .best-value { font-size: 18px; }
+    .choices-panel { grid-template-columns: repeat(2, 1fr); gap: 6px; max-width: none; margin-top: 10px; }
+    .choice-btn { font-size: 15px; padding: 9px 10px; }
+    /* Sub-menu adjustments for narrow screens */
+    .submenu-title { font-size: 26px; }
+    .submenu-subtitle { font-size: 13px; }
+    .submenu-header { gap: 12px; margin-bottom: 18px; }
+    .back-link { padding: 6px 12px; font-size: 12px; }
+    .folder-card { padding: 16px 18px !important; gap: 14px; }
+    .folder-icon { font-size: 30px; }
+    .folder-arrow { font-size: 28px; }
+    .daily-card { padding: 18px 20px !important; }
+    .daily-card .r-name { font-size: 26px; }
+    .daily-card .r-subname { font-size: 13px; }
+    .daily-result-grid { font-size: 22px; letter-spacing: 3px; }
+    .daily-actions { flex-direction: column; }
+    .daily-actions .ctrl-btn { width: 100%; }
+    #menu-screen.view-sub .menu-header { transform: scale(0.5); margin-bottom: -110px; }
+    .regions { grid-template-columns: 1fr 1fr; }
+    .region-card.featured {
+      grid-column: 1 / -1;
+      flex-direction: column;
+      text-align: center;
+      gap: 14px;
+    }
+    .featured-left { flex-direction: column; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- MENU SCREEN -->
+  <div id="menu-screen" class="screen active">
+    <div class="menu-inner">
+      <div class="menu-header">
+        <div class="brand">
+          <div class="brand-line"></div>
+          <div class="brand-mark">Est. MMXXVI · Volume I</div>
+          <div class="brand-line"></div>
+        </div>
+
+        <h1 class="title">Cartographer's <em>Atlas</em></h1>
+        <p class="subtitle">— a study in the nations of the known world —</p>
+
+        <svg class="compass" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="50" r="46" stroke="#6b4423" stroke-width="1"/>
+          <circle cx="50" cy="50" r="38" stroke="#6b4423" stroke-width="0.5" stroke-dasharray="2 2"/>
+          <path d="M50 8 L54 48 L50 52 L46 48 Z" fill="#1f2a3a"/>
+          <path d="M50 92 L54 52 L50 48 L46 52 Z" fill="#6b4423"/>
+          <path d="M8 50 L48 46 L52 50 L48 54 Z" fill="#6b4423"/>
+          <path d="M92 50 L52 46 L48 50 L52 54 Z" fill="#6b4423"/>
+          <circle cx="50" cy="50" r="3" fill="#c8953c"/>
+          <text x="50" y="6" text-anchor="middle" font-family="Cormorant Garamond" font-size="6" fill="#1f2a3a">N</text>
+        </svg>
+      </div>
+
+      <div id="menu-content"></div>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen">
+    <header class="game-header">
+      <div class="hdr-left">
+        <button class="back-btn" id="back-btn">← Atlas</button>
+        <div class="region-tag" id="region-tag">—</div>
+      </div>
+      <div class="hdr-right">
+        <div class="stat stat-primary">
+          <div class="stat-label">Score</div>
+          <div class="stat-value score-color" id="stat-score">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Found</div>
+          <div class="stat-value correct-color" id="stat-correct">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Missed</div>
+          <div class="stat-value wrong-color" id="stat-wrong">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Left</div>
+          <div class="stat-value" id="stat-remaining">—</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="prompt-panel">
+      <div class="prompt-label">Find on the map</div>
+      <div class="prompt-country" id="prompt-country">—</div>
+      <div class="choices-panel" id="choices-panel" style="display:none;"></div>
+    </div>
+
+    <div class="map-wrap">
+      <svg id="world-map" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoom-in-btn" title="Zoom in" aria-label="Zoom in">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="16" y1="16" x2="21" y2="21"/></svg>
+        </button>
+        <button class="zoom-btn" id="zoom-out-btn" title="Zoom out" aria-label="Zoom out">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="16" y1="16" x2="21" y2="21"/></svg>
+        </button>
+        <button class="zoom-btn" id="zoom-reset-btn" title="Reset view" aria-label="Reset view">
+          <svg viewBox="0 0 24 24"><path d="M12 4 L12 20 M4 12 L20 12"/><circle cx="12" cy="12" r="8"/></svg>
+        </button>
+      </div>
+      <div class="zoom-hint" id="zoom-hint">Scroll to zoom · drag to pan</div>
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="skip-btn">Skip <span class="ctrl-kbd">S</span></button>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div id="results-screen" class="screen">
+    <div class="results-inner">
+      <div class="brand">
+        <div class="brand-line"></div>
+        <div class="brand-mark">Expedition Complete</div>
+        <div class="brand-line"></div>
+      </div>
+      <h1 class="results-title">Your <em>Findings</em></h1>
+      <div class="results-region" id="results-region">—</div>
+
+      <div class="new-record-banner" id="new-record-banner" style="display:none;"></div>
+
+      <div class="results-grade">
+        <div class="grade-big" id="grade-big">—</div>
+        <div class="grade-unit">% accuracy</div>
+      </div>
+
+      <div class="results-stats">
+        <div class="r-stat">
+          <div class="r-stat-value score" id="r-score">0/0</div>
+          <div class="r-stat-label">Score</div>
+        </div>
+        <div class="r-stat">
+          <div class="r-stat-value good" id="r-correct">0</div>
+          <div class="r-stat-label">Found</div>
+        </div>
+        <div class="r-stat">
+          <div class="r-stat-value bad" id="r-wrong">0</div>
+          <div class="r-stat-label">Missed</div>
+        </div>
+        <div class="r-stat">
+          <div class="r-stat-value" id="r-time">0:00</div>
+          <div class="r-stat-label">Time</div>
+        </div>
+      </div>
+
+      <div class="bests-section" id="bests-section" style="display:none;">
+        <div class="bests-heading">— Your Personal Bests —</div>
+        <div class="bests-grid"></div>
+      </div>
+
+      <div class="missed-section" id="missed-section" style="display:none;">
+        <div class="missed-heading">— Countries to revisit —</div>
+        <div class="missed-list" id="missed-list"></div>
+      </div>
+
+      <div class="results-actions">
+        <button class="ctrl-btn share" id="share-btn">Share Results</button>
+        <button class="ctrl-btn primary" id="replay-btn">Study Again</button>
+        <button class="ctrl-btn primary" id="daily-practice-btn" style="display:none;">Practice Replay</button>
+        <button class="ctrl-btn" id="home-btn">Choose Region</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SYNC MODAL -->
+  <div class="sync-modal-overlay" id="sync-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="sync-modal-title">
+    <div class="sync-modal" id="sync-modal">
+      <div class="sync-modal-header">
+        <h2 class="sync-modal-title" id="sync-modal-title">Cross-Device Sync</h2>
+        <p class="sync-modal-subtitle">Mirror your records across browsers, phones, and computers.</p>
+        <button class="sync-modal-close" id="sync-modal-close" aria-label="Close">×</button>
+      </div>
+      <div class="sync-modal-body" id="sync-modal-body"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  /* =========================================================
+   * CONTINENT MAPPING
+   * Keys are canonical country names. We also include a set of
+   * aliases to match against various naming conventions in
+   * world-atlas TopoJSON data.
+   * ========================================================= */
+
+  const CONTINENTS = {
+    'Africa': [
+      'Algeria','Angola','Benin','Botswana','Burkina Faso','Burundi','Cameroon',
+      'Cape Verde','Central African Republic','Chad','Comoros',
+      'Democratic Republic of the Congo','Republic of the Congo','Djibouti','Egypt',
+      'Equatorial Guinea','Eritrea','Eswatini','Ethiopia','Gabon','Gambia','Ghana',
+      'Guinea','Guinea-Bissau','Ivory Coast','Kenya','Lesotho','Liberia','Libya',
+      'Madagascar','Malawi','Mali','Mauritania','Mauritius','Morocco','Mozambique',
+      'Namibia','Niger','Nigeria','Rwanda','Senegal','Sierra Leone','Somalia',
+      'South Africa','South Sudan','Sudan','Tanzania','Togo','Tunisia','Uganda',
+      'Western Sahara','Zambia','Zimbabwe','Somaliland'
+    ],
+    'Asia': [
+      'Afghanistan','Armenia','Azerbaijan','Bahrain','Bangladesh','Bhutan','Brunei',
+      'Cambodia','China','Cyprus','Georgia','India','Indonesia','Iran','Iraq',
+      'Israel','Japan','Jordan','Kazakhstan','Kuwait','Kyrgyzstan','Laos','Lebanon',
+      'Malaysia','Mongolia','Myanmar','Nepal','North Korea','Oman','Pakistan',
+      'Palestine','Philippines','Qatar','Saudi Arabia','South Korea','Sri Lanka',
+      'Syria','Taiwan','Tajikistan','Thailand','Timor-Leste','Turkey','Turkmenistan',
+      'United Arab Emirates','Uzbekistan','Vietnam','Yemen','Northern Cyprus'
+    ],
+    'Europe': [
+      'Albania','Austria','Belarus','Belgium','Bosnia and Herzegovina','Bulgaria',
+      'Croatia','Czech Republic','Denmark','Estonia','Finland','France','Germany',
+      'Greece','Hungary','Iceland','Ireland','Italy','Kosovo','Latvia','Lithuania',
+      'Luxembourg','Moldova','Montenegro','Netherlands','North Macedonia','Norway',
+      'Poland','Portugal','Romania','Russia','Serbia','Slovakia','Slovenia','Spain',
+      'Sweden','Switzerland','Ukraine','United Kingdom'
+    ],
+    'North America': [
+      'Antigua and Barbuda','Bahamas','Barbados','Belize','Canada','Costa Rica','Cuba',
+      'Dominica','Dominican Republic','El Salvador','Grenada','Guatemala','Haiti',
+      'Honduras','Jamaica','Mexico','Nicaragua','Panama','Saint Kitts and Nevis',
+      'Saint Lucia','Saint Vincent and the Grenadines','Trinidad and Tobago',
+      'United States'
+    ],
+    'South America': [
+      'Argentina','Bolivia','Brazil','Chile','Colombia','Ecuador','Falkland Islands',
+      'French Guiana','Guyana','Paraguay','Peru','Suriname','Uruguay','Venezuela'
+    ],
+    'Oceania': [
+      'Australia','Fiji','New Caledonia','New Zealand','Papua New Guinea',
+      'Solomon Islands','Vanuatu'
+    ]
+  };
+
+  // Aliases: map various TopoJSON names to canonical names used above.
+  // Keys are lowercased alternative names.
+  const NAME_ALIASES = {
+    'united states of america': 'United States',
+    'usa': 'United States',
+    'us': 'United States',
+    'dem. rep. congo': 'Democratic Republic of the Congo',
+    'democratic republic of the congo': 'Democratic Republic of the Congo',
+    'dr congo': 'Democratic Republic of the Congo',
+    'congo': 'Republic of the Congo',
+    'republic of the congo': 'Republic of the Congo',
+    'central african rep.': 'Central African Republic',
+    'central african republic': 'Central African Republic',
+    'eq. guinea': 'Equatorial Guinea',
+    'equatorial guinea': 'Equatorial Guinea',
+    'w. sahara': 'Western Sahara',
+    'western sahara': 'Western Sahara',
+    's. sudan': 'South Sudan',
+    'south sudan': 'South Sudan',
+    'côte d\'ivoire': 'Ivory Coast',
+    "cote d'ivoire": 'Ivory Coast',
+    'ivory coast': 'Ivory Coast',
+    'czechia': 'Czech Republic',
+    'czech republic': 'Czech Republic',
+    'macedonia': 'North Macedonia',
+    'north macedonia': 'North Macedonia',
+    'republic of macedonia': 'North Macedonia',
+    'bosnia and herz.': 'Bosnia and Herzegovina',
+    'bosnia and herzegovina': 'Bosnia and Herzegovina',
+    'dominican rep.': 'Dominican Republic',
+    'dominican republic': 'Dominican Republic',
+    'eswatini': 'Eswatini',
+    'swaziland': 'Eswatini',
+    'east timor': 'Timor-Leste',
+    'timor-leste': 'Timor-Leste',
+    'myanmar': 'Myanmar',
+    'burma': 'Myanmar',
+    'solomon is.': 'Solomon Islands',
+    'solomon islands': 'Solomon Islands',
+    'falkland is.': 'Falkland Islands',
+    'falkland islands': 'Falkland Islands',
+    'fr. s. antarctic lands': 'French Southern Territories',
+    'new caledonia': 'New Caledonia',
+    'papua new guinea': 'Papua New Guinea',
+    'n. cyprus': 'Northern Cyprus',
+    'northern cyprus': 'Northern Cyprus',
+    'somaliland': 'Somaliland',
+    'russia': 'Russia',
+    'russian federation': 'Russia',
+    'south korea': 'South Korea',
+    'republic of korea': 'South Korea',
+    'korea, south': 'South Korea',
+    'north korea': 'North Korea',
+    "dem. people's rep. korea": 'North Korea',
+    "democratic people's republic of korea": 'North Korea',
+    'iran': 'Iran',
+    'iran (islamic republic of)': 'Iran',
+    'syria': 'Syria',
+    'syrian arab republic': 'Syria',
+    'laos': 'Laos',
+    "lao people's democratic republic": 'Laos',
+    'vietnam': 'Vietnam',
+    'viet nam': 'Vietnam',
+    'cape verde': 'Cape Verde',
+    'cabo verde': 'Cape Verde',
+    'tanzania': 'Tanzania',
+    'united republic of tanzania': 'Tanzania',
+    'moldova': 'Moldova',
+    'republic of moldova': 'Moldova',
+    'brunei': 'Brunei',
+    'brunei darussalam': 'Brunei',
+    'palestine': 'Palestine',
+    'palestinian territory': 'Palestine',
+    'state of palestine': 'Palestine',
+    'venezuela': 'Venezuela',
+    'venezuela (bolivarian republic of)': 'Venezuela',
+    'bolivia': 'Bolivia',
+    'bolivia (plurinational state of)': 'Bolivia',
+    'fiji': 'Fiji',
+    // Caribbean nations - Natural Earth data often uses abbreviated names
+    'antigua and barb.': 'Antigua and Barbuda',
+    'antigua and barbuda': 'Antigua and Barbuda',
+    'st. kitts and nevis': 'Saint Kitts and Nevis',
+    'saint kitts and nevis': 'Saint Kitts and Nevis',
+    'st. lucia': 'Saint Lucia',
+    'saint lucia': 'Saint Lucia',
+    'st. vin. and gren.': 'Saint Vincent and the Grenadines',
+    'st. vincent and the grenadines': 'Saint Vincent and the Grenadines',
+    'saint vincent and the grenadines': 'Saint Vincent and the Grenadines',
+    'trinidad and tobago': 'Trinidad and Tobago',
+  };
+
+  // Build name -> continent lookup
+  const NAME_TO_CONTINENT = {};
+  Object.keys(CONTINENTS).forEach(continent => {
+    CONTINENTS[continent].forEach(name => {
+      NAME_TO_CONTINENT[name.toLowerCase()] = continent;
+    });
+  });
+
+  function canonicalize(rawName) {
+    if (!rawName) return null;
+    const lower = rawName.toLowerCase().trim();
+    if (NAME_ALIASES[lower]) return NAME_ALIASES[lower];
+    // Capitalize-style match
+    for (const continent of Object.keys(CONTINENTS)) {
+      for (const canonical of CONTINENTS[continent]) {
+        if (canonical.toLowerCase() === lower) return canonical;
+      }
+    }
+    return rawName; // fallback to raw
+  }
+
+  function getContinent(canonicalName) {
+    if (!canonicalName) return null;
+    return NAME_TO_CONTINENT[canonicalName.toLowerCase()] || null;
+  }
+
+  /* =========================================================
+   * US STATES & CAPITALS DATA
+   * ========================================================= */
+
+  // Canonical list of 50 state names + their capitals. Kept in the
+  // order: state -> capital. The game can build either direction
+  // (state-by-capital or capital-by-state) from this single source.
+  const US_CAPITALS = {
+    'Alabama': 'Montgomery',
+    'Alaska': 'Juneau',
+    'Arizona': 'Phoenix',
+    'Arkansas': 'Little Rock',
+    'California': 'Sacramento',
+    'Colorado': 'Denver',
+    'Connecticut': 'Hartford',
+    'Delaware': 'Dover',
+    'Florida': 'Tallahassee',
+    'Georgia': 'Atlanta',
+    'Hawaii': 'Honolulu',
+    'Idaho': 'Boise',
+    'Illinois': 'Springfield',
+    'Indiana': 'Indianapolis',
+    'Iowa': 'Des Moines',
+    'Kansas': 'Topeka',
+    'Kentucky': 'Frankfort',
+    'Louisiana': 'Baton Rouge',
+    'Maine': 'Augusta',
+    'Maryland': 'Annapolis',
+    'Massachusetts': 'Boston',
+    'Michigan': 'Lansing',
+    'Minnesota': 'Saint Paul',
+    'Mississippi': 'Jackson',
+    'Missouri': 'Jefferson City',
+    'Montana': 'Helena',
+    'Nebraska': 'Lincoln',
+    'Nevada': 'Carson City',
+    'New Hampshire': 'Concord',
+    'New Jersey': 'Trenton',
+    'New Mexico': 'Santa Fe',
+    'New York': 'Albany',
+    'North Carolina': 'Raleigh',
+    'North Dakota': 'Bismarck',
+    'Ohio': 'Columbus',
+    'Oklahoma': 'Oklahoma City',
+    'Oregon': 'Salem',
+    'Pennsylvania': 'Harrisburg',
+    'Rhode Island': 'Providence',
+    'South Carolina': 'Columbia',
+    'South Dakota': 'Pierre',
+    'Tennessee': 'Nashville',
+    'Texas': 'Austin',
+    'Utah': 'Salt Lake City',
+    'Vermont': 'Montpelier',
+    'Virginia': 'Richmond',
+    'Washington': 'Olympia',
+    'West Virginia': 'Charleston',
+    'Wisconsin': 'Madison',
+    'Wyoming': 'Cheyenne'
+  };
+
+  const US_STATE_NAMES = Object.keys(US_CAPITALS);
+  const US_STATE_SET = new Set(US_STATE_NAMES);
+
+  /* =========================================================
+   * DAILY PUZZLE — DIFFICULTY TIERS & DETERMINISTIC GENERATION
+   * ========================================================= */
+
+  // Tier 1 (easy): large, famous, distinctively-shaped countries that
+  // most casual players will recognize on a map without much hesitation.
+  const TIER_1_EASY = new Set([
+    'United States','Canada','Mexico','Brazil','Argentina','Chile',
+    'United Kingdom','France','Germany','Spain','Italy','Greece','Norway','Sweden','Finland','Poland','Ireland',
+    'Russia','Ukraine','Turkey',
+    'China','Japan','India','Australia','New Zealand','Indonesia','South Korea','Thailand','Vietnam','Philippines',
+    'Egypt','South Africa','Nigeria','Morocco','Kenya','Ethiopia',
+    'Saudi Arabia','Iran','Iraq','Israel','Pakistan','Afghanistan',
+    'Cuba','Colombia','Peru','Venezuela'
+  ]);
+
+  // Tier 3 (hard): small, geographically obscure, or commonly confused
+  // with neighbors. Players will need to actually know geography for these.
+  const TIER_3_HARD = new Set([
+    'Bhutan','Brunei','Timor-Leste','Maldives','Nepal','Tajikistan','Kyrgyzstan','Turkmenistan',
+    'Eritrea','Djibouti','Comoros','Burundi','Rwanda','Lesotho','Eswatini','Equatorial Guinea',
+    'Guinea-Bissau','Sierra Leone','Liberia','Togo','Benin','Gambia','Cape Verde',
+    'Suriname','Guyana','French Guiana','Paraguay','Uruguay','Belize',
+    'Moldova','North Macedonia','Montenegro','Kosovo','Andorra','Liechtenstein','San Marino',
+    'Solomon Islands','Vanuatu','Fiji','New Caledonia','Papua New Guinea',
+    'Falkland Islands','Western Sahara','Somaliland','Northern Cyprus','Palestine'
+  ]);
+
+  // Tier 2 (medium) is everything else — computed lazily once the world
+  // data has loaded so we know the actual eligible-country list.
+
+  // Seeded RNG for deterministic daily puzzles. Mulberry32 — fast, well-
+  // distributed, and identical across all browsers/platforms.
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // Deterministic shuffle so a given seed always produces the same order.
+  function seededShuffle(arr, rng) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // YYYY-MM-DD in UTC so everyone in the world is on the same puzzle.
+  // The "new puzzle" rollover lands at midnight UTC = 7pm Eastern.
+  function todayUtcKey() {
+    const d = new Date();
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  // Convert a date key into a 32-bit numeric seed so the same date
+  // always produces the same RNG sequence on every device.
+  function seedFromDateKey(key) {
+    let h = 2166136261;
+    for (let i = 0; i < key.length; i++) {
+      h ^= key.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  // Daily puzzle number — humans like seeing "Daily #57" rather than a date.
+  // Anchored at a fixed start date so the count is meaningful and stable.
+  const DAILY_EPOCH = '2026-04-26'; // Day 1 of the daily puzzle
+  function dailyPuzzleNumber(dateKey) {
+    const target = Date.parse(dateKey + 'T00:00:00Z');
+    const epoch = Date.parse(DAILY_EPOCH + 'T00:00:00Z');
+    return Math.floor((target - epoch) / (24 * 60 * 60 * 1000)) + 1;
+  }
+
+  // Generates the 5 country names for a given UTC date. The first country
+  // is always Tier 1 (easy) and the fifth is always Tier 3 (hard); the
+  // middle three ramp in difficulty. Returned in play order.
+  function generateDailyPuzzle(dateKey) {
+    const seed = seedFromDateKey(dateKey);
+    const rng = mulberry32(seed);
+
+    // Build pools from the loaded country list (so we never pick a country
+    // that's not actually in the map data)
+    const eligible = state.allFeatures
+      .filter(f => state.continentByFeature.get(featureKey(f)))
+      .map(f => state.canonicalByFeature.get(featureKey(f)))
+      .filter(Boolean);
+    const eligibleSet = new Set(eligible);
+
+    const tier1 = Array.from(TIER_1_EASY).filter(n => eligibleSet.has(n));
+    const tier3 = Array.from(TIER_3_HARD).filter(n => eligibleSet.has(n));
+    const tier2 = eligible.filter(n => !TIER_1_EASY.has(n) && !TIER_3_HARD.has(n));
+
+    // Sort each pool deterministically before shuffling so the output is
+    // independent of TopoJSON file ordering across releases.
+    tier1.sort();
+    tier2.sort();
+    tier3.sort();
+
+    const t1 = seededShuffle(tier1, rng);
+    const t2 = seededShuffle(tier2, rng);
+    const t3 = seededShuffle(tier3, rng);
+
+    // Slot 1: easy. Slot 2: easy or medium. Slot 3: medium.
+    // Slot 4: medium or hard. Slot 5: hard.
+    const picks = [
+      t1.shift(),
+      rng() < 0.5 ? t1.shift() : t2.shift(),
+      t2.shift(),
+      rng() < 0.5 ? t2.shift() : t3.shift(),
+      t3.shift(),
+    ];
+    // Fallback: if any slot ended up undefined (shouldn't happen with
+    // current pool sizes), top up from the medium pool.
+    for (let i = 0; i < picks.length; i++) {
+      if (!picks[i]) picks[i] = t2.shift() || t1.shift() || t3.shift();
+    }
+    return picks;
+  }
+
+  /* =========================================================
+   * DAILY ATTEMPT TRACKING (localStorage, keyed by UTC date)
+   * ========================================================= */
+
+  const DAILY_KEY = 'atlas-daily-attempts';
+
+  function loadDailyAttempts() {
+    try {
+      const raw = localStorage.getItem(DAILY_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function saveDailyAttempt(dateKey, result) {
+    try {
+      const all = loadDailyAttempts();
+      all[dateKey] = result;
+      // Keep only the last 30 days to avoid unbounded growth
+      const sorted = Object.keys(all).sort().slice(-30);
+      const trimmed = {};
+      sorted.forEach(k => { trimmed[k] = all[k]; });
+      localStorage.setItem(DAILY_KEY, JSON.stringify(trimmed));
+    } catch (e) { /* storage blocked - silently ignore */ }
+  }
+
+  function getDailyAttempt(dateKey) {
+    const all = loadDailyAttempts();
+    return all[dateKey] || null;
+  }
+
+  // Daily streak: consecutive days played (any result) ending today.
+  function calculateDailyStreak() {
+    const all = loadDailyAttempts();
+    let streak = 0;
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    for (let offset = 0; offset < 365; offset++) {
+      const d = new Date(today);
+      d.setUTCDate(d.getUTCDate() - offset);
+      const k = d.getUTCFullYear() + '-' +
+                String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
+                String(d.getUTCDate()).padStart(2, '0');
+      if (all[k]) streak++;
+      else break;
+    }
+    return streak;
+  }
+
+  /* =========================================================
+   * GAME MODE DEFINITIONS
+   *
+   * Each mode tells the engine:
+   *   - dataset: which map data source to use
+   *   - promptType: what the header displays
+   *   - eligibility: which features count for this quiz
+   *   - getPromptText(feature): what text appears above the map
+   * ========================================================= */
+
+  const GAME_MODES = {
+    'world-country': {
+      dataset: 'world',
+      label: (continent) => continent === 'World' ? 'The Entire World' : continent,
+      promptLabel: 'Find on the map',
+      recordsLabelSuffix: '',
+    },
+    'daily-five': {
+      dataset: 'world',
+      label: () => 'Daily Five',
+      promptLabel: 'Find on the map',
+      recordsLabelSuffix: ' · Daily',
+    },
+    'us-state': {
+      dataset: 'us',
+      label: () => 'The United States',
+      promptLabel: 'Find the state',
+      recordsLabelSuffix: ' · States',
+    },
+    'us-capital-to-state': {
+      dataset: 'us',
+      label: () => 'US Capitals → States',
+      promptLabel: 'Click the state whose capital is',
+      recordsLabelSuffix: ' · Capitals→States',
+    },
+    'us-state-to-capital': {
+      dataset: 'us',
+      label: () => 'US States → Capitals',
+      promptLabel: 'Which capital belongs to',
+      recordsLabelSuffix: ' · States→Capitals',
+    },
+  };
+
+  const state = {
+    // World dataset
+    allFeatures: [],         // All country features from TopoJSON
+    canonicalByFeature: new Map(), // feature id -> canonical name
+    continentByFeature: new Map(), // feature id -> continent
+    featureByCanonical: new Map(), // canonical name -> feature
+
+    // US dataset (loaded lazily when a US mode is first selected)
+    usFeatures: [],
+    usCanonicalByFeature: new Map(),
+    usFeatureByCanonical: new Map(),
+    usLoaded: false,
+    usLoading: null,         // promise while loading
+
+    // Active game - which dataset + mode is in play
+    activeDataset: 'world',  // 'world' or 'us'
+    gameMode: 'world-country', // key into GAME_MODES
+
+    currentContinent: null,   // Selected region/scope label
+    eligibleFeatures: [],     // Features for current game
+    queue: [],                // Remaining canonical names to ask
+    current: null,            // Current target canonical name
+    currentPromptText: null,  // Text shown above the map (may differ from .current for capital modes)
+    attempts: 0,              // Attempts on current country
+    correct: 0,
+    wrong: 0,
+    score: 0,
+    missed: [],               // Countries not found
+    sequence: [],             // Per-country points: 2 (first try), 1 (second try), 0 (missed)
+    startTime: null,
+    interactionLocked: false,
+    hardMode: false,          // In hard mode, countries are not persistently marked green/red
+    menuView: 'main',         // 'main' | 'continents' | 'us'
+
+    svg: null,
+    projection: null,
+    pathGen: null,
+    mapG: null,
+    zoomBehavior: null,
+    currentTransform: null,
+    zoomHintShown: false,
+  };
+
+  // Small helpers so the engine can work with either dataset without
+  // knowing the specifics of each. Keyed off state.activeDataset.
+  function activeFeatures() {
+    return state.activeDataset === 'us' ? state.usFeatures : state.allFeatures;
+  }
+  function activeCanonicalByFeature() {
+    return state.activeDataset === 'us' ? state.usCanonicalByFeature : state.canonicalByFeature;
+  }
+  function activeFeatureByCanonical() {
+    return state.activeDataset === 'us' ? state.usFeatureByCanonical : state.featureByCanonical;
+  }
+
+  // For ID, use either feature.id or its numeric identifier if present
+  function featureKey(f) {
+    return f.id != null ? 'id:' + f.id : 'name:' + (f.properties && (f.properties.name || f.properties.NAME));
+  }
+
+  function featureName(f) {
+    if (!f.properties) return null;
+    return f.properties.name || f.properties.NAME || f.properties.NAME_LONG || null;
+  }
+
+  /* =========================================================
+   * DATA LOADING
+   * ========================================================= */
+
+  const TOPO_URLS = [
+    // 50m has roughly 3× the polygon detail of 110m — coastlines
+    // and smaller countries look crisp when zoomed in
+    'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json',
+    'https://unpkg.com/world-atlas@2/countries-50m.json',
+    // 110m fallback in case 50m fails (smaller, less detailed)
+    'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
+    'https://unpkg.com/world-atlas@2/countries-110m.json'
+  ];
+
+  async function loadWorldData() {
+    let lastErr = null;
+    for (const url of TOPO_URLS) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return await res.json();
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr || new Error('Could not load world atlas data');
+  }
+
+  const US_TOPO_URLS = [
+    'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json',
+    'https://unpkg.com/us-atlas@3/states-10m.json'
+  ];
+
+  async function loadUsStatesData() {
+    // Cache: load once per session
+    if (state.usLoaded) return;
+    if (state.usLoading) { await state.usLoading; return; }
+
+    state.usLoading = (async () => {
+      await ensureTopojson();
+      let lastErr = null;
+      for (const url of US_TOPO_URLS) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const topology = await res.json();
+          const key = topology.objects.states ? 'states' : Object.keys(topology.objects)[0];
+          const geojson = topojson.feature(topology, topology.objects[key]);
+
+          state.usFeatures = geojson.features.filter(f => featureName(f));
+          state.usCanonicalByFeature.clear();
+          state.usFeatureByCanonical.clear();
+          state.usFeatures.forEach(f => {
+            const raw = featureName(f);
+            // State names in us-atlas already match our canonical list
+            state.usCanonicalByFeature.set(featureKey(f), raw);
+            if (!state.usFeatureByCanonical.has(raw)) {
+              state.usFeatureByCanonical.set(raw, f);
+            }
+          });
+          state.usLoaded = true;
+          return;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('Could not load US states data');
+    })();
+
+    try {
+      await state.usLoading;
+    } finally {
+      state.usLoading = null;
+    }
+  }
+
+  async function ensureTopojson() {
+    if (typeof topojson !== 'undefined' && topojson.feature) return;
+    // Fallback CDNs in case the primary script tag failed
+    const fallbackUrls = [
+      'https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js',
+      'https://unpkg.com/topojson-client@3/dist/topojson-client.min.js'
+    ];
+    for (const url of fallbackUrls) {
+      try {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = url;
+          s.onload = resolve;
+          s.onerror = () => reject(new Error('Failed to load ' + url));
+          document.head.appendChild(s);
+        });
+        if (typeof topojson !== 'undefined' && topojson.feature) return;
+      } catch (_) { /* try next */ }
+    }
+    throw new Error('Could not load topojson library from any CDN');
+  }
+
+  async function init() {
+    try {
+      await ensureTopojson();
+      const topology = await loadWorldData();
+      const countriesKey = topology.objects.countries ? 'countries' : Object.keys(topology.objects)[0];
+      const geojson = topojson.feature(topology, topology.objects[countriesKey]);
+
+      state.allFeatures = geojson.features.filter(f => featureName(f));
+
+      state.allFeatures.forEach(f => {
+        const raw = featureName(f);
+        const canonical = canonicalize(raw);
+        const continent = getContinent(canonical);
+        state.canonicalByFeature.set(featureKey(f), canonical);
+        state.continentByFeature.set(featureKey(f), continent);
+        if (canonical && !state.featureByCanonical.has(canonical)) {
+          state.featureByCanonical.set(canonical, f);
+        }
+      });
+
+      renderMenu();
+
+      // Fire-and-forget: pull latest records from server if a sync token is set.
+      // syncOnAppLoad re-renders the menu when data arrives.
+      syncOnAppLoad().catch(() => {});
+    } catch (err) {
+      console.error(err);
+      const container = document.getElementById('regions-container');
+      container.innerHTML =
+        '<div class="error-state">' +
+        '<strong>The map could not be unfurled.</strong><br/>' +
+        'The atlas data failed to load. This may be a network issue — please check your connection and refresh the page.' +
+        '</div>';
+    }
+  }
+
+  /* =========================================================
+   * MENU
+   * ========================================================= */
+
+  // Continent metadata used by both the main menu (for the folder card)
+  // and the continents sub-menu (for the individual cards).
+  const CONTINENT_ORDER = ['Africa','Asia','Europe','North America','South America','Oceania'];
+  const CONTINENT_ORDINALS = {
+    'Africa': 'I', 'Asia': 'II', 'Europe': 'III',
+    'North America': 'IV', 'South America': 'V', 'Oceania': 'VI'
+  };
+  const CONTINENT_SUBNAMES = {
+    'Africa': 'the cradle of nations',
+    'Asia': 'the vast eastern lands',
+    'Europe': 'the old continent',
+    'North America': 'north of the equator',
+    'South America': 'below the line',
+    'Oceania': 'islands of the Pacific'
+  };
+
+  // Build a short "best" label summarizing the standout record
+  // for this region × current mode. Prefers accuracy → score.
+  function bestLabel(region, gameMode) {
+    const rec = getRecords(region, state.hardMode, gameMode);
+    if (!rec) return '';
+    const parts = [];
+    if (rec.bestAccuracy && rec.bestAccuracy.pct === 100 && rec.bestTime) {
+      parts.push('Perfect · ' + formatTimeSeconds(rec.bestTime.value));
+    } else if (rec.bestAccuracy) {
+      parts.push('Best: ' + rec.bestAccuracy.correct + '/' + rec.bestAccuracy.total);
+    }
+    if (rec.bestScore) {
+      parts.push(rec.bestScore.value + ' pts');
+    }
+    return parts.join(' · ');
+  }
+
+  // Returns the best-overall summary for a "folder" card by scanning all
+  // sub-modes/regions inside that folder. Picks the highest accuracy %
+  // as the standout, falling back to total games played.
+  function folderBestLabel(folder) {
+    let bestPct = -1;
+    let bestText = '';
+    let totalGames = 0;
+    if (folder === 'continents') {
+      CONTINENT_ORDER.forEach(c => {
+        const rec = getRecords(c, state.hardMode, 'world-country');
+        if (!rec) return;
+        totalGames += rec.gamesPlayed || 0;
+        if (rec.bestAccuracy && rec.bestAccuracy.pct > bestPct) {
+          bestPct = rec.bestAccuracy.pct;
+          bestText = c + ' ' + rec.bestAccuracy.pct + '%';
+        }
+      });
+    } else if (folder === 'us') {
+      const modes = ['us-state', 'us-capital-to-state', 'us-state-to-capital'];
+      const labels = {
+        'us-state': 'States',
+        'us-capital-to-state': 'Cap→St',
+        'us-state-to-capital': 'St→Cap'
+      };
+      modes.forEach(m => {
+        const rec = getRecords('The United States', state.hardMode, m);
+        if (!rec) return;
+        totalGames += rec.gamesPlayed || 0;
+        if (rec.bestAccuracy && rec.bestAccuracy.pct > bestPct) {
+          bestPct = rec.bestAccuracy.pct;
+          bestText = labels[m] + ' ' + rec.bestAccuracy.pct + '%';
+        }
+      });
+    }
+    if (bestText) return 'Best: ' + bestText;
+    if (totalGames > 0) return totalGames + ' games played';
+    return '';
+  }
+
+  function renderMenu() {
+    if (state.menuView === 'continents') return renderContinentsMenu();
+    if (state.menuView === 'us') return renderUsMenu();
+    return renderMainMenu();
+  }
+
+  // Top-level menu: featured World card + two folder cards (Continents, US)
+  function renderMainMenu() {
+    const container = document.getElementById('menu-content');
+    const allFeaturesLoaded = state.allFeatures.length > 0;
+    if (!allFeaturesLoaded) {
+      container.innerHTML = '<div class="loading-state">Unfurling the world map</div>';
+      return;
+    }
+
+    let worldCount = 0;
+    CONTINENT_ORDER.forEach(c => { worldCount += countEligibleInContinent(c); });
+
+    const worldBest = bestLabel('World', 'world-country');
+    const continentsBest = folderBestLabel('continents');
+    const usBest = folderBestLabel('us');
+
+    let html = '';
+
+    html += '<div class="section-label"><span>Choose Your Study</span></div>';
+
+    html += renderHardModeToggle();
+    html += renderSyncEntry();
+
+    html += '<div class="regions">';
+
+    // --- Daily Five card (top of menu, most prominent) ---
+    const dateKey = todayUtcKey();
+    const dailyAttempt = getDailyAttempt(dateKey);
+    const puzzleNum = dailyPuzzleNumber(dateKey);
+    const streak = calculateDailyStreak();
+
+    if (dailyAttempt) {
+      // Player has already played today - show their result + replay option
+      const pct = dailyAttempt.total > 0
+        ? Math.round((dailyAttempt.correct / dailyAttempt.total) * 100)
+        : 0;
+      const grid = (dailyAttempt.sequence || [])
+        .map(r => r === 2 ? '🟩' : (r === 1 ? '🟨' : '🟥'))
+        .join('');
+      html +=
+        '<div class="region-card daily-card daily-done" data-no-action="1">' +
+          '<div class="daily-header">' +
+            '<div class="daily-badge">Daily #' + puzzleNum + '</div>' +
+            (streak > 1 ? '<div class="daily-streak">🔥 ' + streak + ' day streak</div>' : '') +
+          '</div>' +
+          '<div class="daily-done-msg">Today\u2019s puzzle complete</div>' +
+          '<div class="daily-result-grid">' + grid + '</div>' +
+          '<div class="daily-result-stats">' +
+            dailyAttempt.correct + '/' + dailyAttempt.total + ' found · ' +
+            dailyAttempt.score + ' pts · ' + pct + '%' +
+          '</div>' +
+          '<div class="daily-actions">' +
+            '<button class="ctrl-btn share daily-share-btn" data-action="share-daily">Share Result</button>' +
+            '<button class="ctrl-btn daily-replay-btn" data-action="replay-daily">Practice Replay</button>' +
+          '</div>' +
+          '<div class="daily-next">Next puzzle in <span data-countdown></span></div>' +
+        '</div>';
+    } else {
+      // Fresh daily, ready to play
+      html +=
+        '<button class="region-card daily-card daily-fresh" data-action="play" data-region="daily-five">' +
+          '<div class="daily-header">' +
+            '<div class="daily-badge">Daily #' + puzzleNum + '</div>' +
+            (streak > 0 ? '<div class="daily-streak">🔥 ' + streak + ' day streak</div>' : '') +
+          '</div>' +
+          '<div class="r-name">The Daily Five</div>' +
+          '<div class="r-subname">five countries · today\u2019s puzzle for the world</div>' +
+          '<div class="daily-cta">Play Today\u2019s Puzzle →</div>' +
+        '</button>';
+    }
+
+    // Featured "Whole World" card - direct play
+    html +=
+      '<button class="region-card featured" data-action="play" data-region="World">' +
+        '<div class="featured-left">' +
+          '<div class="featured-mark">✦</div>' +
+          '<div>' +
+            '<div class="r-name">The Whole World</div>' +
+            '<div class="r-subname">every continent, every nation</div>' +
+            '<div class="r-count">' + worldCount + ' countries · all regions</div>' +
+            (worldBest ? '<div class="r-best">' + worldBest + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="featured-cta">Begin Grand Tour →</div>' +
+      '</button>';
+
+    // Folder card: By Continent
+    html +=
+      '<button class="region-card folder-card" data-action="open-folder" data-folder="continents">' +
+        '<div class="folder-icon">⌖</div>' +
+        '<div class="folder-body">' +
+          '<div class="r-name">By Continent</div>' +
+          '<div class="r-subname">study one region at a time</div>' +
+          '<div class="r-count">6 continents</div>' +
+          (continentsBest ? '<div class="r-best">' + continentsBest + '</div>' : '') +
+        '</div>' +
+        '<div class="folder-arrow">›</div>' +
+      '</button>';
+
+    // Folder card: United States
+    html +=
+      '<button class="region-card folder-card" data-action="open-folder" data-folder="us">' +
+        '<div class="folder-icon">★</div>' +
+        '<div class="folder-body">' +
+          '<div class="r-name">The United States</div>' +
+          '<div class="r-subname">states, capitals, and more</div>' +
+          '<div class="r-count">3 study modes</div>' +
+          (usBest ? '<div class="r-best">' + usBest + '</div>' : '') +
+        '</div>' +
+        '<div class="folder-arrow">›</div>' +
+      '</button>';
+
+    html += '</div>';
+
+    container.innerHTML = html;
+    attachMenuHandlers();
+    if (dailyAttempt) startDailyCountdown();
+  }
+
+  // Updates the "Next puzzle in HH:MM:SS" countdown on the daily card.
+  // Self-rebinds via setTimeout(1000) until the menu is left.
+  function startDailyCountdown() {
+    function tick() {
+      const el = document.querySelector('[data-countdown]');
+      if (!el) return; // Element gone (menu re-rendered or left) - stop ticking
+      const now = new Date();
+      const next = new Date();
+      next.setUTCHours(24, 0, 0, 0);
+      const ms = next - now;
+      const hrs = Math.floor(ms / 3600000);
+      const mins = Math.floor((ms % 3600000) / 60000);
+      const secs = Math.floor((ms % 60000) / 1000);
+      el.textContent = String(hrs).padStart(2, '0') + ':' +
+                       String(mins).padStart(2, '0') + ':' +
+                       String(secs).padStart(2, '0');
+      // If the day rolled over while we were sitting here, refresh
+      // the menu so the user gets the fresh-puzzle card
+      if (ms <= 0) { renderMenu(); return; }
+      setTimeout(tick, 1000);
+    }
+    tick();
+  }
+
+  // Shows the "already played today" view as a transient overlay on
+  // the menu screen if a player taps Daily after completing it.
+  // (Currently unused since we render the same info inline on the Daily
+  // card itself; kept in case we want to enable a tap-to-confirm flow.)
+  function showDailyAlreadyPlayed(_attempt, _dateKey) {
+    state.menuView = 'main';
+    renderMenu();
+    switchScreen('menu');
+  }
+
+  // Continents sub-menu: back arrow + section heading + 6 continent cards
+  function renderContinentsMenu() {
+    const container = document.getElementById('menu-content');
+    let html = '';
+    html += renderSubMenuHeader('By Continent', 'Six regions of the known world');
+    html += renderHardModeToggle();
+    html += '<div class="regions">';
+    CONTINENT_ORDER.forEach(c => {
+      const count = countEligibleInContinent(c);
+      const best = bestLabel(c, 'world-country');
+      html +=
+        '<button class="region-card" data-action="play" data-region="' + c + '">' +
+          '<div class="r-name">' + c + '</div>' +
+          '<div class="r-subname">№ ' + CONTINENT_ORDINALS[c] + ' — ' + CONTINENT_SUBNAMES[c] + '</div>' +
+          '<div class="r-count">' + count + ' countries to study</div>' +
+          (best ? '<div class="r-best">' + best + '</div>' : '') +
+        '</button>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+    attachMenuHandlers();
+  }
+
+  // US sub-menu: back arrow + section heading + 3 mode cards
+  function renderUsMenu() {
+    const container = document.getElementById('menu-content');
+    const usModes = [
+      {
+        mode: 'us-state',
+        name: 'The Fifty States',
+        subname: 'find each state on the map',
+        count: '50 states to study'
+      },
+      {
+        mode: 'us-capital-to-state',
+        name: 'Capitals → States',
+        subname: 'capital given, find the state',
+        count: '50 capitals to place'
+      },
+      {
+        mode: 'us-state-to-capital',
+        name: 'States → Capitals',
+        subname: 'state given, name its capital',
+        count: '50 capitals to recall'
+      }
+    ];
+    let html = '';
+    html += renderSubMenuHeader('The United States', 'A closer study of the fifty states');
+    html += renderHardModeToggle();
+    html += '<div class="regions">';
+    usModes.forEach(m => {
+      const best = bestLabel('The United States', m.mode);
+      html +=
+        '<button class="region-card us-card" data-action="play" data-region="' + m.mode + '">' +
+          '<div class="r-name">' + m.name + '</div>' +
+          '<div class="r-subname">' + m.subname + '</div>' +
+          '<div class="r-count">' + m.count + '</div>' +
+          (best ? '<div class="r-best">' + best + '</div>' : '') +
+        '</button>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+    attachMenuHandlers();
+  }
+
+  // Header used at the top of sub-menus (Continents, US, etc).
+  // Includes a back button that returns to the main menu view.
+  function renderSubMenuHeader(title, subtitle) {
+    return (
+      '<div class="submenu-header">' +
+        '<button class="back-link" data-action="back-to-main">← Back</button>' +
+        '<div class="submenu-title-block">' +
+          '<div class="submenu-title">' + title + '</div>' +
+          '<div class="submenu-subtitle">' + subtitle + '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderHardModeToggle() {
+    return (
+      '<div class="mode-toggle-row">' +
+        '<label class="mode-toggle">' +
+          '<input type="checkbox" id="hard-mode-toggle"' +
+            (state.hardMode ? ' checked' : '') + ' />' +
+          '<span class="switch-box">' +
+            '<span class="switch-knob"></span>' +
+          '</span>' +
+          '<span class="switch-text">' +
+            '<span class="switch-title">Hard Mode</span>' +
+            '<span class="switch-desc">No process of elimination — completed targets stay unmarked</span>' +
+          '</span>' +
+        '</label>' +
+      '</div>'
+    );
+  }
+
+  // Wires up clicks for the three card types: play, open-folder, and back.
+  // Called after every renderMenu() since innerHTML wipes existing handlers.
+  function attachMenuHandlers() {
+    // Update body class so CSS can subtly differ between main/sub views
+    const screen = document.getElementById('menu-screen');
+    screen.classList.toggle('view-sub', state.menuView !== 'main');
+
+    document.querySelectorAll('[data-action="play"]').forEach(card => {
+      card.addEventListener('click', () => startGame(card.dataset.region));
+    });
+    document.querySelectorAll('[data-action="open-folder"]').forEach(card => {
+      card.addEventListener('click', () => {
+        state.menuView = card.dataset.folder;
+        renderMenu();
+        // Scroll to top so the user sees the new view from the start
+        const screenEl = document.getElementById('menu-screen');
+        if (screenEl) screenEl.scrollTop = 0;
+      });
+    });
+    document.querySelectorAll('[data-action="back-to-main"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.menuView = 'main';
+        renderMenu();
+        const screenEl = document.getElementById('menu-screen');
+        if (screenEl) screenEl.scrollTop = 0;
+      });
+    });
+    // Daily-specific actions on the locked-out card
+    document.querySelectorAll('[data-action="share-daily"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shareDailyResultFromMenu();
+      });
+    });
+    document.querySelectorAll('[data-action="replay-daily"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startDailyReplay(todayUtcKey());
+      });
+    });
+
+    initHardModeToggle();
+    wireSyncEntryButton();
+  }
+
+  function countEligibleInContinent(continent) {
+    let count = 0;
+    state.allFeatures.forEach(f => {
+      const c = state.continentByFeature.get(featureKey(f));
+      if (c === continent) count++;
+    });
+    return count;
+  }
+
+  /* =========================================================
+   * GAME
+   * ========================================================= */
+
+  // Entry point for all games. For world modes, pass the continent name
+  // (or 'World'). For US modes, pass the mode key; `region` becomes
+  // unused and `currentContinent` is the display label.
+  async function startGame(regionOrMode) {
+    // Determine game mode
+    let mode, region;
+    if (regionOrMode === 'daily-five') {
+      mode = 'daily-five';
+      region = 'Daily';
+    } else if (regionOrMode === 'us-state' ||
+        regionOrMode === 'us-capital-to-state' ||
+        regionOrMode === 'us-state-to-capital') {
+      mode = regionOrMode;
+      region = GAME_MODES[mode].label();
+    } else {
+      mode = 'world-country';
+      region = regionOrMode;
+    }
+
+    state.gameMode = mode;
+    state.activeDataset = GAME_MODES[mode].dataset;
+    state.currentContinent = region;
+
+    // For daily mode, refuse to start if already played today (unless
+    // explicitly replaying — see startDailyReplay below).
+    if (mode === 'daily-five' && !state.dailyReplay) {
+      const dateKey = todayUtcKey();
+      const existing = getDailyAttempt(dateKey);
+      if (existing) {
+        showDailyAlreadyPlayed(existing, dateKey);
+        return;
+      }
+      // Stash today's date key on state so finishGame knows what to save under
+      state.dailyDateKey = dateKey;
+    }
+
+    // Lazy-load US data if needed
+    if (state.activeDataset === 'us' && !state.usLoaded) {
+      showLoadingOverlay('Loading the United States');
+      try {
+        await loadUsStatesData();
+      } catch (err) {
+        hideLoadingOverlay();
+        alert('The United States map could not be loaded. Please check your connection and try again.');
+        switchScreen('menu');
+        return;
+      }
+      hideLoadingOverlay();
+    }
+
+    state.correct = 0;
+    state.wrong = 0;
+    state.score = 0;
+    state.missed = [];
+    state.sequence = [];
+    state.attempts = 0;
+    state.startTime = Date.now();
+    state.interactionLocked = false;
+    state.totalQuestions = 0;
+
+    // Build eligible features based on mode
+    if (mode === 'daily-five') {
+      // Daily uses the world-country dataset but the queue is the
+      // deterministic 5-country puzzle for today's date (or a replay date).
+      const dateKey = state.dailyReplay && state.dailyReplay.dateKey
+        ? state.dailyReplay.dateKey
+        : todayUtcKey();
+      state.dailyDateKey = dateKey;
+      state.eligibleFeatures = state.allFeatures.filter(
+        f => state.continentByFeature.get(featureKey(f))
+      );
+      const dailyNames = generateDailyPuzzle(dateKey);
+      // Order matters for the daily puzzle - we want the easy→hard ramp
+      state.queue = dailyNames.slice();
+    } else if (state.activeDataset === 'us') {
+      state.eligibleFeatures = state.usFeatures.filter(f => {
+        const name = state.usCanonicalByFeature.get(featureKey(f));
+        return US_STATE_SET.has(name);
+      });
+      const names = new Set();
+      const byCanonical = activeCanonicalByFeature();
+      state.eligibleFeatures.forEach(f => {
+        const c = byCanonical.get(featureKey(f));
+        if (c) names.add(c);
+      });
+      state.queue = shuffle(Array.from(names));
+    } else if (region === 'World') {
+      state.eligibleFeatures = state.allFeatures.filter(f => state.continentByFeature.get(featureKey(f)));
+      const names = new Set();
+      state.eligibleFeatures.forEach(f => {
+        const c = state.canonicalByFeature.get(featureKey(f));
+        if (c) names.add(c);
+      });
+      state.queue = shuffle(Array.from(names));
+    } else {
+      state.eligibleFeatures = state.allFeatures.filter(f => state.continentByFeature.get(featureKey(f)) === region);
+      const names = new Set();
+      state.eligibleFeatures.forEach(f => {
+        const c = state.canonicalByFeature.get(featureKey(f));
+        if (c) names.add(c);
+      });
+      state.queue = shuffle(Array.from(names));
+    }
+    state.totalQuestions = state.queue.length;
+
+    switchScreen('game');
+    // Header label - daily mode shows the puzzle number
+    let headerLabel = GAME_MODES[mode].label(region);
+    if (mode === 'daily-five') {
+      headerLabel = 'Daily #' + dailyPuzzleNumber(state.dailyDateKey);
+      if (state.dailyReplay) headerLabel += ' (Practice)';
+    }
+    document.getElementById('region-tag').textContent = headerLabel;
+    const zoomHintEl = document.getElementById('zoom-hint');
+    if (zoomHintEl) {
+      zoomHintEl.style.display = state.zoomHintShown ? 'none' : '';
+      state.zoomHintShown = true;
+    }
+
+    // Wait for screen transition, then render map
+    setTimeout(() => {
+      renderMap();
+      nextCountry();
+    }, 80);
+  }
+
+  // Allow replaying a past daily puzzle without affecting today's record.
+  // Used by the "Replay this puzzle" link on the already-played view.
+  function startDailyReplay(dateKey) {
+    state.dailyReplay = { dateKey: dateKey };
+    startGame('daily-five').finally(() => {
+      // Reset the flag once the game is set up, so a future "Daily" tap
+      // from the menu doesn't accidentally inherit replay mode.
+      state.dailyReplay = null;
+    });
+  }
+
+  function showLoadingOverlay(text) {
+    let el = document.getElementById('loading-overlay');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'loading-overlay';
+      el.className = 'loading-overlay';
+      document.body.appendChild(el);
+    }
+    el.innerHTML = '<div class="loading-inner">' + text + '<span class="loading-dots"></span></div>';
+    el.classList.add('visible');
+  }
+  function hideLoadingOverlay() {
+    const el = document.getElementById('loading-overlay');
+    if (el) el.classList.remove('visible');
+  }
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function renderMap() {
+    const svgEl = document.getElementById('world-map');
+    const wrap = svgEl.parentElement;
+    const width = wrap.clientWidth;
+    const height = wrap.clientHeight;
+
+    svgEl.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+
+    // Clear
+    while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
+
+    const svg = d3.select(svgEl);
+    state.svg = svg;
+
+    // Feature lists for fitting and background rendering
+    const fitCollection = {
+      type: 'FeatureCollection',
+      features: state.eligibleFeatures
+    };
+    const bgCollection = {
+      type: 'FeatureCollection',
+      features: activeFeatures()
+    };
+
+    // Pick projection based on active dataset
+    let projection;
+    if (state.activeDataset === 'us') {
+      // Albers USA handles Alaska and Hawaii insets automatically,
+      // giving a clean framed map of the 50 states at any size.
+      projection = d3.geoAlbersUsa();
+    } else if (state.currentContinent === 'World' || state.gameMode === 'daily-five') {
+      // Daily mode also uses the whole world, so it gets the same
+      // Natural Earth projection (and the same fitExtent below).
+      projection = d3.geoNaturalEarth1();
+    } else {
+      // Center Mercator on the continent's centroid longitude so the
+      // land fills the view instead of being offset toward Greenwich.
+      const centroid = d3.geoCentroid(fitCollection);
+      projection = d3.geoMercator()
+        .rotate([-centroid[0], 0]);
+    }
+
+    const padding = 20;
+    if (state.activeDataset === 'us') {
+      projection.fitExtent(
+        [[padding + 20, padding + 10], [width - padding - 20, height - padding - 10]],
+        fitCollection
+      );
+    } else if (state.currentContinent === 'World' || state.gameMode === 'daily-five') {
+      projection.fitExtent(
+        [[padding, padding], [width - padding, height - padding]],
+        bgCollection
+      );
+    } else {
+      projection.fitExtent(
+        [[padding + 40, padding + 10], [width - padding - 40, height - padding - 10]],
+        fitCollection
+      );
+    }
+
+    state.projection = projection;
+    state.pathGen = d3.geoPath(projection);
+
+    const g = svg.append('g');
+    state.mapG = g;
+
+    // Zoom & pan behavior
+    // 60× max scale gives plenty of room to click tiny island nations
+    // (Caribbean, Oceania) which are barely a few pixels at 1× zoom.
+    const zoomBehavior = d3.zoom()
+      .scaleExtent([1, 60])
+      .translateExtent([[-width * 0.5, -height * 0.5], [width * 1.5, height * 1.5]])
+      .filter((event) => {
+        if (event.type === 'dblclick') return false;
+        if (event.type === 'mousedown' && event.button !== 0) return false;
+        return true;
+      })
+      .on('zoom', (event) => {
+        state.currentTransform = event.transform;
+        g.attr('transform', event.transform);
+      });
+
+    svg.call(zoomBehavior);
+    state.zoomBehavior = zoomBehavior;
+
+    // Sphere backdrop - only for world projections. Albers USA isn't a
+    // true globe projection so a Sphere would just be a big blue box.
+    if (state.activeDataset !== 'us') {
+      g.append('path')
+        .attr('class', 'sphere-bg')
+        .attr('d', state.pathGen({ type: 'Sphere' }));
+      const graticule = d3.geoGraticule().step([20, 20]);
+      g.append('path')
+        .attr('class', 'graticule')
+        .attr('d', state.pathGen(graticule()));
+    } else {
+      // Full-bleed "ocean" rectangle so we get a consistent look
+      g.append('rect')
+        .attr('class', 'us-ocean')
+        .attr('x', -width * 2).attr('y', -height * 2)
+        .attr('width', width * 5).attr('height', height * 5);
+    }
+
+    // Hit-zone overlay for tiny eligible features. Rendered first (so it sits
+    // BELOW visible polygons in z-order) — visible neighbors take click
+    // precedence at land borders, but small islands surrounded by ocean now
+    // catch clicks within ~22px of their outline regardless of zoom.
+    const SMALL_FEATURE_PX = 14; // max bounding-box dimension at zoom k=1
+    g.selectAll('.country-hitzone')
+      .data(activeFeatures().filter(f => {
+        if (!isEligible(f)) return false;
+        const d = state.pathGen(f);
+        if (!d || d.indexOf('NaN') !== -1) return false;
+        const b = state.pathGen.bounds(f);
+        const maxDim = Math.max(b[1][0] - b[0][0], b[1][1] - b[0][1]);
+        return maxDim < SMALL_FEATURE_PX;
+      }))
+      .enter()
+      .append('path')
+      .attr('class', 'country-hitzone')
+      .attr('d', f => state.pathGen(f))
+      .attr('data-fkey', f => featureKey(f))
+      .on('click', handleCountryClick);
+
+    // All features (eligible ones colored as land, others grayed out)
+    // Albers USA returns invalid paths (starting with NaN) for features
+    // outside CONUS/AK/HI — we skip those so they don't render as artifacts.
+    g.selectAll('.country-bg')
+      .data(activeFeatures())
+      .enter()
+      .append('path')
+      .attr('class', f => 'country ' + (isEligible(f) ? 'eligible' : 'ineligible'))
+      .attr('d', f => {
+        const d = state.pathGen(f);
+        return (d && d.indexOf('NaN') === -1) ? d : null;
+      })
+      .filter(function () { return this.getAttribute('d') != null; })
+      .attr('data-fkey', f => featureKey(f))
+      .on('click', handleCountryClick);
+  }
+
+  function isEligible(feature) {
+    if (state.activeDataset === 'us') {
+      const name = state.usCanonicalByFeature.get(featureKey(feature));
+      return US_STATE_SET.has(name);
+    }
+    const continent = state.continentByFeature.get(featureKey(feature));
+    // Daily mode pulls from the whole world, so every recognized country
+    // is fair game to click. Without this, all countries are treated as
+    // ineligible (grayed out) because state.currentContinent === 'Daily'
+    // doesn't match any continent.
+    if (state.gameMode === 'daily-five') return !!continent;
+    if (state.currentContinent === 'World') return !!continent;
+    return continent === state.currentContinent;
+  }
+
+  function nextCountry() {
+    if (state.queue.length === 0) {
+      finishGame();
+      return;
+    }
+    state.current = state.queue.shift();
+    state.attempts = 0;
+    state.interactionLocked = false;
+
+    const mode = state.gameMode;
+    const promptEl = document.getElementById('prompt-country');
+    const promptLabelEl = document.querySelector('.prompt-panel .prompt-label');
+    const choicesEl = document.getElementById('choices-panel');
+
+    // Configure the prompt based on mode
+    if (mode === 'us-capital-to-state') {
+      // The quiz target is a state name; the prompt shows its capital.
+      promptLabelEl.textContent = 'Click the state with this capital';
+      promptEl.textContent = US_CAPITALS[state.current];
+      state.currentPromptText = US_CAPITALS[state.current];
+      choicesEl.style.display = 'none';
+    } else if (mode === 'us-state-to-capital') {
+      // The quiz target is a state name; the prompt shows the state,
+      // and the user chooses the correct capital from 4 options.
+      promptLabelEl.textContent = 'Which capital belongs to';
+      promptEl.textContent = state.current;
+      state.currentPromptText = state.current;
+      renderCapitalChoices(state.current);
+      choicesEl.style.display = '';
+      // Highlight the state on the map so users visualize what they're being asked
+      highlightPromptedState(state.current);
+    } else {
+      // World country mode or US state mode
+      promptLabelEl.textContent = 'Find on the map';
+      promptEl.textContent = state.current;
+      state.currentPromptText = state.current;
+      choicesEl.style.display = 'none';
+    }
+
+    promptEl.classList.remove('shake');
+    promptEl.classList.remove('pulse');
+    void promptEl.offsetWidth;
+    promptEl.classList.add('pulse');
+
+    updateStats();
+    document.getElementById('skip-btn').disabled = false;
+  }
+
+  // Highlights the currently-prompted state in the state-to-capital mode
+  // so the user can see which state they're being asked about. Also pans
+  // to it if it's off-screen.
+  function highlightPromptedState(stateName) {
+    d3.selectAll('.country.prompt-highlight').classed('prompt-highlight', false);
+    const feature = state.usFeatureByCanonical.get(stateName);
+    if (!feature) return;
+    const targetKey = featureKey(feature);
+    d3.select('.country[data-fkey="' + CSS.escape(targetKey) + '"]').classed('prompt-highlight', true);
+    ensureFeatureVisible(feature);
+  }
+
+  // Builds 4 capital-choice buttons for state-to-capital mode: the correct
+  // answer plus 3 plausible distractors (other state capitals).
+  function renderCapitalChoices(stateName) {
+    const correctCapital = US_CAPITALS[stateName];
+    const distractors = shuffle(
+      US_STATE_NAMES.filter(s => s !== stateName).map(s => US_CAPITALS[s])
+    ).slice(0, 3);
+    const choices = shuffle([correctCapital, ...distractors]);
+
+    const container = document.getElementById('choices-panel');
+    container.innerHTML = '';
+    choices.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = c;
+      btn.dataset.capital = c;
+      btn.addEventListener('click', () => handleCapitalChoice(c, btn));
+      container.appendChild(btn);
+    });
+  }
+
+  function handleCapitalChoice(capital, btn) {
+    if (state.interactionLocked) return;
+    if (!state.current) return;
+
+    const correctCapital = US_CAPITALS[state.current];
+    if (capital === correctCapital) {
+      const pointsEarned = state.attempts === 0 ? 2 : 1;
+      state.correct++;
+      state.score += pointsEarned;
+      state.sequence.push(pointsEarned);
+      state.interactionLocked = true;
+      btn.classList.add('choice-correct');
+      const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
+      showToast('correct', '<em>' + state.current + '</em> → ' + capital + ' · ' + pointsLabel);
+      updateStats();
+      flashScore();
+
+      // Also mark the state on the map as completed
+      const feature = state.usFeatureByCanonical.get(state.current);
+      if (feature) {
+        const targetKey = featureKey(feature);
+        const p = d3.select('.country[data-fkey="' + CSS.escape(targetKey) + '"]');
+        p.classed('target-correct', true);
+        setTimeout(() => {
+          p.classed('target-correct', false);
+          if (!state.hardMode) p.classed('completed-correct', true);
+        }, 700);
+      }
+
+      setTimeout(nextCountry, 1100);
+    } else {
+      state.attempts++;
+      btn.classList.add('choice-wrong');
+      btn.disabled = true;
+
+      const promptEl = document.getElementById('prompt-country');
+      promptEl.classList.remove('shake');
+      void promptEl.offsetWidth;
+      promptEl.classList.add('shake');
+
+      if (state.attempts >= 2) {
+        // Reveal the correct answer
+        state.wrong++;
+        state.sequence.push(0);
+        state.missed.push(state.current);
+        state.interactionLocked = true;
+
+        // Highlight the correct capital button
+        const container = document.getElementById('choices-panel');
+        container.querySelectorAll('.choice-btn').forEach(b => {
+          if (b.dataset.capital === correctCapital) b.classList.add('choice-reveal');
+        });
+
+        // Also mark state on map as wrong + show the reveal marker
+        const feature = state.usFeatureByCanonical.get(state.current);
+        if (feature) {
+          revealTargetFeature(feature,
+            '<em>' + state.current + '</em> → ' + correctCapital);
+        } else {
+          showToast('wrong', '<em>' + state.current + '</em> → ' + correctCapital);
+          setTimeout(nextCountry, 1800);
+        }
+      } else {
+        showToast('wrong', 'Not quite — try again');
+      }
+    }
+  }
+
+  function handleCountryClick(event, f) {
+    if (state.interactionLocked) return;
+    if (!state.current) return;
+    if (!isEligible(f)) return;
+    // In state-to-capital mode, clicking the map shouldn't register —
+    // the user answers via the capital choice buttons instead.
+    if (state.gameMode === 'us-state-to-capital') return;
+
+    // Always operate on the VISIBLE polygon (.country) regardless of whether
+    // the click hit the visible polygon or the invisible hit-zone overlay.
+    // event.currentTarget can be either; we resolve by data-fkey + class.
+    const fkey = featureKey(f);
+    const visiblePath = d3.select('.country[data-fkey="' + CSS.escape(fkey) + '"]');
+    const visibleEl = visiblePath.node();
+    if (!visibleEl) return;
+    if (visibleEl.classList.contains('completed-correct') ||
+        visibleEl.classList.contains('completed-wrong')) {
+      return;
+    }
+
+    const byCanonical = activeCanonicalByFeature();
+    const byName = activeFeatureByCanonical();
+    const clickedCanonical = byCanonical.get(featureKey(f));
+    const targetFeature = byName.get(state.current);
+    if (!targetFeature) return;
+
+    if (clickedCanonical === state.current) {
+      const pointsEarned = state.attempts === 0 ? 2 : 1;
+      state.correct++;
+      state.score += pointsEarned;
+      state.sequence.push(pointsEarned);
+      state.interactionLocked = true;
+      visiblePath.classed('target-correct', true);
+      const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
+      // For capital mode, the toast shows "Capital → State" to reinforce learning
+      const toastMsg = state.gameMode === 'us-capital-to-state'
+        ? '<em>' + state.currentPromptText + '</em> → ' + state.current + ' · ' + pointsLabel
+        : 'Well done — <em>' + state.current + '</em> · ' + pointsLabel;
+      showToast('correct', toastMsg);
+      updateStats();
+      flashScore();
+
+      setTimeout(() => {
+        visiblePath.classed('target-correct', false);
+        if (!state.hardMode) {
+          visiblePath.classed('completed-correct', true);
+        }
+        nextCountry();
+      }, 900);
+    } else {
+      state.attempts++;
+      visiblePath.classed('target-wrong', true);
+      setTimeout(() => visiblePath.classed('target-wrong', false), 700);
+
+      const promptEl = document.getElementById('prompt-country');
+      promptEl.classList.remove('shake');
+      void promptEl.offsetWidth;
+      promptEl.classList.add('shake');
+
+      if (state.attempts >= 2) {
+        state.wrong++;
+        state.sequence.push(0);
+        state.missed.push(state.current);
+        state.interactionLocked = true;
+        const revealMsg = state.gameMode === 'us-capital-to-state'
+          ? '<em>' + state.currentPromptText + '</em> → ' + state.current
+          : 'Not quite — this is <em>' + state.current + '</em>';
+        revealTargetFeature(targetFeature, revealMsg);
+      } else {
+        const wrongName = clickedCanonical || 'That';
+        showToast('wrong', '<em>' + wrongName + '</em> — try again');
+      }
+    }
+  }
+
+  // Prominently reveal a missed country: pan to it if off-screen,
+  // flash the country with a bright gold fill and thick navy outline,
+  // and draw a pulsing ring marker at its centroid.
+  function revealTargetFeature(feature, toastHtml) {
+    const targetKey = featureKey(feature);
+    const targetPath = d3.select('.country[data-fkey="' + CSS.escape(targetKey) + '"]');
+    targetPath.classed('reveal', true);
+    showToast('wrong', toastHtml);
+    updateStats();
+
+    ensureFeatureVisible(feature);
+    showRevealMarker(feature);
+
+    setTimeout(() => {
+      targetPath.classed('reveal', false);
+      if (!state.hardMode) {
+        targetPath.classed('completed-wrong', true);
+      }
+      nextCountry();
+    }, 2600);
+  }
+
+  // Pan the map so the given feature is visible, if currently off-screen.
+  function ensureFeatureVisible(feature) {
+    if (!state.svg || !state.zoomBehavior || !state.pathGen) return;
+    const t = state.currentTransform || d3.zoomIdentity;
+    const [cx, cy] = state.pathGen.centroid(feature);
+    if (isNaN(cx) || isNaN(cy)) return;
+
+    const node = state.svg.node();
+    const width = node.clientWidth || node.getBoundingClientRect().width;
+    const height = node.clientHeight || node.getBoundingClientRect().height;
+
+    // Current screen position of the centroid
+    const sx = cx * t.k + t.x;
+    const sy = cy * t.k + t.y;
+
+    const marginX = width * 0.15;
+    const marginY = height * 0.15;
+    const inView = sx >= marginX && sx <= width - marginX &&
+                   sy >= marginY && sy <= height - marginY;
+    if (inView && t.k <= 1.2) return; // already well in view at low zoom
+
+    // Only auto-pan if we're meaningfully zoomed in; at 1x the whole map is visible
+    if (t.k <= 1.05 && inView) return;
+
+    const newX = width / 2 - cx * t.k;
+    const newY = height / 2 - cy * t.k;
+    state.svg.transition().duration(550)
+      .call(state.zoomBehavior.transform,
+            d3.zoomIdentity.translate(newX, newY).scale(t.k));
+  }
+
+  // Draw a pulsing ring marker at the centroid of the given feature.
+  // Size is zoom-compensated so it looks consistent in screen pixels.
+  function showRevealMarker(feature) {
+    if (!state.pathGen || !state.mapG) return;
+    const [cx, cy] = state.pathGen.centroid(feature);
+    if (isNaN(cx) || isNaN(cy)) return;
+
+    // Clean up any stray marker
+    state.mapG.selectAll('.reveal-marker').remove();
+
+    const k = (state.currentTransform && state.currentTransform.k) || 1;
+    const invK = 1 / k;
+
+    const marker = state.mapG.append('g')
+      .attr('class', 'reveal-marker')
+      .attr('transform', 'translate(' + cx + ',' + cy + ') scale(' + invK + ')');
+
+    marker.append('circle').attr('class', 'pulse-ring');
+    marker.append('circle').attr('class', 'pulse-ring delayed');
+    marker.append('circle').attr('class', 'center-dot').attr('r', 5);
+
+    setTimeout(() => {
+      marker.transition().duration(300).style('opacity', 0).remove();
+    }, 2400);
+  }
+
+  function handleSkip() {
+    if (state.interactionLocked) return;
+    if (!state.current) return;
+    state.wrong++;
+    state.sequence.push(0);
+    state.missed.push(state.current);
+    state.interactionLocked = true;
+
+    // In state-to-capital mode, also show the correct capital button
+    if (state.gameMode === 'us-state-to-capital') {
+      const correctCapital = US_CAPITALS[state.current];
+      const container = document.getElementById('choices-panel');
+      if (container) {
+        container.querySelectorAll('.choice-btn').forEach(b => {
+          if (b.dataset.capital === correctCapital) b.classList.add('choice-reveal');
+        });
+      }
+    }
+
+    const targetFeature = activeFeatureByCanonical().get(state.current);
+    if (targetFeature) {
+      // Toast message depends on mode
+      let msg;
+      if (state.gameMode === 'us-capital-to-state') {
+        msg = '<em>' + state.currentPromptText + '</em> → ' + state.current;
+      } else if (state.gameMode === 'us-state-to-capital') {
+        msg = '<em>' + state.current + '</em> → ' + US_CAPITALS[state.current];
+      } else {
+        msg = '<em>' + state.current + '</em> — shown on the map';
+      }
+      revealTargetFeature(targetFeature, msg);
+    } else {
+      nextCountry();
+    }
+    updateStats();
+  }
+
+  function updateStats() {
+    document.getElementById('stat-score').textContent = state.score;
+    document.getElementById('stat-correct').textContent = state.correct;
+    document.getElementById('stat-wrong').textContent = state.wrong;
+    const remaining = Math.max(0, state.totalQuestions - state.correct - state.wrong);
+    document.getElementById('stat-remaining').textContent = remaining;
+  }
+
+  function flashScore() {
+    const el = document.getElementById('stat-score');
+    if (!el) return;
+    el.classList.remove('score-flash');
+    void el.offsetWidth;
+    el.classList.add('score-flash');
+  }
+
+  function showToast(kind, html) {
+    const toast = document.getElementById('toast');
+    toast.className = 'toast ' + kind;
+    toast.innerHTML = html;
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), 1400);
+  }
+
+  function finishGame() {
+    const elapsed = Math.round((Date.now() - state.startTime) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    const total = state.correct + state.wrong;
+    const pct = total > 0 ? Math.round((state.correct / total) * 100) : 0;
+    const maxScore = state.totalQuestions * 2;
+
+    // Snapshot previous records BEFORE committing this session so we can
+    // show the user what they beat (or how close they came).
+    const priorRecords = getRecords(state.currentContinent, state.hardMode, state.gameMode);
+
+    const commitResult = commitSessionRecords({
+      region: state.currentContinent,
+      hardMode: state.hardMode,
+      gameMode: state.gameMode,
+      score: state.score,
+      correct: state.correct,
+      totalQuestions: state.totalQuestions,
+      timeSeconds: elapsed
+    });
+    state.brokenRecords = commitResult.broken;
+    state.priorRecords = priorRecords;
+    state.currentRecords = commitResult.records;
+
+    // Daily mode: persist this attempt so the player gets the locked-out
+    // "already played today" view if they reload or come back later.
+    // Practice replays don't write to storage so they never "use up" the day.
+    if (state.gameMode === 'daily-five' && !state.dailyReplay && state.dailyDateKey) {
+      saveDailyAttempt(state.dailyDateKey, {
+        dateKey: state.dailyDateKey,
+        puzzleNumber: dailyPuzzleNumber(state.dailyDateKey),
+        countries: generateDailyPuzzle(state.dailyDateKey),
+        sequence: state.sequence.slice(),
+        score: state.score,
+        correct: state.correct,
+        wrong: state.wrong,
+        total: state.totalQuestions,
+        timeSeconds: elapsed,
+        hardMode: state.hardMode,
+        completedAt: Date.now()
+      });
+    }
+
+    // Mirror to cloud after every game (fire-and-forget; no-op if sync isn't set up)
+    syncAfterGameEnd();
+
+    const modeConfig = GAME_MODES[state.gameMode];
+    let regionLabel = modeConfig.label(state.currentContinent);
+    if (state.gameMode === 'daily-five') {
+      regionLabel = 'Daily #' + dailyPuzzleNumber(state.dailyDateKey);
+      if (state.dailyReplay) regionLabel += ' (Practice)';
+    }
+    document.getElementById('results-region').textContent =
+      regionLabel + (state.hardMode ? ' · Hard Mode' : '');
+    document.getElementById('grade-big').textContent = pct;
+    document.getElementById('r-correct').textContent = state.correct;
+    document.getElementById('r-wrong').textContent = state.wrong;
+    document.getElementById('r-time').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    document.getElementById('r-score').textContent = state.score + '/' + maxScore;
+
+    renderRecordsBanner();
+    renderBestsSection();
+
+    const missedSection = document.getElementById('missed-section');
+    const missedList = document.getElementById('missed-list');
+    if (state.missed.length > 0) {
+      missedList.innerHTML = state.missed
+        .map(n => '<span class="missed-item">' + n + '</span>')
+        .join('<span style="opacity:0.3">·</span>');
+      missedSection.style.display = 'block';
+    } else {
+      missedSection.style.display = 'none';
+    }
+
+    // Daily mode tweaks the results actions: hide "Study Again" since you
+    // can't replay today's puzzle for record. Replace with a Practice link.
+    const replayBtn = document.getElementById('replay-btn');
+    const dailyPracticeBtn = document.getElementById('daily-practice-btn');
+    if (state.gameMode === 'daily-five' && !state.dailyReplay) {
+      if (replayBtn) replayBtn.style.display = 'none';
+      if (dailyPracticeBtn) dailyPracticeBtn.style.display = '';
+    } else {
+      if (replayBtn) replayBtn.style.display = '';
+      if (dailyPracticeBtn) dailyPracticeBtn.style.display = 'none';
+    }
+
+    switchScreen('results');
+  }
+
+  // Shows a "New Record!" banner at the top of results if any record broke.
+  function renderRecordsBanner() {
+    const banner = document.getElementById('new-record-banner');
+    if (!banner) return;
+    const broken = state.brokenRecords || {};
+    const list = [];
+    if (broken.score) list.push('Score');
+    if (broken.time) list.push('Time');
+    if (broken.accuracy) list.push('Accuracy');
+
+    if (list.length === 0) {
+      banner.style.display = 'none';
+      return;
+    }
+
+    const headline = list.length === 3
+      ? 'Triple Record Broken!'
+      : list.length === 2
+        ? 'Two New Records!'
+        : 'New ' + list[0] + ' Record!';
+
+    banner.innerHTML =
+      '<div class="record-laurel">❧</div>' +
+      '<div class="record-text">' + headline + '</div>' +
+      '<div class="record-laurel flipped">❧</div>';
+    banner.style.display = 'flex';
+  }
+
+  // Shows the "Your Personal Bests" panel with current records for this region × mode.
+  function renderBestsSection() {
+    const section = document.getElementById('bests-section');
+    if (!section) return;
+    const rec = state.currentRecords;
+    if (!rec) { section.style.display = 'none'; return; }
+
+    const broken = state.brokenRecords || {};
+
+    const items = [];
+    if (rec.bestScore) {
+      items.push({
+        label: 'Best Score',
+        value: rec.bestScore.value + '/' + rec.bestScore.max,
+        broken: broken.score
+      });
+    }
+    if (rec.bestAccuracy) {
+      items.push({
+        label: 'Best Accuracy',
+        value: rec.bestAccuracy.pct + '% · ' + rec.bestAccuracy.correct + '/' + rec.bestAccuracy.total,
+        broken: broken.accuracy
+      });
+    }
+    if (rec.bestTime) {
+      items.push({
+        label: 'Fastest Clean Sweep',
+        value: formatTimeSeconds(rec.bestTime.value),
+        broken: broken.time
+      });
+    }
+    items.push({
+      label: 'Games Played',
+      value: String(rec.gamesPlayed || 0),
+      broken: false
+    });
+
+    const html = items.map(it =>
+      '<div class="best-item' + (it.broken ? ' broken' : '') + '">' +
+        '<div class="best-value">' + it.value + (it.broken ? ' <span class="best-star">★</span>' : '') + '</div>' +
+        '<div class="best-label">' + it.label + '</div>' +
+      '</div>'
+    ).join('');
+
+    section.querySelector('.bests-grid').innerHTML = html;
+    section.style.display = 'block';
+  }
+
+  /* =========================================================
+   * PERSONAL RECORDS (best score, time, accuracy per region × mode)
+   *
+   * Storage shape under key "atlas-records":
+   * {
+   *   "North America|normal": {
+   *     bestScore: { value: 44, max: 46, date: "2026-04-24" },
+   *     bestTime:  { value: 182, total: 23, date: "..." },  // seconds, only if all found
+   *     bestAccuracy: { correct: 23, total: 23, pct: 100, date: "..." },
+   *     gamesPlayed: 7,
+   *     lastPlayed: "2026-04-24"
+   *   },
+   *   "North America|hard": { ... },
+   *   "World|normal": { ... },
+   *   ...
+   * }
+   * ========================================================= */
+
+  const RECORDS_KEY = 'atlas-records';
+
+  function loadAllRecords() {
+    try {
+      const raw = localStorage.getItem(RECORDS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveAllRecords(records) {
+    try {
+      localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+    } catch (e) { /* storage blocked - ignore silently */ }
+  }
+
+  function recordsKeyFor(region, hardMode, gameMode) {
+    // Include mode so US quiz types don't collide with each other
+    // or with world country games. Defaults to world-country if omitted.
+    const mode = gameMode || 'world-country';
+    return mode + '|' + region + '|' + (hardMode ? 'hard' : 'normal');
+  }
+
+  function getRecords(region, hardMode, gameMode) {
+    const all = loadAllRecords();
+    return all[recordsKeyFor(region, hardMode, gameMode)] || null;
+  }
+
+  // Commit the session's results against the stored records for this
+  // region × mode. Returns an object indicating which records were broken
+  // so the results screen can celebrate them.
+  function commitSessionRecords(session) {
+    const all = loadAllRecords();
+    const key = recordsKeyFor(session.region, session.hardMode, session.gameMode);
+    const existing = all[key] || { gamesPlayed: 0 };
+    const today = new Date().toISOString().slice(0, 10);
+    const maxScore = session.totalQuestions * 2;
+    const pct = session.totalQuestions > 0
+      ? Math.round((session.correct / session.totalQuestions) * 100)
+      : 0;
+
+    const broken = { score: false, time: false, accuracy: false, firstPlay: !existing.lastPlayed };
+
+    // Best score
+    if (!existing.bestScore || session.score > existing.bestScore.value) {
+      broken.score = !broken.firstPlay;
+      existing.bestScore = { value: session.score, max: maxScore, date: today };
+    }
+
+    // Best time — only tracked if the session was a clean sweep (no misses).
+    // A faster time on an incomplete run isn't really "better".
+    if (session.correct === session.totalQuestions && session.totalQuestions > 0) {
+      if (!existing.bestTime || session.timeSeconds < existing.bestTime.value) {
+        broken.time = !broken.firstPlay || existing.bestTime !== undefined;
+        // Don't mark as broken on the very first perfect clear if there
+        // simply was no prior time to beat — still celebrate it as a first.
+        if (!existing.bestTime) broken.time = true;
+        existing.bestTime = {
+          value: session.timeSeconds,
+          total: session.totalQuestions,
+          date: today
+        };
+      }
+    }
+
+    // Best accuracy (by percentage, then by absolute count as tiebreaker)
+    const priorPct = existing.bestAccuracy ? existing.bestAccuracy.pct : -1;
+    const priorCorrect = existing.bestAccuracy ? existing.bestAccuracy.correct : -1;
+    if (pct > priorPct || (pct === priorPct && session.correct > priorCorrect)) {
+      broken.accuracy = !broken.firstPlay;
+      existing.bestAccuracy = {
+        correct: session.correct,
+        total: session.totalQuestions,
+        pct: pct,
+        date: today
+      };
+    }
+
+    existing.gamesPlayed = (existing.gamesPlayed || 0) + 1;
+    existing.lastPlayed = today;
+
+    all[key] = existing;
+    saveAllRecords(all);
+    return { broken: broken, records: existing };
+  }
+
+  function formatTimeSeconds(seconds) {
+    if (seconds == null) return '—';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* =========================================================
+   * HARD MODE PREFERENCE (persisted across sessions)
+   * ========================================================= */
+
+  function loadHardMode() {
+    try {
+      return localStorage.getItem('atlas-hard-mode') === 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function saveHardMode(val) {
+    try {
+      localStorage.setItem('atlas-hard-mode', val ? 'true' : 'false');
+    } catch (e) { /* private mode or disabled storage - ignore */ }
+  }
+
+  function initHardModeToggle() {
+    const toggle = document.getElementById('hard-mode-toggle');
+    if (!toggle) return;
+    // Apply persisted preference to the freshly-rendered checkbox
+    state.hardMode = loadHardMode();
+    toggle.checked = state.hardMode;
+    // The toggle DOM element is recreated on every renderMenu(), so it's
+    // safe (and required) to attach a fresh listener every time.
+    toggle.addEventListener('change', (e) => {
+      state.hardMode = e.target.checked;
+      saveHardMode(state.hardMode);
+      renderMenu();
+    });
+  }
+
+  /* =========================================================
+   * SHARE RESULTS
+   * ========================================================= */
+
+  function buildShareText() {
+    // Daily mode gets its own concise Wordle-style format. The country
+    // names are deliberately NOT included so people can share before
+    // their friends play without spoiling the puzzle.
+    if (state.gameMode === 'daily-five' && !state.dailyReplay) {
+      return buildDailyShareText({
+        puzzleNumber: dailyPuzzleNumber(state.dailyDateKey),
+        sequence: state.sequence,
+        score: state.score,
+        correct: state.correct,
+        total: state.totalQuestions,
+        hardMode: state.hardMode
+      });
+    }
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const mode = state.gameMode;
+    let region;
+    if (mode === 'us-state') region = 'US States';
+    else if (mode === 'us-capital-to-state') region = 'US Capitals → States';
+    else if (mode === 'us-state-to-capital') region = 'US States → Capitals';
+    else region = state.currentContinent === 'World' ? 'The World' : state.currentContinent;
+    const total = state.correct + state.wrong;
+    const maxScore = state.totalQuestions * 2;
+    const elapsed = Math.round((Date.now() - state.startTime) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    const timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+    // Three-color emoji grid telling the full story:
+    //   🟩 = found on first try (2 pts)
+    //   🟨 = found on second try (1 pt)
+    //   🟥 = missed (0 pts)
+    const EMOJI = { 2: '🟩', 1: '🟨', 0: '🟥' };
+    const perRow = 10;
+    const gridRows = [];
+    for (let i = 0; i < state.sequence.length; i += perRow) {
+      const row = state.sequence.slice(i, i + perRow)
+        .map(r => EMOJI[r] || '⬜')
+        .join('');
+      gridRows.push(row);
+    }
+
+    // Perfect score (all 2s) gets a flourish
+    const isPerfect = state.score === maxScore && state.totalQuestions > 0;
+    const modeBadge = state.hardMode ? ' · Hard' : '';
+    const headline = isPerfect
+      ? region + modeBadge + ' · Perfect! ' + state.score + '/' + maxScore + ' pts in ' + timeStr + ' ✨'
+      : region + modeBadge + ' · ' + state.score + '/' + maxScore + ' pts · ' + state.correct + '/' + state.totalQuestions + ' found · ' + timeStr;
+
+    // Broken-record badges (shown as a single line between grid and URL)
+    const broken = state.brokenRecords || {};
+    const badges = [];
+    if (broken.score) badges.push('New Score Record');
+    if (broken.accuracy) badges.push('New Accuracy Record');
+    if (broken.time) badges.push('New Time Record');
+    const recordLine = badges.length
+      ? '🏆 ' + badges.join(' · ')
+      : null;
+
+    // Clean URL (no query string or hash fragment)
+    const url = window.location.origin + window.location.pathname;
+
+    const lines = [
+      '🧭 Cartographer\u2019s Atlas · ' + dateStr,
+      headline,
+      '',
+      ...gridRows,
+      ''
+    ];
+    if (recordLine) {
+      lines.push(recordLine);
+      lines.push('');
+    }
+    lines.push(url);
+
+    return lines.join('\n');
+  }
+
+  // Wordle-style compact share format for the daily puzzle, used both
+  // from the in-game share button and from the menu's "Share Result" button.
+  function buildDailyShareText(opts) {
+    const EMOJI = { 2: '🟩', 1: '🟨', 0: '🟥' };
+    const grid = (opts.sequence || []).map(r => EMOJI[r] || '⬜').join('');
+    const maxScore = opts.total * 2;
+    const isPerfect = opts.score === maxScore && opts.total > 0;
+    const hardBadge = opts.hardMode ? ' · Hard' : '';
+    const url = window.location.origin + window.location.pathname;
+
+    const headline = isPerfect
+      ? 'Perfect! ' + opts.score + '/' + maxScore + ' pts ✨'
+      : opts.correct + '/' + opts.total + ' found · ' + opts.score + '/' + maxScore + ' pts';
+
+    return [
+      '🧭 Atlas Daily #' + opts.puzzleNumber + hardBadge,
+      headline,
+      '',
+      grid,
+      '',
+      url
+    ].join('\n');
+  }
+
+  // Re-share today's result from the menu after the game has been completed.
+  async function shareDailyResultFromMenu() {
+    const dateKey = todayUtcKey();
+    const attempt = getDailyAttempt(dateKey);
+    if (!attempt) return;
+    const text = buildDailyShareText({
+      puzzleNumber: attempt.puzzleNumber || dailyPuzzleNumber(dateKey),
+      sequence: attempt.sequence || [],
+      score: attempt.score,
+      correct: attempt.correct,
+      total: attempt.total,
+      hardMode: attempt.hardMode
+    });
+    await shareTextOrCopy(text, 'Atlas Daily');
+  }
+
+  // Common share-or-clipboard logic, factored out so both the in-game
+  // share button and the menu share button can use it.
+  async function shareTextOrCopy(text, title) {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: title, text: text });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      // Find the button that triggered this share if possible
+      const btn = document.querySelector('.daily-share-btn') || document.getElementById('share-btn');
+      if (btn) {
+        const original = btn.textContent;
+        btn.textContent = '✓ Copied to clipboard';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 2200);
+      }
+    } catch (err) {
+      try { window.prompt('Copy your results:', text); } catch (_) {}
+    }
+  }
+
+  async function shareResults() {
+    const btn = document.getElementById('share-btn');
+    const text = buildShareText();
+    const shareData = { title: "Cartographer's Atlas", text: text };
+
+    // Try the native share sheet first (mobile, modern desktop)
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        // User cancelled — don't fall through to clipboard
+        if (err && err.name === 'AbortError') return;
+        // Other errors fall through to clipboard
+      }
+    }
+
+    // Clipboard fallback
+    try {
+      await navigator.clipboard.writeText(text);
+      const originalText = btn.textContent;
+      btn.textContent = '✓ Copied to clipboard';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('copied');
+      }, 2200);
+    } catch (err) {
+      // Last resort: select-and-show in a prompt
+      try {
+        window.prompt('Copy your results:', text);
+      } catch (_) { /* nothing else we can do */ }
+    }
+  }
+
+  /* =========================================================
+   * SCREEN SWITCHING
+   * ========================================================= */
+
+  function switchScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById(name + '-screen');
+    if (target) target.classList.add('active');
+  }
+
+  /* =========================================================
+   * EVENT BINDINGS
+   * ========================================================= */
+
+  document.getElementById('back-btn').addEventListener('click', () => switchScreen('menu'));
+  document.getElementById('home-btn').addEventListener('click', () => switchScreen('menu'));
+  document.getElementById('replay-btn').addEventListener('click', () => startGame(state.currentContinent));
+  document.getElementById('daily-practice-btn').addEventListener('click', () => {
+    startDailyReplay(state.dailyDateKey || todayUtcKey());
+  });
+  document.getElementById('share-btn').addEventListener('click', shareResults);
+  document.getElementById('skip-btn').addEventListener('click', handleSkip);
+
+  // Zoom controls
+  function zoomBy(factor) {
+    if (!state.svg || !state.zoomBehavior) return;
+    state.svg.transition().duration(280).call(state.zoomBehavior.scaleBy, factor);
+  }
+  function zoomReset() {
+    if (!state.svg || !state.zoomBehavior) return;
+    state.svg.transition().duration(380).call(state.zoomBehavior.transform, d3.zoomIdentity);
+  }
+  document.getElementById('zoom-in-btn').addEventListener('click', () => zoomBy(1.6));
+  document.getElementById('zoom-out-btn').addEventListener('click', () => zoomBy(1 / 1.6));
+  document.getElementById('zoom-reset-btn').addEventListener('click', zoomReset);
+
+  document.addEventListener('keydown', (e) => {
+    const gameActive = document.getElementById('game-screen').classList.contains('active');
+    if (!gameActive) return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key === 's' || e.key === 'S') {
+      e.preventDefault();
+      handleSkip();
+    } else if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      zoomBy(1.6);
+    } else if (e.key === '-' || e.key === '_') {
+      e.preventDefault();
+      zoomBy(1 / 1.6);
+    } else if (e.key === '0') {
+      e.preventDefault();
+      zoomReset();
+    } else if (e.key === 'Escape') {
+      switchScreen('menu');
+    }
+  });
+
+  // Re-render map on resize
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const gameActive = document.getElementById('game-screen').classList.contains('active');
+      if (gameActive && state.svg) {
+        renderMap();
+      }
+    }, 200);
+  });
+
+  /* =========================================================
+   * SYNC — cross-device record sync via Cloudflare Pages Function
+   *
+   * Architecture:
+   *   - localStorage is the source of truth. The API at /api/records
+   *     mirrors a single user's data, keyed by a 32-char hex token.
+   *   - The token is generated once and stored in localStorage. To link
+   *     another device, paste the same token there (no accounts).
+   *
+   * Triggers:
+   *   - On app load: if a token exists, pull from server and merge.
+   *   - On game end: push to server (fire-and-forget).
+   *   - Manual "Sync Now" button: pull + push.
+   * ========================================================= */
+
+  const SYNC_API = '/api/records';
+  const SYNC_TOKEN_RE = /^[a-f0-9]{32}$/i;
+  const SYNC_VERSION = 1;
+  const SYNC_KEY_TOKEN = 'atlas-sync-token';
+  const SYNC_KEY_USERNAME = 'atlas-sync-username';
+  const SYNC_KEY_META = 'atlas-sync-meta';
+
+  // ---- Storage helpers ----
+
+  function syncGetToken() {
+    try { return localStorage.getItem(SYNC_KEY_TOKEN) || null; } catch (e) { return null; }
+  }
+  function syncSetToken(token) {
+    try { localStorage.setItem(SYNC_KEY_TOKEN, token); } catch (e) {}
+  }
+  function syncClearToken() {
+    try {
+      localStorage.removeItem(SYNC_KEY_TOKEN);
+      localStorage.removeItem(SYNC_KEY_USERNAME);
+      localStorage.removeItem(SYNC_KEY_META);
+    } catch (e) {}
+  }
+  function syncGetUsername() {
+    try { return localStorage.getItem(SYNC_KEY_USERNAME) || ''; } catch (e) { return ''; }
+  }
+  function syncSetUsername(name) {
+    try { localStorage.setItem(SYNC_KEY_USERNAME, name || ''); } catch (e) {}
+  }
+  function syncGetMeta() {
+    try {
+      const raw = localStorage.getItem(SYNC_KEY_META);
+      return raw ? JSON.parse(raw) : { lastSyncAt: 0, lastError: null };
+    } catch (e) { return { lastSyncAt: 0, lastError: null }; }
+  }
+  function syncSetMeta(patch) {
+    const next = Object.assign(syncGetMeta(), patch);
+    try { localStorage.setItem(SYNC_KEY_META, JSON.stringify(next)); } catch (e) {}
+    return next;
+  }
+
+  // ---- Token generation / normalization ----
+
+  // 128-bit secret as 32 hex chars, from cryptographically-secure RNG
+  function syncGenerateToken() {
+    const arr = new Uint8Array(16);
+    (window.crypto || window.msCrypto).getRandomValues(arr);
+    return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Cleans pasted input (whitespace, dashes, casing) and validates shape
+  function syncNormalizeToken(input) {
+    if (!input) return null;
+    const cleaned = String(input).trim().replace(/\s+/g, '').replace(/-/g, '').toLowerCase();
+    return SYNC_TOKEN_RE.test(cleaned) ? cleaned : null;
+  }
+
+  // ---- Sync payload shape (what we send/receive) ----
+
+  function syncLoadDailyAttempts() {
+    try {
+      const raw = localStorage.getItem(DAILY_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function syncBuildPayload() {
+    return {
+      version: SYNC_VERSION,
+      username: syncGetUsername(),
+      lastUpdated: Date.now(),
+      records: loadAllRecords(),
+      dailyAttempts: syncLoadDailyAttempts(),
+      hardMode: loadHardMode()
+    };
+  }
+
+  // ---- Merge: blend remote data into localStorage ----
+
+  function syncApplyRemote(remote) {
+    if (!remote || typeof remote !== 'object') return;
+
+    if (remote.username && !syncGetUsername()) syncSetUsername(remote.username);
+
+    saveAllRecords(syncMergeRecords(loadAllRecords(), remote.records || {}));
+
+    // Daily attempts: union; entries already present locally win
+    const localDaily = syncLoadDailyAttempts();
+    const remoteDaily = remote.dailyAttempts || {};
+    const mergedDaily = Object.assign({}, localDaily);
+    for (const dateKey in remoteDaily) {
+      if (!mergedDaily[dateKey]) mergedDaily[dateKey] = remoteDaily[dateKey];
+    }
+    try { localStorage.setItem(DAILY_KEY, JSON.stringify(mergedDaily)); } catch (e) {}
+  }
+
+  function syncMergeRecords(local, remote) {
+    const out = Object.assign({}, local);
+    for (const key in remote) {
+      out[key] = out[key] ? syncMergeRecordEntry(out[key], remote[key]) : remote[key];
+    }
+    return out;
+  }
+
+  // Per-field merge — better/newer wins
+  function syncMergeRecordEntry(a, b) {
+    const out = Object.assign({}, a);
+    if (b.bestScore && (!out.bestScore
+        || b.bestScore.value > out.bestScore.value
+        || (b.bestScore.value === out.bestScore.value && (b.bestScore.date || '') > (out.bestScore.date || '')))) {
+      out.bestScore = b.bestScore;
+    }
+    if (b.bestTime && (!out.bestTime
+        || b.bestTime.value < out.bestTime.value
+        || (b.bestTime.value === out.bestTime.value && (b.bestTime.date || '') > (out.bestTime.date || '')))) {
+      out.bestTime = b.bestTime;
+    }
+    if (b.bestAccuracy && (!out.bestAccuracy
+        || b.bestAccuracy.pct > out.bestAccuracy.pct
+        || (b.bestAccuracy.pct === out.bestAccuracy.pct && b.bestAccuracy.correct > out.bestAccuracy.correct))) {
+      out.bestAccuracy = b.bestAccuracy;
+    }
+    out.gamesPlayed = Math.max(out.gamesPlayed || 0, b.gamesPlayed || 0);
+    if ((b.lastPlayed || '') > (out.lastPlayed || '')) out.lastPlayed = b.lastPlayed;
+    return out;
+  }
+
+  // ---- API client ----
+
+  async function syncPush() {
+    const token = syncGetToken();
+    if (!token) return { ok: false, reason: 'no_token' };
+    try {
+      const res = await fetch(SYNC_API + '?token=' + encodeURIComponent(token), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(syncBuildPayload())
+      });
+      if (!res.ok) {
+        syncSetMeta({ lastError: 'push_' + res.status });
+        return { ok: false, reason: 'push_' + res.status };
+      }
+      syncSetMeta({ lastSyncAt: Date.now(), lastError: null });
+      return { ok: true };
+    } catch (e) {
+      syncSetMeta({ lastError: 'network' });
+      return { ok: false, reason: 'network' };
+    }
+  }
+
+  async function syncPull() {
+    const token = syncGetToken();
+    if (!token) return { ok: false, reason: 'no_token' };
+    try {
+      const res = await fetch(SYNC_API + '?token=' + encodeURIComponent(token));
+      if (!res.ok) {
+        syncSetMeta({ lastError: 'pull_' + res.status });
+        return { ok: false, reason: 'pull_' + res.status };
+      }
+      const data = await res.json();
+      if (data && typeof data === 'object') syncApplyRemote(data);
+      syncSetMeta({ lastSyncAt: Date.now(), lastError: null });
+      return { ok: true, hadData: !!data };
+    } catch (e) {
+      syncSetMeta({ lastError: 'network' });
+      return { ok: false, reason: 'network' };
+    }
+  }
+
+  // Pull then push — used for manual sync and post-import
+  async function syncFullSync() {
+    const pull = await syncPull();
+    if (!pull.ok) return { ok: false, pull, push: null };
+    const push = await syncPush();
+    return { ok: push.ok, pull, push };
+  }
+
+  // Lifecycle hooks
+  async function syncOnAppLoad() {
+    if (!syncGetToken()) return;
+    const result = await syncPull();
+    if (result.ok) renderMenu();
+  }
+  function syncAfterGameEnd() {
+    if (!syncGetToken()) return;
+    syncPush().catch(() => {});
+  }
+
+  // ---- Menu entry button ----
+
+  function renderSyncEntry() {
+    const token = syncGetToken();
+    const meta = syncGetMeta();
+    const stateClass = !token ? 'never' : (meta.lastError ? 'error' : 'ok');
+    const label = token ? 'Sync' : 'Set up sync';
+    return (
+      '<div class="sync-entry-row">' +
+        '<button id="sync-entry-btn" class="sync-entry-btn ' + stateClass + '" type="button">' +
+          '<span class="sync-glyph">⛓</span>' +
+          '<span class="sync-entry-label">' + label + '</span>' +
+          '<span class="sync-status-dot"></span>' +
+        '</button>' +
+      '</div>'
+    );
+  }
+
+  function wireSyncEntryButton() {
+    const btn = document.getElementById('sync-entry-btn');
+    if (!btn) return;
+    btn.addEventListener('click', syncOpenModal);
+  }
+
+  // ---- Modal ----
+
+  function syncEscapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function syncOpenModal() {
+    const overlay = document.getElementById('sync-modal-overlay');
+    if (!overlay) return;
+    overlay.classList.add('show');
+    syncRenderModalContent();
+  }
+  function syncCloseModal() {
+    const overlay = document.getElementById('sync-modal-overlay');
+    if (overlay) overlay.classList.remove('show');
+  }
+
+  function syncRenderModalContent() {
+    const body = document.getElementById('sync-modal-body');
+    if (!body) return;
+    if (syncGetToken()) {
+      body.innerHTML = syncRenderAuthedView();
+      syncWireAuthedHandlers();
+    } else {
+      body.innerHTML = syncRenderSetupView();
+      syncWireSetupHandlers();
+    }
+  }
+
+  function syncRenderSetupView() {
+    return (
+      '<div class="sync-tab-row">' +
+        '<button class="sync-tab active" data-sync-tab="new" type="button">New sync key</button>' +
+        '<button class="sync-tab" data-sync-tab="import" type="button">Import existing</button>' +
+      '</div>' +
+      '<div data-sync-pane="new">' +
+        '<p class="sync-help">Generate a new sync key on this device. Save the key — paste it on your phone or other devices to share records.</p>' +
+        '<div class="sync-section">' +
+          '<label class="sync-label" for="sync-username-new">Username (optional)</label>' +
+          '<input class="sync-input text" id="sync-username-new" placeholder="Cartographer" autocomplete="off" />' +
+        '</div>' +
+        '<button class="sync-btn" id="sync-create-btn" type="button">Create Sync Key</button>' +
+      '</div>' +
+      '<div data-sync-pane="import" style="display:none;">' +
+        '<p class="sync-help">Already set up sync on another device? Paste the sync key from there to mirror your records onto this device.</p>' +
+        '<div class="sync-section">' +
+          '<label class="sync-label" for="sync-key-input">Sync key (32 hex characters)</label>' +
+          '<input class="sync-input" id="sync-key-input" placeholder="e.g. 4a8e9b2c7d3f1e6a5b8c2d4e7f9a1b3c" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />' +
+        '</div>' +
+        '<button class="sync-btn" id="sync-import-btn" type="button">Connect &amp; Pull Records</button>' +
+        '<p class="sync-status-line" id="sync-import-status"></p>' +
+      '</div>'
+    );
+  }
+
+  function syncRenderAuthedView() {
+    const username = syncGetUsername();
+    const meta = syncGetMeta();
+    const token = syncGetToken();
+    const lastText = meta.lastSyncAt
+      ? 'Last synced ' + new Date(meta.lastSyncAt).toLocaleString()
+      : 'Not yet synced';
+    const errorText = meta.lastError ? 'Last error: ' + meta.lastError : '';
+    return (
+      '<div class="sync-section">' +
+        '<label class="sync-label" for="sync-username-edit">Username</label>' +
+        '<input class="sync-input text" id="sync-username-edit" value="' + syncEscapeHtml(username) + '" placeholder="Cartographer" autocomplete="off" />' +
+      '</div>' +
+      '<div class="sync-section">' +
+        '<label class="sync-label">Sync key (paste this on other devices)</label>' +
+        '<div class="sync-key-display hidden" id="sync-key-display">' + syncEscapeHtml(token) + '</div>' +
+        '<div class="sync-key-actions">' +
+          '<button class="sync-mini-btn" id="sync-key-show" type="button">Show</button>' +
+          '<button class="sync-mini-btn" id="sync-key-copy" type="button">Copy</button>' +
+        '</div>' +
+      '</div>' +
+      '<button class="sync-btn" id="sync-now-btn" type="button">Sync Now</button>' +
+      '<p class="sync-status-line ' + (errorText ? 'error' : '') + '" id="sync-status-line">' +
+        syncEscapeHtml(errorText || lastText) +
+      '</p>' +
+      '<hr class="sync-divider" />' +
+      '<button class="sync-btn danger" id="sync-disconnect-btn" type="button">Disconnect this Device</button>' +
+      '<p class="sync-help">Removes the sync key from this device only. Records here remain; the cloud copy and other devices are untouched.</p>'
+    );
+  }
+
+  function syncWireSetupHandlers() {
+    document.querySelectorAll('[data-sync-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-sync-tab]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const target = btn.dataset.syncTab;
+        document.querySelectorAll('[data-sync-pane]').forEach(p => {
+          p.style.display = (p.dataset.syncPane === target) ? '' : 'none';
+        });
+      });
+    });
+
+    const createBtn = document.getElementById('sync-create-btn');
+    if (createBtn) createBtn.addEventListener('click', async () => {
+      createBtn.disabled = true;
+      createBtn.textContent = 'Creating...';
+      const usernameInput = document.getElementById('sync-username-new');
+      const username = usernameInput ? usernameInput.value.trim() : '';
+      syncSetToken(syncGenerateToken());
+      if (username) syncSetUsername(username);
+      await syncPush();
+      syncRenderModalContent();
+      renderMenu();
+    });
+
+    const importBtn = document.getElementById('sync-import-btn');
+    if (importBtn) importBtn.addEventListener('click', async () => {
+      const input = document.getElementById('sync-key-input');
+      const status = document.getElementById('sync-import-status');
+      if (!input || !status) return;
+      const candidate = syncNormalizeToken(input.value);
+      if (!candidate) {
+        status.textContent = 'That doesn’t look like a valid sync key (expected 32 hex characters).';
+        status.className = 'sync-status-line error';
+        return;
+      }
+      importBtn.disabled = true;
+      importBtn.textContent = 'Connecting...';
+      status.textContent = '';
+      status.className = 'sync-status-line';
+      syncSetToken(candidate);
+      const pull = await syncPull();
+      if (!pull.ok) {
+        status.textContent = 'Connection failed (' + pull.reason + '). Check the key and try again.';
+        status.className = 'sync-status-line error';
+        syncClearToken();
+        importBtn.disabled = false;
+        importBtn.textContent = 'Connect & Pull Records';
+        return;
+      }
+      await syncPush();
+      syncRenderModalContent();
+      renderMenu();
+    });
+  }
+
+  function syncWireAuthedHandlers() {
+    // Username (debounced commit + push)
+    const usernameInput = document.getElementById('sync-username-edit');
+    if (usernameInput) {
+      let t;
+      usernameInput.addEventListener('input', () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          syncSetUsername(usernameInput.value.trim());
+          syncPush().catch(() => {});
+        }, 600);
+      });
+    }
+
+    // Show / Hide token
+    const showBtn = document.getElementById('sync-key-show');
+    const display = document.getElementById('sync-key-display');
+    if (showBtn && display) {
+      showBtn.addEventListener('click', () => {
+        const wasHidden = display.classList.contains('hidden');
+        display.classList.toggle('hidden', !wasHidden);
+        showBtn.textContent = wasHidden ? 'Hide' : 'Show';
+      });
+    }
+
+    // Copy
+    const copyBtn = document.getElementById('sync-key-copy');
+    if (copyBtn) copyBtn.addEventListener('click', async () => {
+      const token = syncGetToken();
+      if (!token) return;
+      try {
+        await navigator.clipboard.writeText(token);
+        copyBtn.textContent = '✓ Copied';
+        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1400);
+      } catch (e) {
+        window.prompt('Copy this sync key:', token);
+      }
+    });
+
+    // Sync now (manual pull + push)
+    const syncBtn = document.getElementById('sync-now-btn');
+    if (syncBtn) syncBtn.addEventListener('click', async () => {
+      syncBtn.disabled = true;
+      syncBtn.textContent = 'Syncing...';
+      const result = await syncFullSync();
+      const status = document.getElementById('sync-status-line');
+      if (status) {
+        if (result.ok) {
+          status.textContent = 'Synced ' + new Date().toLocaleTimeString();
+          status.className = 'sync-status-line success';
+        } else {
+          const why = (result.pull && result.pull.reason) || (result.push && result.push.reason) || 'unknown';
+          status.textContent = 'Sync failed: ' + why;
+          status.className = 'sync-status-line error';
+        }
+      }
+      syncBtn.disabled = false;
+      syncBtn.textContent = 'Sync Now';
+      if (result.ok) renderMenu();
+    });
+
+    // Disconnect
+    const discBtn = document.getElementById('sync-disconnect-btn');
+    if (discBtn) discBtn.addEventListener('click', () => {
+      const ok = window.confirm('Disconnect this device from sync? Your records here will remain. Use the sync key on another device — or paste it back here — to reconnect.');
+      if (!ok) return;
+      syncClearToken();
+      syncRenderModalContent();
+      renderMenu();
+    });
+  }
+
+  // Wire close button + click-outside-to-close once at module load
+  function wireSyncModalChrome() {
+    const overlay = document.getElementById('sync-modal-overlay');
+    const closeBtn = document.getElementById('sync-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', syncCloseModal);
+    if (overlay) overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) syncCloseModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && overlay && overlay.classList.contains('show')) {
+        syncCloseModal();
+      }
+    });
+  }
+
+  wireSyncModalChrome();
+
+  init();
+
+})();
+</script>
+
+</body>
+</html>
