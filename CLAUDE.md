@@ -44,7 +44,8 @@ Atlas Game/
 ├── wrangler.toml               # Cloudflare config. KV binding lives here.
 ├── atlas_handoff.md            # Full feature catalog, project history, technical reference.
 ├── CLAUDE.md                   # This file.
-└── .wrangler/                  # Local dev state (gitignore this if/when git is added).
+├── .gitignore                  # Excludes .wrangler/, .DS_Store, node_modules/, editor cruft.
+└── .wrangler/                  # Local dev state (gitignored).
 ```
 
 There's no `src/`, no build output, no `node_modules/` at the project root. The HTML file IS the build artifact.
@@ -80,8 +81,8 @@ Before declaring an edit done, syntax-check the JS:
    ```
    The `--branch=main` flag is **required** — Cloudflare's Production branch setting on this project is `main`. Without it, the deploy lands as Preview and the production URL doesn't update.
 
-2. **GitHub auto-deploy** (not yet set up, but recommended next):
-   Once a GitHub repo is connected to the Pages project, every push to `main` auto-deploys. This eliminates the wrong-directory class of bugs (see Gotchas).
+2. **GitHub auto-deploy** (repo created 2026-05-23, Pages connection pending):
+   Repo lives at `https://github.com/nathankolk/atlas-game` (public). Every `git push origin main` will auto-deploy to production once the Cloudflare Pages project is connected to the GitHub repo via the dashboard (Workers & Pages → atlas-game → Settings → Builds & deployments → Connect to Git). Once wired, this becomes the default deploy path and eliminates the wrong-directory class of bugs (see Gotchas).
 
 ### Local dev
 
@@ -149,7 +150,9 @@ The token must be 32 hex chars. Anything else returns `400 invalid_token`.
 - Wrangler (installed globally via `npm install -g wrangler`)
 - `wrangler login` already done — auth token persists in `~/.wrangler/`
 - Cloudflare account: yes (also owns Full Stock Amenities project at fullstockamenities.com)
-- Git: probably installed (comes with macOS), but **the project is not yet a git repo**. Adding GitHub auto-deploy is the next infrastructure step.
+- Git installed (Apple Git via macOS). Repo initialized on `main`, identity set locally to `Nathan Kolk <275984939+nathankolk@users.noreply.github.com>` (no-reply email — `--local` config, doesn't affect other repos).
+- GitHub CLI (`gh`) installed via Homebrew, authenticated as `nathankolk` via HTTPS.
+- GitHub repo: `https://github.com/nathankolk/atlas-game` (public). `origin/main` tracked.
 
 ---
 
