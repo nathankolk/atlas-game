@@ -1,7 +1,7 @@
 # Cartographer's Atlas — Project Reference
 
 **Owner:** Nathan Kolk
-**Last updated:** May 22, 2026
+**Last updated:** June 2, 2026
 **Live at:** `https://atlas.nathankolk.com` (also `https://atlas-game.pages.dev`)
 
 This doc is the deeper reference for the game: full feature catalog, design decisions, technical schemas, and tabled ideas. For everyday working context (deploy commands, conventions, gotchas), see `CLAUDE.md` — it's the orientation doc and loads automatically in Claude Code.
@@ -122,20 +122,20 @@ User wants personal records to sync across phone and laptop. **Group leaderboard
 - **Auth model:** No passwords. Each user creates a username locally; the app generates a 128-bit random secret token stored in localStorage. To link a second device, user views a 12-character sync code on device 1 and types it on device 2. Same model as Signal device linking.
 - **localStorage stays the source of truth.** The API mirrors it — the game still works fully offline.
 
-### Status
+### Status — **shipped**
 - **Backend Function:** done, deployed at `functions/api/records.js`
 - **KV namespace:** provisioned (`eda12720123441638f8261e2d19efcff`), bound via `wrangler.toml`
 - **Cloudflare Pages migration:** done. Live at `atlas.nathankolk.com` and `atlas-game.pages.dev`
-- **Client-side sync UI:** not yet built. Needs username creation flow, token generation, sync-code device-linking, periodic POST on record changes, GET-on-load merge logic.
+- **GitHub auto-deploy:** wired up May 23, 2026. Repo at `github.com/nathankolk/atlas-game`; pushes to `main` auto-deploy to production.
+- **Client-side sync UI:** built, wired into `public/index.html`, and verified end-to-end as of June 2, 2026. Covers username creation, token generation, sync-code device linking, periodic POST on record changes, and GET-on-load merge logic. UI lives in the SYNC section near the bottom of the inline script plus the `#sync-modal` markup; settings entry point sits on the main menu.
 
 ---
 
 ## Tabled future ideas (don't build without checking)
 
-- **Live Kahoot-style mode** — multiplayer rooms with WebSockets via Cloudflare Durable Objects. Requires Workers Paid plan ($5/mo minimum). User explicitly wanted this in Phase 2 after Phase 1 ships.
+- **Live Kahoot-style mode** — multiplayer rooms with WebSockets via Cloudflare Durable Objects. Requires Workers Paid plan ($5/mo minimum). User explicitly wanted this as Phase 2 after Phase 1 shipped. Phase 1 is now shipped; don't pre-empt — Nathan will raise it when he's ready.
 - **Daily archive** — let players catch up on yesterday's puzzle if they missed it (with "Catch-up" badge so it doesn't count for streak).
-- **Hand-curated daily puzzles** — once the sync layer exists, hand-pick puzzles for themed days (holidays, etc.) instead of pure random tier shuffle.
-- **GitHub auto-deploy** — connect repo to Cloudflare Pages for push-to-deploy. Removes the manual `wrangler pages deploy` step and the wrong-directory class of bugs. Recommended next infrastructure step.
+- **Hand-curated daily puzzles** — now that the sync layer exists, hand-pick puzzles for themed days (holidays, etc.) instead of pure random tier shuffle.
 
 ---
 
@@ -213,3 +213,5 @@ Trimmed to last 30 days.
 - **Apr 26, 2026:** Daily Five launched (Day 1 of the daily epoch).
 - **Apr 28, 2026:** Decision to migrate to Cloudflare Pages so a Worker backend could support cross-device sync. Group leaderboards considered and scratched.
 - **May 22, 2026:** Migration complete. Site live on Cloudflare Pages at `atlas-game.pages.dev`. Custom subdomain `atlas.nathankolk.com` wired up via CNAME at Squarespace DNS (nameservers stayed at Squarespace to preserve email records on the root domain). Phase 1 backend deployed; client-side sync UI is the next milestone.
+- **May 23, 2026:** GitHub auto-deploy wired. Repo created at `github.com/nathankolk/atlas-game`; original Direct Upload Pages project deleted and recreated as Git-connected (one-way door per Cloudflare — see CLAUDE.md gotchas). Pushes to `main` now auto-deploy to production. KV namespace survived the swap since it's account-level.
+- **June 2, 2026:** Phase 1 shipped end-to-end. Client-side sync UI is wired into the HTML; records now mirror across devices through KV using a 128-bit hex token. localStorage stays source of truth so the game still works fully offline.

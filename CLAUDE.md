@@ -14,21 +14,21 @@ Owner: Nathan Kolk. Solo project, family-first orientation (designed in part so 
 
 ---
 
-## Current status (as of May 22, 2026)
+## Current status (as of June 2, 2026)
 
 **Live at:** `https://atlas.nathankolk.com` (and `https://atlas-game.pages.dev`)
 
-**Hosting:** Cloudflare Pages, project name `atlas-game`. Custom subdomain configured via CNAME at Squarespace DNS (nameservers stayed at Squarespace; only the `atlas` subdomain is delegated to Cloudflare).
+**Hosting:** Cloudflare Pages, project name `atlas-game`. Custom subdomain configured via CNAME at Squarespace DNS (nameservers stayed at Squarespace; only the `atlas` subdomain is delegated to Cloudflare). Git-connected to `github.com/nathankolk/atlas-game` — pushes to `main` auto-deploy.
 
 **Backend:** Cloudflare Pages Function at `functions/api/records.js` exposes `GET`/`POST /api/records?token=...`. KV namespace `RECORDS_KV` is bound in `wrangler.toml`. The Function is deployed alongside the static site.
 
-**Phase 1 status (cross-device record sync):**
+**Phase 1 status (cross-device record sync):** **shipped.**
 - Backend Worker code: **done and deployed**
 - KV namespace: **provisioned and bound**
-- Client-side sync UI (username creation, token generation, sync code flow, API calls): **not yet wired into the HTML**
-- localStorage records work fully offline today; sync layer mirrors them when added
+- Client-side sync UI (username creation, token generation, sync code flow, API calls): **wired in and verified end-to-end**
+- localStorage stays the source of truth; the API mirrors it, so the game still works fully offline if KV is unreachable.
 
-**Phase 2 (live multiplayer mode):** tabled until Phase 1 ships. Requires Workers Paid ($5/mo). Don't push toward it.
+**Phase 2 (live multiplayer mode):** tabled. Requires Workers Paid ($5/mo). Don't push toward it — Nathan will raise it when he's ready.
 
 ---
 
@@ -133,7 +133,7 @@ The token must be 32 hex chars. Anything else returns `400 invalid_token`.
 - **Don't suggest paid Cloudflare tier without flagging cost.** Workers Paid ($5/mo) is acceptable to discuss for Phase 2 (live mode) but always lead with the price. Phase 1 stays free-tier.
 - **Don't regenerate OG image, favicons, or other visual assets** unless asked. They exist (`og-image.png`, `favicon-32.png`, `favicon.png`, `favicon-180.png`) and look the way Nathan wants.
 - **Don't break the parchment/sepia/Cormorant Garamond aesthetic.** Visual polish matters to this user. Match palette and typography.
-- **Don't push toward Phase 2 (live mode) until Phase 1 ships and is stable.**
+- **Don't push toward Phase 2 (live mode).** Phase 1 is shipped, but Nathan will raise live mode when he's ready. Don't pre-empt.
 - **Don't rebuild from scratch.** Always extend the existing HTML file.
 
 ---
