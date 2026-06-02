@@ -900,6 +900,27 @@
     100% { opacity: 0; }
   }
 
+  /* ===== Review mode (post-game map view for screenshots) =====
+   * Entered from the results screen via "View Map". The map keeps its green
+   * /red markers and zoom; everything else (prompt, score, skip button,
+   * page hint, the normal Atlas back button) is hidden so the player can
+   * grab a clean shot. The .review-back-btn takes the back-button slot and
+   * routes back to the results screen.
+   */
+  .review-back-btn { display: none; }
+
+  #game-screen.review-mode .hdr-right,
+  #game-screen.review-mode .prompt-panel,
+  #game-screen.review-mode .controls,
+  #game-screen.review-mode .zoom-hint,
+  #game-screen.review-mode #back-btn {
+    display: none !important;
+  }
+
+  #game-screen.review-mode .review-back-btn {
+    display: inline-block;
+  }
+
   /* Controls */
   .controls {
     flex: 0 0 auto;
@@ -2020,6 +2041,7 @@
     <header class="game-header">
       <div class="hdr-left">
         <button class="back-btn" id="back-btn">← Atlas</button>
+        <button class="back-btn review-back-btn" id="review-back-btn">← Results</button>
         <div class="region-tag" id="region-tag">—</div>
       </div>
       <div class="hdr-right">
@@ -2121,6 +2143,7 @@
         <button class="ctrl-btn share" id="share-btn">Share Results</button>
         <button class="ctrl-btn primary" id="replay-btn">Study Again</button>
         <button class="ctrl-btn primary" id="daily-practice-btn" style="display:none;">Practice Replay</button>
+        <button class="ctrl-btn" id="view-map-btn" style="display:none;">View Map</button>
         <button class="ctrl-btn" id="home-btn">Choose Region</button>
       </div>
     </div>
@@ -3194,6 +3217,11 @@
   // (or 'World'). For US modes, pass the mode key; `region` becomes
   // unused and `currentContinent` is the display label.
   async function startGame(regionOrMode) {
+    // Clear any leftover review-mode class so the prompt/score/skip UI
+    // shows on the new round (in case the player entered review mode after
+    // their last game and then started a fresh one without backing out).
+    document.getElementById('game-screen').classList.remove('review-mode');
+
     // Determine game mode
     let mode, region;
     if (regionOrMode === 'daily-five') {
@@ -3966,6 +3994,15 @@
       if (dailyPracticeBtn) dailyPracticeBtn.style.display = 'none';
     }
 
+    // "View Map" button: lets the player go back to the map with all the
+    // green/red markers still in place, so they can take a screenshot.
+    // Pointless in Hard Mode (markers don't persist between answers), so
+    // hide it there.
+    const viewMapBtn = document.getElementById('view-map-btn');
+    if (viewMapBtn) {
+      viewMapBtn.style.display = state.hardMode ? 'none' : '';
+    }
+
     switchScreen('results');
   }
 
@@ -4395,6 +4432,18 @@
   document.getElementById('back-btn').addEventListener('click', () => switchScreen('menu'));
   document.getElementById('home-btn').addEventListener('click', () => switchScreen('menu'));
   document.getElementById('replay-btn').addEventListener('click', () => startGame(state.currentContinent));
+
+  // View Map (results → game screen in review mode) + back out of review mode.
+  // Review mode hides the prompt panel, score readout, skip button, page hint,
+  // and the regular Atlas back button so the map can be screenshotted clean.
+  document.getElementById('view-map-btn').addEventListener('click', () => {
+    document.getElementById('game-screen').classList.add('review-mode');
+    switchScreen('game');
+  });
+  document.getElementById('review-back-btn').addEventListener('click', () => {
+    document.getElementById('game-screen').classList.remove('review-mode');
+    switchScreen('results');
+  });
   document.getElementById('daily-practice-btn').addEventListener('click', () => {
     startDailyReplay(state.dailyDateKey || todayUtcKey());
   });
