@@ -4435,14 +4435,53 @@
     }
   });
 
-  // Re-render map on resize
+  // Re-render map on resize (e.g. mobile orientation change).
+  //
+  // renderMap() wipes the SVG and rebuilds the country paths from scratch,
+  // which drops the persistent .completed-correct / .completed-wrong classes
+  // that mark green/red answered countries. We snapshot the per-feature class
+  // state and the zoom transform first, then re-apply them after the rebuild
+  // so the board still looks identical to the player after rotating their
+  // phone landscape ↔ portrait mid-round.
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       const gameActive = document.getElementById('game-screen').classList.contains('active');
-      if (gameActive && state.svg) {
-        renderMap();
+      if (!gameActive || !state.svg) return;
+
+      // Snapshot persistent per-feature state by feature key
+      const svgEl = document.getElementById('world-map');
+      const correctKeys = Array.from(
+        svgEl.querySelectorAll('.country.completed-correct')
+      ).map(el => el.getAttribute('data-fkey'));
+      const wrongKeys = Array.from(
+        svgEl.querySelectorAll('.country.completed-wrong')
+      ).map(el => el.getAttribute('data-fkey'));
+      const promptKeys = Array.from(
+        svgEl.querySelectorAll('.country.prompt-highlight')
+      ).map(el => el.getAttribute('data-fkey'));
+      const savedTransform = state.currentTransform || null;
+
+      renderMap();
+
+      // Re-apply classes to the newly-built paths. Each feature has a unique
+      // data-fkey, so this is a simple lookup. We escape via CSS.escape since
+      // some keys contain characters that would break the selector.
+      const reapply = (keys, cls) => {
+        keys.forEach(k => {
+          if (!k) return;
+          state.mapG.selectAll('.country[data-fkey="' + CSS.escape(k) + '"]')
+            .classed(cls, true);
+        });
+      };
+      reapply(correctKeys, 'completed-correct');
+      reapply(wrongKeys, 'completed-wrong');
+      reapply(promptKeys, 'prompt-highlight');
+
+      // Restore zoom/pan so the player keeps the framing they had
+      if (savedTransform && state.zoomBehavior) {
+        state.svg.call(state.zoomBehavior.transform, savedTransform);
       }
     }, 200);
   });
