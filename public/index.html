@@ -2113,7 +2113,7 @@
       </div>
 
       <div class="missed-section" id="missed-section" style="display:none;">
-        <div class="missed-heading">— Countries to revisit —</div>
+        <div class="missed-heading" id="missed-heading">— Countries to revisit —</div>
         <div class="missed-list" id="missed-list"></div>
       </div>
 
@@ -3939,7 +3939,13 @@
 
     const missedSection = document.getElementById('missed-section');
     const missedList = document.getElementById('missed-list');
+    const missedHeading = document.getElementById('missed-heading');
     if (state.missed.length > 0) {
+      // Heading word matches what the player was actually identifying.
+      // US modes always store state names in state.missed (even when the prompt
+      // was a capital), so all US modes show "States to revisit".
+      const noun = GAME_MODES[state.gameMode].dataset === 'us' ? 'States' : 'Countries';
+      if (missedHeading) missedHeading.textContent = '— ' + noun + ' to revisit —';
       missedList.innerHTML = state.missed
         .map(n => '<span class="missed-item">' + n + '</span>')
         .join('<span style="opacity:0.3">·</span>');
