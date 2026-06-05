@@ -790,6 +790,79 @@
     fill: #b23d28 !important;
   }
 
+  /* ===== City dot markers (us-city mode) =====
+   * Dots are placed at each city's projected coords. Their radius is set
+   * in renderMap and counter-scaled on every zoom event so they stay at
+   * constant screen size. stroke uses vector-effect: non-scaling-stroke
+   * (set inline below) to match.
+   */
+  .city-dot {
+    fill: var(--ink);
+    stroke: var(--parchment);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+    cursor: pointer;
+    transition: fill 0.18s ease;
+  }
+
+  .city-dot:hover {
+    fill: var(--gold-bright);
+    stroke: var(--ink);
+  }
+
+  .city-dot.target-correct {
+    fill: var(--moss-bright);
+    stroke: var(--moss);
+    animation: dotFlashCorrect 0.5s ease;
+  }
+
+  .city-dot.target-wrong {
+    fill: var(--sienna);
+    stroke: var(--sienna-deep);
+    animation: dotFlashWrong 0.4s ease;
+  }
+
+  .city-dot.completed-correct {
+    fill: var(--moss-bright);
+    stroke: var(--moss);
+    cursor: default;
+  }
+
+  .city-dot.completed-correct:hover {
+    fill: #6f9c59;
+  }
+
+  .city-dot.completed-wrong {
+    fill: var(--sienna);
+    stroke: var(--sienna-deep);
+    cursor: default;
+  }
+
+  .city-dot.completed-wrong:hover {
+    fill: #b23d28;
+  }
+
+  .city-dot.reveal {
+    fill: var(--gold-bright);
+    stroke: var(--sepia);
+    animation: dotPulseReveal 0.7s ease-in-out infinite alternate;
+  }
+
+  @keyframes dotFlashCorrect {
+    0%   { fill: #9ec97f; }
+    100% { fill: var(--moss-bright); }
+  }
+
+  @keyframes dotFlashWrong {
+    0%   { fill: #c94f3c; }
+    100% { fill: var(--sienna); }
+  }
+
+  @keyframes dotPulseReveal {
+    0%   { fill: var(--gold-bright); }
+    100% { fill: var(--gold); }
+  }
+
   @keyframes flashCorrect {
     0% { fill: #9ec97f; transform: scale(1); }
     50% { fill: var(--moss-bright); }
@@ -1653,6 +1726,17 @@
     border-left-color: var(--gold) !important;
   }
 
+  /* Disabled / "coming soon" region cards (US Cities sub-menu Stage 1) */
+  .region-card.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .region-card.disabled .r-count {
+    font-style: italic;
+    color: var(--ink-faded);
+  }
+
   /* Loading overlay for lazy-loaded datasets */
   .loading-overlay {
     position: fixed;
@@ -2404,6 +2488,107 @@
   const US_STATE_SET = new Set(US_STATE_NAMES);
 
   /* =========================================================
+   * US CITIES BY REGION (us-city mode)
+   *
+   * Census's standard 4-region split. Each region has a curated list of
+   * cities (mostly the largest by population, plus state capitals to
+   * ensure every state in the region has at least one entry). Coords are
+   * [longitude, latitude] — d3.geoAlbersUsa() consumes them in that order.
+   *
+   * Coords are sourced from training-data knowledge and are accurate to
+   * within ~1km, which is far below the rendering tolerance at a regional
+   * zoom level. If anything looks off when playing, open this file and
+   * adjust — there's no external data source to keep in sync.
+   *
+   * Stage 1 ships Northeast only as the pilot. Midwest, South, and West
+   * will land in a follow-up commit once the framework is verified.
+   * ========================================================= */
+
+  const US_REGION_STATES = {
+    'Northeast': [
+      'Maine', 'New Hampshire', 'Vermont', 'Massachusetts', 'Rhode Island',
+      'Connecticut', 'New York', 'New Jersey', 'Pennsylvania'
+    ],
+    'Midwest': [
+      'Ohio', 'Michigan', 'Indiana', 'Illinois', 'Wisconsin', 'Minnesota',
+      'Iowa', 'Missouri', 'North Dakota', 'South Dakota', 'Nebraska', 'Kansas'
+    ],
+    'South': [
+      'Delaware', 'Maryland', 'Virginia', 'West Virginia', 'North Carolina',
+      'South Carolina', 'Georgia', 'Florida', 'Kentucky', 'Tennessee',
+      'Alabama', 'Mississippi', 'Arkansas', 'Louisiana', 'Oklahoma', 'Texas'
+    ],
+    'West': [
+      'Montana', 'Wyoming', 'Colorado', 'New Mexico', 'Idaho', 'Utah',
+      'Arizona', 'Nevada', 'Washington', 'Oregon', 'California', 'Alaska', 'Hawaii'
+    ]
+  };
+
+  const US_CITIES_BY_REGION = {
+    'Northeast': [
+      // New York (6)
+      { name: 'New York',     state: 'New York',       coords: [-74.0060, 40.7128] },
+      { name: 'Buffalo',      state: 'New York',       coords: [-78.8784, 42.8864] },
+      { name: 'Rochester',    state: 'New York',       coords: [-77.6088, 43.1566] },
+      { name: 'Syracuse',     state: 'New York',       coords: [-76.1474, 43.0481] },
+      { name: 'Albany',       state: 'New York',       coords: [-73.7562, 42.6526] },
+      { name: 'Yonkers',      state: 'New York',       coords: [-73.8987, 40.9312] },
+      // Pennsylvania (8)
+      { name: 'Philadelphia', state: 'Pennsylvania',   coords: [-75.1652, 39.9526] },
+      { name: 'Pittsburgh',   state: 'Pennsylvania',   coords: [-79.9959, 40.4406] },
+      { name: 'Allentown',    state: 'Pennsylvania',   coords: [-75.4714, 40.6084] },
+      { name: 'Erie',         state: 'Pennsylvania',   coords: [-80.0851, 42.1292] },
+      { name: 'Reading',      state: 'Pennsylvania',   coords: [-75.9269, 40.3357] },
+      { name: 'Scranton',     state: 'Pennsylvania',   coords: [-75.6624, 41.4090] },
+      { name: 'Lancaster',    state: 'Pennsylvania',   coords: [-76.3055, 40.0379] },
+      { name: 'Harrisburg',   state: 'Pennsylvania',   coords: [-76.8867, 40.2732] },
+      // Massachusetts (6)
+      { name: 'Boston',       state: 'Massachusetts',  coords: [-71.0589, 42.3601] },
+      { name: 'Worcester',    state: 'Massachusetts',  coords: [-71.8023, 42.2626] },
+      { name: 'Springfield',  state: 'Massachusetts',  coords: [-72.5898, 42.1015] },
+      { name: 'Cambridge',    state: 'Massachusetts',  coords: [-71.1097, 42.3736] },
+      { name: 'Lowell',       state: 'Massachusetts',  coords: [-71.3162, 42.6334] },
+      { name: 'New Bedford',  state: 'Massachusetts',  coords: [-70.9342, 41.6362] },
+      // New Jersey (5)
+      { name: 'Newark',       state: 'New Jersey',     coords: [-74.1724, 40.7357] },
+      { name: 'Jersey City',  state: 'New Jersey',     coords: [-74.0431, 40.7178] },
+      { name: 'Paterson',     state: 'New Jersey',     coords: [-74.1718, 40.9168] },
+      { name: 'Elizabeth',    state: 'New Jersey',     coords: [-74.2107, 40.6640] },
+      { name: 'Trenton',      state: 'New Jersey',     coords: [-74.7429, 40.2206] },
+      // Connecticut (5)
+      { name: 'Bridgeport',   state: 'Connecticut',    coords: [-73.1952, 41.1865] },
+      { name: 'New Haven',    state: 'Connecticut',    coords: [-72.9279, 41.3083] },
+      { name: 'Hartford',     state: 'Connecticut',    coords: [-72.6851, 41.7637] },
+      { name: 'Stamford',     state: 'Connecticut',    coords: [-73.5387, 41.0534] },
+      { name: 'Waterbury',    state: 'Connecticut',    coords: [-73.0407, 41.5582] },
+      // Rhode Island (2)
+      { name: 'Providence',   state: 'Rhode Island',   coords: [-71.4128, 41.8240] },
+      { name: 'Warwick',      state: 'Rhode Island',   coords: [-71.4162, 41.7001] },
+      // New Hampshire (3)
+      { name: 'Manchester',   state: 'New Hampshire',  coords: [-71.4548, 42.9956] },
+      { name: 'Nashua',       state: 'New Hampshire',  coords: [-71.4673, 42.7654] },
+      { name: 'Concord',      state: 'New Hampshire',  coords: [-71.5376, 43.2081] },
+      // Maine (3)
+      { name: 'Portland',     state: 'Maine',          coords: [-70.2553, 43.6591] },
+      { name: 'Bangor',       state: 'Maine',          coords: [-68.7712, 44.8016] },
+      { name: 'Augusta',      state: 'Maine',          coords: [-69.7795, 44.3106] },
+      // Vermont (2)
+      { name: 'Burlington',   state: 'Vermont',        coords: [-73.2121, 44.4759] },
+      { name: 'Montpelier',   state: 'Vermont',        coords: [-72.5754, 44.2601] }
+    ]
+    // Midwest / South / West populated in Stage 2.
+  };
+
+  // Maps the data-region attribute on a menu card to the region label.
+  // Lets startGame dispatch us-city mode from a single button click.
+  const US_CITY_REGION_KEYS = {
+    'northeast-cities': 'Northeast',
+    'midwest-cities': 'Midwest',
+    'south-cities': 'South',
+    'west-cities': 'West'
+  };
+
+  /* =========================================================
    * DAILY PUZZLE — DIFFICULTY TIERS & DETERMINISTIC GENERATION
    * ========================================================= */
 
@@ -2621,6 +2806,14 @@
       label: () => 'US States → Capitals',
       promptLabel: 'Which capital belongs to',
       recordsLabelSuffix: ' · States→Capitals',
+    },
+    'us-city': {
+      dataset: 'us',
+      // Region (Northeast / Midwest / South / West) is supplied as the
+      // continent label at startGame time, so use it directly in records.
+      label: (region) => (region || 'US') + ' Cities',
+      promptLabel: 'Find the city',
+      recordsLabelSuffix: ' · Cities',
     },
   };
 
@@ -2902,6 +3095,7 @@
   function renderMenu() {
     if (state.menuView === 'continents') return renderContinentsMenu();
     if (state.menuView === 'us') return renderUsMenu();
+    if (state.menuView === 'us-cities') return renderUsCitiesMenu();
     return renderMainMenu();
   }
 
@@ -3081,7 +3275,7 @@
     attachMenuHandlers();
   }
 
-  // US sub-menu: back arrow + section heading + 3 mode cards
+  // US sub-menu: back arrow + section heading + 3 mode cards + Cities sub-folder
   function renderUsMenu() {
     const container = document.getElementById('menu-content');
     const usModes = [
@@ -3118,17 +3312,74 @@
           (best ? '<div class="r-best">' + best + '</div>' : '') +
         '</button>';
     });
+    // US Cities is a sub-folder: opens its own view with per-region cards.
+    html +=
+      '<button class="region-card us-card folder-card" data-action="open-folder" data-folder="us-cities">' +
+        '<div class="r-name">US Cities ▸</div>' +
+        '<div class="r-subname">find cities region by region</div>' +
+        '<div class="r-count">4 regions to study</div>' +
+      '</button>';
+    html += '</div>';
+    container.innerHTML = html;
+    attachMenuHandlers();
+  }
+
+  // US Cities sub-menu: nested under "The United States" folder. Back arrow
+  // returns to the US folder, not all the way to main. Stage 1 ships only
+  // Northeast; the others land in Stage 2 once the framework is proven.
+  function renderUsCitiesMenu() {
+    const container = document.getElementById('menu-content');
+    const regions = [
+      { key: 'northeast-cities', name: 'Northeast Cities',
+        subname: '9 states · NY, MA, PA, and neighbors',
+        count: '40 cities to find', enabled: true },
+      { key: 'midwest-cities', name: 'Midwest Cities',
+        subname: '12 states · OH, IL, MI, and neighbors',
+        count: 'coming soon', enabled: false },
+      { key: 'south-cities', name: 'Southern Cities',
+        subname: '16 states + DC · TX, FL, GA, and neighbors',
+        count: 'coming soon', enabled: false },
+      { key: 'west-cities', name: 'Western Cities',
+        subname: '13 states · CA, WA, AZ, and neighbors',
+        count: 'coming soon', enabled: false }
+    ];
+    let html = '';
+    html += renderSubMenuHeader('US Cities', 'Four regions of the United States', 'us');
+    html += renderHardModeToggle();
+    html += '<div class="regions">';
+    regions.forEach(r => {
+      if (r.enabled) {
+        const best = bestLabel(US_CITY_REGION_KEYS[r.key], 'us-city');
+        html +=
+          '<button class="region-card us-card" data-action="play" data-region="' + r.key + '">' +
+            '<div class="r-name">' + r.name + '</div>' +
+            '<div class="r-subname">' + r.subname + '</div>' +
+            '<div class="r-count">' + r.count + '</div>' +
+            (best ? '<div class="r-best">' + best + '</div>' : '') +
+          '</button>';
+      } else {
+        // Disabled card: same shape but unclickable + visually subdued.
+        html +=
+          '<button class="region-card us-card disabled" disabled>' +
+            '<div class="r-name">' + r.name + '</div>' +
+            '<div class="r-subname">' + r.subname + '</div>' +
+            '<div class="r-count">' + r.count + '</div>' +
+          '</button>';
+      }
+    });
     html += '</div>';
     container.innerHTML = html;
     attachMenuHandlers();
   }
 
   // Header used at the top of sub-menus (Continents, US, etc).
-  // Includes a back button that returns to the main menu view.
-  function renderSubMenuHeader(title, subtitle) {
+  // Includes a back button. backTarget defaults to 'main', but nested
+  // sub-folders pass their parent view's name (e.g. 'us-cities' passes 'us').
+  function renderSubMenuHeader(title, subtitle, backTarget) {
+    const target = backTarget || 'main';
     return (
       '<div class="submenu-header">' +
-        '<button class="back-link" data-action="back-to-main">← Back</button>' +
+        '<button class="back-link" data-action="back-to" data-target="' + target + '">← Back</button>' +
         '<div class="submenu-title-block">' +
           '<div class="submenu-title">' + title + '</div>' +
           '<div class="submenu-subtitle">' + subtitle + '</div>' +
@@ -3174,9 +3425,9 @@
         if (screenEl) screenEl.scrollTop = 0;
       });
     });
-    document.querySelectorAll('[data-action="back-to-main"]').forEach(btn => {
+    document.querySelectorAll('[data-action="back-to"]').forEach(btn => {
       btn.addEventListener('click', () => {
-        state.menuView = 'main';
+        state.menuView = btn.dataset.target || 'main';
         renderMenu();
         const screenEl = document.getElementById('menu-screen');
         if (screenEl) screenEl.scrollTop = 0;
@@ -3232,6 +3483,12 @@
         regionOrMode === 'us-state-to-capital') {
       mode = regionOrMode;
       region = GAME_MODES[mode].label();
+    } else if (US_CITY_REGION_KEYS[regionOrMode]) {
+      // Cities mode: the button id like 'northeast-cities' maps to a region
+      // label like 'Northeast'. The label drives queue selection AND becomes
+      // currentContinent so the records key stays per-region.
+      mode = 'us-city';
+      region = US_CITY_REGION_KEYS[regionOrMode];
     } else {
       mode = 'world-country';
       region = regionOrMode;
@@ -3292,6 +3549,18 @@
       const dailyNames = generateDailyPuzzle(dateKey);
       // Order matters for the daily puzzle - we want the easy→hard ramp
       state.queue = dailyNames.slice();
+    } else if (mode === 'us-city') {
+      // City mode: state polygons in the region are visible as the "land
+      // beneath" but aren't click targets — the queue is city names, and
+      // clicks resolve against city dots instead of country polygons.
+      const regionStates = US_REGION_STATES[region] || [];
+      const regionStateSet = new Set(regionStates);
+      state.eligibleFeatures = state.usFeatures.filter(f => {
+        const name = state.usCanonicalByFeature.get(featureKey(f));
+        return regionStateSet.has(name);
+      });
+      const cities = US_CITIES_BY_REGION[region] || [];
+      state.queue = shuffle(cities.map(c => c.name));
     } else if (state.activeDataset === 'us') {
       state.eligibleFeatures = state.usFeatures.filter(f => {
         const name = state.usCanonicalByFeature.get(featureKey(f));
@@ -3460,6 +3729,13 @@
       .on('zoom', (event) => {
         state.currentTransform = event.transform;
         g.attr('transform', event.transform);
+        // City dots live inside `g` so they get scaled along with the map.
+        // Counter-scale their radius and stroke so they stay at constant
+        // screen size like the country borders do.
+        if (state.gameMode === 'us-city') {
+          const invK = 1 / event.transform.k;
+          g.selectAll('.city-dot').attr('r', CITY_DOT_BASE_RADIUS * invK);
+        }
       });
 
     svg.call(zoomBehavior);
@@ -3519,11 +3795,48 @@
       .filter(function () { return this.getAttribute('d') != null; })
       .attr('data-fkey', f => featureKey(f))
       .on('click', handleCountryClick);
+
+    // City-dot layer (us-city mode only). Sits on top of the country
+    // polygons so each city is clickable. Each dot's radius is set in
+    // map-space units, so on subsequent zoom events we counter-scale it
+    // (see zoomBehavior .on('zoom') above) to keep constant screen size.
+    if (state.gameMode === 'us-city') {
+      const cities = US_CITIES_BY_REGION[state.currentContinent] || [];
+      const k0 = (state.currentTransform && state.currentTransform.k) || 1;
+      g.selectAll('.city-dot')
+        .data(cities)
+        .enter()
+        .append('circle')
+        .attr('class', 'city-dot')
+        .attr('cx', d => {
+          const p = state.projection(d.coords);
+          return p ? p[0] : 0;
+        })
+        .attr('cy', d => {
+          const p = state.projection(d.coords);
+          return p ? p[1] : 0;
+        })
+        .attr('r', CITY_DOT_BASE_RADIUS / k0)
+        .attr('data-city', d => d.name)
+        .on('click', handleCityClick);
+    }
   }
+
+  // Base radius for city dots, in screen pixels at zoom k=1.
+  // The dots live inside the zoom-transformed group, so we divide by k
+  // on every zoom event to keep them visually constant.
+  const CITY_DOT_BASE_RADIUS = 6;
 
   function isEligible(feature) {
     if (state.activeDataset === 'us') {
       const name = state.usCanonicalByFeature.get(featureKey(feature));
+      if (state.gameMode === 'us-city') {
+        // In cities mode, only states inside the current region are
+        // foreground "land"; the rest are grayed-out background so the
+        // regional zoom is unambiguous.
+        const regionStates = US_REGION_STATES[state.currentContinent];
+        return regionStates ? regionStates.indexOf(name) !== -1 : false;
+      }
       return US_STATE_SET.has(name);
     }
     const continent = state.continentByFeature.get(featureKey(feature));
@@ -3551,7 +3864,14 @@
     const choicesEl = document.getElementById('choices-panel');
 
     // Configure the prompt based on mode
-    if (mode === 'us-capital-to-state') {
+    if (mode === 'us-city') {
+      // City mode: the prompt is just the city name; map is dotted
+      // with the region's cities and the player clicks the matching dot.
+      promptLabelEl.textContent = 'Find the city';
+      promptEl.textContent = state.current;
+      state.currentPromptText = state.current;
+      choicesEl.style.display = 'none';
+    } else if (mode === 'us-capital-to-state') {
       // The quiz target is a state name; the prompt shows its capital.
       promptLabelEl.textContent = 'Click the state with this capital';
       promptEl.textContent = US_CAPITALS[state.current];
@@ -3692,6 +4012,9 @@
     // In state-to-capital mode, clicking the map shouldn't register —
     // the user answers via the capital choice buttons instead.
     if (state.gameMode === 'us-state-to-capital') return;
+    // In cities mode, the city dots are the click target, not the
+    // state polygons under them.
+    if (state.gameMode === 'us-city') return;
 
     // Always operate on the VISIBLE polygon (.country) regardless of whether
     // the click hit the visible polygon or the invisible hit-zone overlay.
@@ -3839,6 +4162,135 @@
     }, 2400);
   }
 
+  // City-dot click (us-city mode only). Parallel to handleCountryClick
+  // but operates on data-city attributes instead of feature keys.
+  function handleCityClick(event, cityData) {
+    if (state.interactionLocked) return;
+    if (!state.current) return;
+
+    const dotEl = event.currentTarget;
+    if (!dotEl) return;
+    if (dotEl.classList.contains('completed-correct') ||
+        dotEl.classList.contains('completed-wrong')) {
+      return;
+    }
+
+    const dotSel = d3.select(dotEl);
+    const clickedName = cityData.name;
+
+    if (clickedName === state.current) {
+      const pointsEarned = state.attempts === 0 ? 2 : 1;
+      state.correct++;
+      state.score += pointsEarned;
+      state.sequence.push(pointsEarned);
+      state.interactionLocked = true;
+      dotSel.classed('target-correct', true);
+      const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
+      showToast('correct', 'Well done — <em>' + clickedName + '</em> · ' + pointsLabel);
+      updateStats();
+      flashScore();
+
+      setTimeout(() => {
+        dotSel.classed('target-correct', false);
+        if (!state.hardMode) dotSel.classed('completed-correct', true);
+        nextCountry();
+      }, 900);
+    } else {
+      state.attempts++;
+      dotSel.classed('target-wrong', true);
+      setTimeout(() => dotSel.classed('target-wrong', false), 700);
+
+      const promptEl = document.getElementById('prompt-country');
+      promptEl.classList.remove('shake');
+      void promptEl.offsetWidth;
+      promptEl.classList.add('shake');
+
+      if (state.attempts >= 2) {
+        state.wrong++;
+        state.sequence.push(0);
+        state.missed.push(state.current);
+        state.interactionLocked = true;
+        revealMissedCity(state.current);
+      } else {
+        showToast('wrong', '<em>' + clickedName + '</em> — try again');
+      }
+    }
+  }
+
+  // Reveal animation for a missed city: pan to it if off-screen, flash the
+  // dot, draw the pulsing ring marker, advance after a beat.
+  function revealMissedCity(cityName) {
+    const cities = US_CITIES_BY_REGION[state.currentContinent] || [];
+    const cityData = cities.find(c => c.name === cityName);
+    if (!cityData) {
+      showToast('wrong', 'Not quite — this is <em>' + cityName + '</em>');
+      setTimeout(nextCountry, 1800);
+      return;
+    }
+
+    const dotSel = d3.select('.city-dot[data-city="' + CSS.escape(cityName) + '"]');
+    dotSel.classed('reveal', true);
+    showToast('wrong', 'Not quite — this is <em>' + cityName + '</em>');
+    updateStats();
+
+    ensureCoordsVisible(cityData.coords);
+    showRevealMarkerAtCoords(cityData.coords);
+
+    setTimeout(() => {
+      dotSel.classed('reveal', false);
+      if (!state.hardMode) dotSel.classed('completed-wrong', true);
+      nextCountry();
+    }, 2600);
+  }
+
+  // Pan the map so the given [lng, lat] point is visible. Parallel to
+  // ensureFeatureVisible but for explicit points (cities have no polygon).
+  function ensureCoordsVisible(coords) {
+    if (!state.svg || !state.zoomBehavior || !state.projection) return;
+    const proj = state.projection(coords);
+    if (!proj) return;
+    const [cx, cy] = proj;
+    const t = state.currentTransform || d3.zoomIdentity;
+    const node = state.svg.node();
+    const width = node.clientWidth || node.getBoundingClientRect().width;
+    const height = node.clientHeight || node.getBoundingClientRect().height;
+    const sx = cx * t.k + t.x;
+    const sy = cy * t.k + t.y;
+    const marginX = width * 0.15;
+    const marginY = height * 0.15;
+    const inView = sx >= marginX && sx <= width - marginX &&
+                   sy >= marginY && sy <= height - marginY;
+    if (inView && t.k <= 1.2) return;
+    if (t.k <= 1.05 && inView) return;
+
+    const newX = width / 2 - cx * t.k;
+    const newY = height / 2 - cy * t.k;
+    state.svg.transition().duration(550)
+      .call(state.zoomBehavior.transform,
+            d3.zoomIdentity.translate(newX, newY).scale(t.k));
+  }
+
+  // Pulsing ring marker at an arbitrary [lng, lat] point. Parallel to
+  // showRevealMarker, which uses a feature's centroid.
+  function showRevealMarkerAtCoords(coords) {
+    if (!state.projection || !state.mapG) return;
+    const proj = state.projection(coords);
+    if (!proj) return;
+    const [cx, cy] = proj;
+    state.mapG.selectAll('.reveal-marker').remove();
+    const k = (state.currentTransform && state.currentTransform.k) || 1;
+    const invK = 1 / k;
+    const marker = state.mapG.append('g')
+      .attr('class', 'reveal-marker')
+      .attr('transform', 'translate(' + cx + ',' + cy + ') scale(' + invK + ')');
+    marker.append('circle').attr('class', 'pulse-ring');
+    marker.append('circle').attr('class', 'pulse-ring delayed');
+    marker.append('circle').attr('class', 'center-dot').attr('r', 5);
+    setTimeout(() => {
+      marker.transition().duration(300).style('opacity', 0).remove();
+    }, 2400);
+  }
+
   function handleSkip() {
     if (state.interactionLocked) return;
     if (!state.current) return;
@@ -3856,6 +4308,14 @@
           if (b.dataset.capital === correctCapital) b.classList.add('choice-reveal');
         });
       }
+    }
+
+    // City mode has no polygon for the missed answer — reveal the dot
+    // and pulse a ring at its coords instead.
+    if (state.gameMode === 'us-city') {
+      revealMissedCity(state.current);
+      updateStats();
+      return;
     }
 
     const targetFeature = activeFeatureByCanonical().get(state.current);
@@ -3970,9 +4430,11 @@
     const missedHeading = document.getElementById('missed-heading');
     if (state.missed.length > 0) {
       // Heading word matches what the player was actually identifying.
-      // US modes always store state names in state.missed (even when the prompt
-      // was a capital), so all US modes show "States to revisit".
-      const noun = GAME_MODES[state.gameMode].dataset === 'us' ? 'States' : 'Countries';
+      // us-city stores city names; us-state/us-capital-to-state/us-state-to-capital
+      // all store state names (even when the prompt was a capital).
+      const noun =
+        state.gameMode === 'us-city' ? 'Cities' :
+        GAME_MODES[state.gameMode].dataset === 'us' ? 'States' : 'Countries';
       if (missedHeading) missedHeading.textContent = '— ' + noun + ' to revisit —';
       missedList.innerHTML = state.missed
         .map(n => '<span class="missed-item">' + n + '</span>')
@@ -4499,7 +4961,7 @@
       const gameActive = document.getElementById('game-screen').classList.contains('active');
       if (!gameActive || !state.svg) return;
 
-      // Snapshot persistent per-feature state by feature key
+      // Snapshot persistent per-feature state by feature key (country paths)
       const svgEl = document.getElementById('world-map');
       const correctKeys = Array.from(
         svgEl.querySelectorAll('.country.completed-correct')
@@ -4510,23 +4972,43 @@
       const promptKeys = Array.from(
         svgEl.querySelectorAll('.country.prompt-highlight')
       ).map(el => el.getAttribute('data-fkey'));
+
+      // Snapshot per-city state by data-city (us-city mode)
+      const correctCities = Array.from(
+        svgEl.querySelectorAll('.city-dot.completed-correct')
+      ).map(el => el.getAttribute('data-city'));
+      const wrongCities = Array.from(
+        svgEl.querySelectorAll('.city-dot.completed-wrong')
+      ).map(el => el.getAttribute('data-city'));
+
       const savedTransform = state.currentTransform || null;
 
       renderMap();
 
-      // Re-apply classes to the newly-built paths. Each feature has a unique
-      // data-fkey, so this is a simple lookup. We escape via CSS.escape since
-      // some keys contain characters that would break the selector.
-      const reapply = (keys, cls) => {
+      // Re-apply classes to the newly-built paths/dots. Each feature has a
+      // unique data-fkey and each city has a unique data-city, so this is a
+      // simple lookup. We escape via CSS.escape since some keys contain
+      // characters that would break the selector.
+      const reapplyPath = (keys, cls) => {
         keys.forEach(k => {
           if (!k) return;
           state.mapG.selectAll('.country[data-fkey="' + CSS.escape(k) + '"]')
             .classed(cls, true);
         });
       };
-      reapply(correctKeys, 'completed-correct');
-      reapply(wrongKeys, 'completed-wrong');
-      reapply(promptKeys, 'prompt-highlight');
+      reapplyPath(correctKeys, 'completed-correct');
+      reapplyPath(wrongKeys, 'completed-wrong');
+      reapplyPath(promptKeys, 'prompt-highlight');
+
+      const reapplyDot = (names, cls) => {
+        names.forEach(n => {
+          if (!n) return;
+          state.mapG.selectAll('.city-dot[data-city="' + CSS.escape(n) + '"]')
+            .classed(cls, true);
+        });
+      };
+      reapplyDot(correctCities, 'completed-correct');
+      reapplyDot(wrongCities, 'completed-wrong');
 
       // Restore zoom/pan so the player keeps the framing they had
       if (savedTransform && state.zoomBehavior) {
