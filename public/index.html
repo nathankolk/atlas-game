@@ -2936,14 +2936,15 @@
     throw lastErr || new Error('Could not load world atlas data');
   }
 
-  // us-atlas v3 ships states at three detail levels: 5m (highest detail),
-  // 10m, and 20m (lowest). 5m has noticeably smoother coastlines and
-  // borders — the difference shows clearly at the regional zoom level
-  // used by us-city mode. File is ~300KB vs ~150KB for 10m, but it's
-  // lazy-loaded so non-US modes don't pay the cost.
+  // us-atlas v3 only publishes states-10m.json (1:10M scale) — earlier
+  // commit claimed states-5m existed and it doesn't, which broke US
+  // modes entirely. Reverted to states-10m. Higher-detail US borders
+  // would need a different source (Natural Earth admin_1, US Census
+  // TIGER simplified, etc.) — deferred until we pick one that's
+  // actually CDN-hosted and free.
   const US_TOPO_URLS = [
-    'https://cdn.jsdelivr.net/npm/us-atlas@3/states-5m.json',
-    'https://unpkg.com/us-atlas@3/states-5m.json'
+    'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json',
+    'https://unpkg.com/us-atlas@3/states-10m.json'
   ];
 
   // Natural Earth rivers (10m / "highest detail" in NE convention). Only
