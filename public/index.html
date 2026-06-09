@@ -790,22 +790,6 @@
     fill: #b23d28 !important;
   }
 
-  /* ===== River overlay (us-city mode) =====
-   * Thin ocean-blue lines drawn over the state polygons. Non-clickable
-   * so taps pass through to whichever city dot is under the cursor.
-   * vector-effect keeps the stroke width constant regardless of zoom.
-   */
-  .river {
-    fill: none;
-    stroke: var(--ocean-deep);
-    stroke-width: 1;
-    stroke-linejoin: round;
-    stroke-linecap: round;
-    vector-effect: non-scaling-stroke;
-    pointer-events: none;
-    opacity: 0.7;
-  }
-
   /* ===== City dot markers (us-city mode) =====
    * Dots are placed at each city's projected coords. Their radius is set
    * in renderMap and counter-scaled on every zoom event so they stay at
@@ -2846,13 +2830,6 @@
     usFeatureByCanonical: new Map(),
     usLoaded: false,
     usLoading: null,         // promise while loading
-    // Rivers/lake-centerlines GeoJSON (Natural Earth 10m), lazy-loaded on
-    // first entry into us-city mode. The data is shared across all four
-    // regional cities sub-modes since it's a worldwide dataset filtered at
-    // render time.
-    riversData: null,
-    riversLoaded: false,
-    riversLoading: null,
     // Map of city name -> state name, rebuilt per round in us-city mode
     // so the prompt can show "Burlington, Vermont" to disambiguate.
     cityStateByName: null,
@@ -2936,24 +2913,19 @@
     throw lastErr || new Error('Could not load world atlas data');
   }
 
-  // us-atlas v3 only publishes states-10m.json (1:10M scale) — earlier
-  // commit claimed states-5m existed and it doesn't, which broke US
-  // modes entirely. Reverted to states-10m. Higher-detail US borders
-  // would need a different source (Natural Earth admin_1, US Census
-  // TIGER simplified, etc.) — deferred until we pick one that's
-  // actually CDN-hosted and free.
+  // US states data, in priority order:
+  //   1. Our own filtered copy of Natural Earth 10m admin_1 (51 US features,
+  //      ~1MB GeoJSON, ~300KB after Cloudflare gzip). NE's 10m is the
+  //      highest-detail commonly available state boundary set — borders are
+  //      visibly smoother than us-atlas 10m at the regional zoom used by
+  //      cities mode. File lives in this repo at public/data/.
+  //   2. us-atlas 10m as graceful-degradation fallback (chunkier borders,
+  //      but the game still plays).
+  // Format-agnostic loader handles either GeoJSON or TopoJSON below.
   const US_TOPO_URLS = [
+    '/data/us-states-detail.json',
     'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json',
     'https://unpkg.com/us-atlas@3/states-10m.json'
-  ];
-
-  // Natural Earth rivers (10m / "highest detail" in NE convention). Only
-  // loaded when entering us-city mode. ne_10m_rivers_lake_centerlines
-  // includes the Hudson, Delaware, Susquehanna, Connecticut, Mohawk,
-  // Penobscot, Mississippi, Missouri, Colorado, etc. as polylines.
-  const RIVERS_URLS = [
-    'https://cdn.jsdelivr.net/gh/martynafford/natural-earth-geojson@master/10m/physical/ne_10m_rivers_lake_centerlines.json',
-    'https://raw.githubusercontent.com/martynafford/natural-earth-geojson/master/10m/physical/ne_10m_rivers_lake_centerlines.json'
   ];
 
   async function loadUsStatesData() {
@@ -2968,9 +2940,19 @@
         try {
           const res = await fetch(url);
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          const topology = await res.json();
-          const key = topology.objects.states ? 'states' : Object.keys(topology.objects)[0];
-          const geojson = topojson.feature(topology, topology.objects[key]);
+          const data = await res.json();
+
+          // Accept either GeoJSON FeatureCollection or TopoJSON. Our local
+          // high-detail file is GeoJSON; the us-atlas fallback is TopoJSON.
+          let geojson;
+          if (data.type === 'FeatureCollection') {
+            geojson = data;
+          } else if (data.objects) {
+            const key = data.objects.states ? 'states' : Object.keys(data.objects)[0];
+            geojson = topojson.feature(data, data.objects[key]);
+          } else {
+            throw new Error('Unrecognized US states data format');
+          }
 
           state.usFeatures = geojson.features.filter(f => featureName(f));
           state.usCanonicalByFeature.clear();
@@ -2996,38 +2978,6 @@
       await state.usLoading;
     } finally {
       state.usLoading = null;
-    }
-  }
-
-  // Lazy-load Natural Earth rivers. Called from startGame() when entering
-  // us-city mode. Rivers are an aesthetic anchor (the Hudson, Mississippi,
-  // etc.) not a gameplay requirement, so failure is non-fatal — the game
-  // still plays, just without the river overlay.
-  async function loadRiversData() {
-    if (state.riversLoaded) return;
-    if (state.riversLoading) { await state.riversLoading; return; }
-
-    state.riversLoading = (async () => {
-      let lastErr = null;
-      for (const url of RIVERS_URLS) {
-        try {
-          const res = await fetch(url);
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const geojson = await res.json();
-          state.riversData = geojson;
-          state.riversLoaded = true;
-          return;
-        } catch (err) {
-          lastErr = err;
-        }
-      }
-      throw lastErr || new Error('Could not load rivers data');
-    })();
-
-    try {
-      await state.riversLoading;
-    } finally {
-      state.riversLoading = null;
     }
   }
 
@@ -3598,17 +3548,6 @@
       hideLoadingOverlay();
     }
 
-    // Lazy-load rivers for cities mode. Non-fatal: if the network fetch
-    // fails the game still plays without the river overlay.
-    if (mode === 'us-city' && !state.riversLoaded) {
-      showLoadingOverlay('Loading geography');
-      try {
-        await loadRiversData();
-      } catch (err) {
-        console.warn('Rivers data did not load; cities mode will render without river overlay:', err);
-      }
-      hideLoadingOverlay();
-    }
 
     state.correct = 0;
     state.wrong = 0;
@@ -3887,26 +3826,8 @@
       .attr('data-fkey', f => featureKey(f))
       .on('click', handleCountryClick);
 
-    // River overlay (us-city mode only). Natural Earth's 10m rivers +
-    // lake centerlines dataset, rendered as thin ocean-blue polylines
-    // sitting on top of the country polygons but BELOW the city dots
-    // so dots remain easy to click. Albers USA returns NaN paths for
-    // features outside CONUS/AK/HI; the filter drops those.
-    if (state.gameMode === 'us-city' && state.riversData && state.riversData.features) {
-      g.selectAll('.river')
-        .data(state.riversData.features)
-        .enter()
-        .append('path')
-        .attr('class', 'river')
-        .attr('d', f => {
-          const d = state.pathGen(f);
-          return (d && d.indexOf('NaN') === -1) ? d : null;
-        })
-        .filter(function () { return this.getAttribute('d') != null; });
-    }
-
     // City-dot layer (us-city mode only). Sits on top of the country
-    // polygons and rivers so each city is clickable. Each dot's radius
+    // polygons so each city is clickable. Each dot's radius
     // is set in map-space units, so on subsequent zoom events we
     // counter-scale it (see zoomBehavior .on('zoom') above) to keep
     // constant screen size.
