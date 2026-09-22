@@ -1716,12 +1716,14 @@
     color: var(--gold);
   }
 
-  .us-card {
+  .us-card,
+  .province-card {
     background: linear-gradient(135deg, rgba(255,250,235,0.5), rgba(248,238,214,0.4)) !important;
     border-left: 3px solid var(--sepia) !important;
   }
 
-  .us-card:hover {
+  .us-card:hover,
+  .province-card:hover {
     background: linear-gradient(135deg, rgba(255,250,235,0.8), rgba(248,238,214,0.7)) !important;
     border-left-color: var(--gold) !important;
   }
@@ -2589,6 +2591,91 @@
   };
 
   /* =========================================================
+   * PROVINCES OF NATIONS (province mode)
+   *
+   * Click-the-province rounds for other countries, same mechanic as The
+   * Fifty States. Each country's map lives in public/data/provinces-*.json
+   * (TopoJSON), generated from Natural Earth by tools/build-provinces.js —
+   * display names and Russia's round groups are baked into those files.
+   *
+   * Each round gets an equal-area conic projection (standard parallels
+   * tuned per country) centered on the round's own land, so high-latitude
+   * land (northern Canada, Siberia) isn't ballooned the way Mercator would
+   * draw it, and a regional round like Central & Northwest Russia sits
+   * upright instead of tilted off the edge of a whole-Russia cone.
+   *
+   * Border choices, inherited from the data build: Crimea and Sevastopol
+   * are left out of Russia; Taiwan is left out of China (world mode already
+   * treats it as its own country); Hong Kong and Macau are in as China's
+   * two SARs; India follows Natural Earth's de facto lines.
+   * ========================================================= */
+
+  const PROVINCE_COUNTRIES = {
+    canada: {
+      name: 'Canada',
+      dataUrl: '/data/provinces-canada.json',
+      noun: 'Provinces',
+      parallels: [50, 70]
+    },
+    china: {
+      name: 'China',
+      dataUrl: '/data/provinces-china.json',
+      noun: 'Provinces',
+      parallels: [25, 47]
+    },
+    india: {
+      name: 'India',
+      dataUrl: '/data/provinces-india.json',
+      noun: 'States',
+      parallels: [12, 28]
+    },
+    russia: {
+      name: 'Russia',
+      dataUrl: '/data/provinces-russia.json',
+      noun: 'Regions',
+      parallels: [50, 70]
+    }
+  };
+
+  // One entry per playable round. The key doubles as the menu card's
+  // data-region and as the records region, so renaming a label never
+  // orphans anyone's saved bests. Russia's 83 federal subjects are split
+  // into three rounds along federal-district lines (`group` matches the
+  // group property baked into provinces-russia.json).
+  const PROVINCE_ROUNDS = {
+    'canada-provinces': {
+      country: 'canada', label: 'Provinces of Canada', short: 'Canada', count: 13,
+      subname: 'ten provinces and three territories'
+    },
+    'china-provinces': {
+      country: 'china', label: 'Provinces of China', short: 'China', count: 33,
+      subname: 'provinces, regions, municipalities & SARs'
+    },
+    'india-states': {
+      country: 'india', label: 'States of India', short: 'India', count: 36,
+      subname: 'twenty-eight states and eight territories'
+    },
+    'russia-west': {
+      country: 'russia', group: 'west', label: 'Central & Northwest Russia', short: 'Russia W', count: 29,
+      subname: 'Moscow, St. Petersburg, and the Arctic west'
+    },
+    'russia-south': {
+      country: 'russia', group: 'south', label: 'Southern Russia & the Volga', short: 'Russia S', count: 27,
+      subname: 'the Caucasus, the Black Sea, and the Volga'
+    },
+    'russia-east': {
+      country: 'russia', group: 'east', label: 'Urals, Siberia & the Far East', short: 'Russia E', count: 27,
+      subname: 'from the Urals to the Pacific'
+    }
+  };
+
+  const EMPTY_PROVINCE_STORE = {
+    features: [],
+    canonicalByFeature: new Map(),
+    featureByCanonical: new Map()
+  };
+
+  /* =========================================================
    * DAILY PUZZLE — DIFFICULTY TIERS & DETERMINISTIC GENERATION
    * ========================================================= */
 
@@ -2815,6 +2902,14 @@
       promptLabel: 'Find the city',
       recordsLabelSuffix: ' · Cities',
     },
+    'province': {
+      dataset: 'province',
+      // currentContinent holds the PROVINCE_ROUNDS key (e.g. 'russia-west');
+      // map it to the round's display title.
+      label: (roundKey) => (PROVINCE_ROUNDS[roundKey] || {}).label || 'Provinces',
+      promptLabel: 'Find on the map',
+      recordsLabelSuffix: ' · Provinces',
+    },
   };
 
   const state = {
@@ -2834,6 +2929,13 @@
     // so the prompt can show "Burlington, Vermont" to disambiguate.
     cityStateByName: null,
 
+    // Province mode: one store per country, lazy-loaded on first play
+    // ({ features, canonicalByFeature, featureByCanonical }), plus the
+    // PROVINCE_ROUNDS key of the round in progress.
+    provinceStores: {},
+    provinceLoading: {},
+    currentProvinceRound: null,
+
     // Active game - which dataset + mode is in play
     activeDataset: 'world',  // 'world' or 'us'
     gameMode: 'world-country', // key into GAME_MODES
@@ -2852,7 +2954,7 @@
     startTime: null,
     interactionLocked: false,
     hardMode: false,          // In hard mode, countries are not persistently marked green/red
-    menuView: 'main',         // 'main' | 'continents' | 'us'
+    menuView: 'main',         // 'main' | 'continents' | 'us' | 'us-cities' | 'provinces' | 'provinces-russia'
 
     svg: null,
     projection: null,
@@ -2863,16 +2965,28 @@
     zoomHintShown: false,
   };
 
-  // Small helpers so the engine can work with either dataset without
+  // Small helpers so the engine can work with any dataset without
   // knowing the specifics of each. Keyed off state.activeDataset.
   function activeFeatures() {
-    return state.activeDataset === 'us' ? state.usFeatures : state.allFeatures;
+    if (state.activeDataset === 'us') return state.usFeatures;
+    if (state.activeDataset === 'province') return currentProvinceStore().features;
+    return state.allFeatures;
   }
   function activeCanonicalByFeature() {
-    return state.activeDataset === 'us' ? state.usCanonicalByFeature : state.canonicalByFeature;
+    if (state.activeDataset === 'us') return state.usCanonicalByFeature;
+    if (state.activeDataset === 'province') return currentProvinceStore().canonicalByFeature;
+    return state.canonicalByFeature;
   }
   function activeFeatureByCanonical() {
-    return state.activeDataset === 'us' ? state.usFeatureByCanonical : state.featureByCanonical;
+    if (state.activeDataset === 'us') return state.usFeatureByCanonical;
+    if (state.activeDataset === 'province') return currentProvinceStore().featureByCanonical;
+    return state.featureByCanonical;
+  }
+
+  // The loaded store for the country of the province round in progress
+  function currentProvinceStore() {
+    const round = PROVINCE_ROUNDS[state.currentProvinceRound];
+    return (round && state.provinceStores[round.country]) || EMPTY_PROVINCE_STORE;
   }
 
   // For ID, use either feature.id or its numeric identifier if present
@@ -2978,6 +3092,42 @@
       await state.usLoading;
     } finally {
       state.usLoading = null;
+    }
+  }
+
+  // Lazy-load one country's province map (TopoJSON from public/data/).
+  // Cached per session in state.provinceStores; concurrent calls share the
+  // same in-flight fetch.
+  async function loadProvinceData(countryKey) {
+    if (state.provinceStores[countryKey]) return;
+    if (state.provinceLoading[countryKey]) { await state.provinceLoading[countryKey]; return; }
+
+    state.provinceLoading[countryKey] = (async () => {
+      await ensureTopojson();
+      const res = await fetch(PROVINCE_COUNTRIES[countryKey].dataUrl);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const topology = await res.json();
+      const key = topology.objects.provinces ? 'provinces' : Object.keys(topology.objects)[0];
+      const geojson = topojson.feature(topology, topology.objects[key]);
+
+      const store = {
+        features: geojson.features.filter(f => featureName(f)),
+        canonicalByFeature: new Map(),
+        featureByCanonical: new Map()
+      };
+      // Names are already canonical — the build script bakes them in
+      store.features.forEach(f => {
+        const name = featureName(f);
+        store.canonicalByFeature.set(featureKey(f), name);
+        store.featureByCanonical.set(name, f);
+      });
+      state.provinceStores[countryKey] = store;
+    })();
+
+    try {
+      await state.provinceLoading[countryKey];
+    } finally {
+      state.provinceLoading[countryKey] = null;
     }
   }
 
@@ -3109,6 +3259,18 @@
           bestText = labels[m] + ' ' + rec.bestAccuracy.pct + '%';
         }
       });
+    } else if (folder === 'provinces' || folder === 'provinces-russia') {
+      Object.keys(PROVINCE_ROUNDS).forEach(key => {
+        const round = PROVINCE_ROUNDS[key];
+        if (folder === 'provinces-russia' && round.country !== 'russia') return;
+        const rec = getRecords(key, state.hardMode, 'province');
+        if (!rec) return;
+        totalGames += rec.gamesPlayed || 0;
+        if (rec.bestAccuracy && rec.bestAccuracy.pct > bestPct) {
+          bestPct = rec.bestAccuracy.pct;
+          bestText = round.short + ' ' + rec.bestAccuracy.pct + '%';
+        }
+      });
     }
     if (bestText) return 'Best: ' + bestText;
     if (totalGames > 0) return totalGames + ' games played';
@@ -3119,6 +3281,8 @@
     if (state.menuView === 'continents') return renderContinentsMenu();
     if (state.menuView === 'us') return renderUsMenu();
     if (state.menuView === 'us-cities') return renderUsCitiesMenu();
+    if (state.menuView === 'provinces') return renderProvincesMenu();
+    if (state.menuView === 'provinces-russia') return renderRussiaMenu();
     return renderMainMenu();
   }
 
@@ -3137,6 +3301,7 @@
     const worldBest = bestLabel('World', 'world-country');
     const continentsBest = folderBestLabel('continents');
     const usBest = folderBestLabel('us');
+    const provincesBest = folderBestLabel('provinces');
 
     let html = '';
 
@@ -3230,6 +3395,19 @@
           '<div class="r-subname">states, capitals, and more</div>' +
           '<div class="r-count">3 study modes</div>' +
           (usBest ? '<div class="r-best">' + usBest + '</div>' : '') +
+        '</div>' +
+        '<div class="folder-arrow">›</div>' +
+      '</button>';
+
+    // Folder card: Provinces & States of other nations
+    html +=
+      '<button class="region-card folder-card" data-action="open-folder" data-folder="provinces">' +
+        '<div class="folder-icon">❖</div>' +
+        '<div class="folder-body">' +
+          '<div class="r-name">Provinces &amp; States</div>' +
+          '<div class="r-subname">Canada, China, India, and Russia</div>' +
+          '<div class="r-count">4 nations</div>' +
+          (provincesBest ? '<div class="r-best">' + provincesBest + '</div>' : '') +
         '</div>' +
         '<div class="folder-arrow">›</div>' +
       '</button>';
@@ -3395,6 +3573,60 @@
     attachMenuHandlers();
   }
 
+  // One playable card for a PROVINCE_ROUNDS entry
+  function renderProvinceRoundCard(roundKey) {
+    const round = PROVINCE_ROUNDS[roundKey];
+    const noun = PROVINCE_COUNTRIES[round.country].noun.toLowerCase();
+    const best = bestLabel(roundKey, 'province');
+    return (
+      '<button class="region-card province-card" data-action="play" data-region="' + roundKey + '">' +
+        '<div class="r-name">' + round.label + '</div>' +
+        '<div class="r-subname">' + round.subname + '</div>' +
+        '<div class="r-count">' + round.count + ' ' + noun + ' to find</div>' +
+        (best ? '<div class="r-best">' + best + '</div>' : '') +
+      '</button>'
+    );
+  }
+
+  // Provinces sub-menu: one card per whole-country round, plus Russia as a
+  // nested folder since its 83 regions are split into three rounds.
+  function renderProvincesMenu() {
+    const container = document.getElementById('menu-content');
+    const russiaBest = folderBestLabel('provinces-russia');
+    let html = '';
+    html += renderSubMenuHeader('Provinces & States', 'The inner divisions of great nations');
+    html += renderHardModeToggle();
+    html += '<div class="regions">';
+    html += renderProvinceRoundCard('canada-provinces');
+    html += renderProvinceRoundCard('china-provinces');
+    html += renderProvinceRoundCard('india-states');
+    html +=
+      '<button class="region-card province-card" data-action="open-folder" data-folder="provinces-russia">' +
+        '<div class="r-name">Russia ▸</div>' +
+        '<div class="r-subname">83 federal subjects in three rounds</div>' +
+        '<div class="r-count">3 regions to study</div>' +
+        (russiaBest ? '<div class="r-best">' + russiaBest + '</div>' : '') +
+      '</button>';
+    html += '</div>';
+    container.innerHTML = html;
+    attachMenuHandlers();
+  }
+
+  // Russia sub-menu, nested under Provinces & States (back returns there)
+  function renderRussiaMenu() {
+    const container = document.getElementById('menu-content');
+    let html = '';
+    html += renderSubMenuHeader('Russia', 'Eleven time zones in three rounds', 'provinces');
+    html += renderHardModeToggle();
+    html += '<div class="regions">';
+    html += renderProvinceRoundCard('russia-west');
+    html += renderProvinceRoundCard('russia-south');
+    html += renderProvinceRoundCard('russia-east');
+    html += '</div>';
+    container.innerHTML = html;
+    attachMenuHandlers();
+  }
+
   // Header used at the top of sub-menus (Continents, US, etc).
   // Includes a back button. backTarget defaults to 'main', but nested
   // sub-folders pass their parent view's name (e.g. 'us-cities' passes 'us').
@@ -3512,6 +3744,11 @@
       // currentContinent so the records key stays per-region.
       mode = 'us-city';
       region = US_CITY_REGION_KEYS[regionOrMode];
+    } else if (PROVINCE_ROUNDS[regionOrMode]) {
+      // Province mode: the round key (e.g. 'india-states') is the region,
+      // so records stay per-round and GAME_MODES.province.label() can title it.
+      mode = 'province';
+      region = regionOrMode;
     } else {
       mode = 'world-country';
       region = regionOrMode;
@@ -3520,6 +3757,7 @@
     state.gameMode = mode;
     state.activeDataset = GAME_MODES[mode].dataset;
     state.currentContinent = region;
+    state.currentProvinceRound = mode === 'province' ? region : null;
 
     // For daily mode, refuse to start if already played today (unless
     // explicitly replaying — see startDailyReplay below).
@@ -3548,6 +3786,23 @@
       hideLoadingOverlay();
     }
 
+    // Lazy-load the country's province map on first play
+    if (mode === 'province') {
+      const countryKey = PROVINCE_ROUNDS[region].country;
+      const country = PROVINCE_COUNTRIES[countryKey];
+      if (!state.provinceStores[countryKey]) {
+        showLoadingOverlay('Loading ' + country.name);
+        try {
+          await loadProvinceData(countryKey);
+        } catch (err) {
+          hideLoadingOverlay();
+          alert('The map of ' + country.name + ' could not be loaded. Please check your connection and try again.');
+          switchScreen('menu');
+          return;
+        }
+        hideLoadingOverlay();
+      }
+    }
 
     state.correct = 0;
     state.wrong = 0;
@@ -3591,6 +3846,12 @@
       state.cityStateByName = new Map();
       cities.forEach(c => state.cityStateByName.set(c.name, c.state));
       state.queue = shuffle(cities.map(c => c.name));
+    } else if (mode === 'province') {
+      // Every feature in the country's file is quizzable; Russia's rounds
+      // narrow it to one group (isEligible handles that).
+      const store = currentProvinceStore();
+      state.eligibleFeatures = store.features.filter(isEligible);
+      state.queue = shuffle(state.eligibleFeatures.map(f => store.canonicalByFeature.get(featureKey(f))));
     } else if (state.activeDataset === 'us') {
       state.eligibleFeatures = state.usFeatures.filter(f => {
         const name = state.usCanonicalByFeature.get(featureKey(f));
@@ -3709,6 +3970,15 @@
       // Albers USA handles Alaska and Hawaii insets automatically,
       // giving a clean framed map of the 50 states at any size.
       projection = d3.geoAlbersUsa();
+    } else if (state.activeDataset === 'province') {
+      // Equal-area conic centered on the round's land (see PROVINCE_COUNTRIES).
+      // geoCentroid is spherical, so the Russian Far East round centers
+      // correctly even though Chukotka straddles the antimeridian.
+      const round = PROVINCE_ROUNDS[state.currentProvinceRound];
+      const centroid = d3.geoCentroid(fitCollection);
+      projection = d3.geoConicEqualArea()
+        .parallels(PROVINCE_COUNTRIES[round.country].parallels)
+        .rotate([-centroid[0], 0]);
     } else if (state.currentContinent === 'World' || state.gameMode === 'daily-five') {
       // Daily mode also uses the whole world, so it gets the same
       // Natural Earth projection (and the same fitExtent below).
@@ -3722,7 +3992,7 @@
     }
 
     const padding = 20;
-    if (state.activeDataset === 'us') {
+    if (state.activeDataset === 'us' || state.activeDataset === 'province') {
       projection.fitExtent(
         [[padding + 20, padding + 10], [width - padding - 20, height - padding - 10]],
         fitCollection
@@ -3772,8 +4042,9 @@
     state.zoomBehavior = zoomBehavior;
 
     // Sphere backdrop - only for world projections. Albers USA isn't a
-    // true globe projection so a Sphere would just be a big blue box.
-    if (state.activeDataset !== 'us') {
+    // true globe projection so a Sphere would just be a big blue box, and
+    // the per-country conics would draw it as a giant fan shape.
+    if (state.activeDataset === 'world') {
       g.append('path')
         .attr('class', 'sphere-bg')
         .attr('d', state.pathGen({ type: 'Sphere' }));
@@ -3794,6 +4065,10 @@
     // precedence at land borders, but small islands surrounded by ocean now
     // catch clicks within ~22px of their outline regardless of zoom.
     const SMALL_FEATURE_PX = 14; // max bounding-box dimension at zoom k=1
+    // Province maps also have scattered territories (Lakshadweep's islands,
+    // Puducherry's four enclaves) whose bounding box is big but whose land
+    // is a few pixels. Catch those by on-screen area instead.
+    const SMALL_AREA_PX2 = 200;
     g.selectAll('.country-hitzone')
       .data(activeFeatures().filter(f => {
         if (!isEligible(f)) return false;
@@ -3801,7 +4076,8 @@
         if (!d || d.indexOf('NaN') !== -1) return false;
         const b = state.pathGen.bounds(f);
         const maxDim = Math.max(b[1][0] - b[0][0], b[1][1] - b[0][1]);
-        return maxDim < SMALL_FEATURE_PX;
+        return maxDim < SMALL_FEATURE_PX ||
+          (state.activeDataset === 'province' && state.pathGen.area(f) < SMALL_AREA_PX2);
       }))
       .enter()
       .append('path')
@@ -3869,6 +4145,13 @@
         return regionStates ? regionStates.indexOf(name) !== -1 : false;
       }
       return US_STATE_SET.has(name);
+    }
+    if (state.activeDataset === 'province') {
+      // Whole-country rounds quiz everything; Russia's rounds quiz one
+      // group and gray out the rest of the country as context.
+      const round = PROVINCE_ROUNDS[state.currentProvinceRound];
+      if (!round) return false;
+      return !round.group || (feature.properties && feature.properties.group === round.group);
     }
     const continent = state.continentByFeature.get(featureKey(feature));
     // Daily mode pulls from the whole world, so every recognized country
@@ -4468,8 +4751,10 @@
       // Heading word matches what the player was actually identifying.
       // us-city stores city names; us-state/us-capital-to-state/us-state-to-capital
       // all store state names (even when the prompt was a capital).
+      const provinceRound = PROVINCE_ROUNDS[state.currentProvinceRound];
       const noun =
         state.gameMode === 'us-city' ? 'Cities' :
+        provinceRound ? PROVINCE_COUNTRIES[provinceRound.country].noun :
         GAME_MODES[state.gameMode].dataset === 'us' ? 'States' : 'Countries';
       if (missedHeading) missedHeading.textContent = '— ' + noun + ' to revisit —';
       missedList.innerHTML = state.missed
@@ -4751,6 +5036,7 @@
     if (mode === 'us-state') region = 'US States';
     else if (mode === 'us-capital-to-state') region = 'US Capitals → States';
     else if (mode === 'us-state-to-capital') region = 'US States → Capitals';
+    else if (mode === 'province') region = GAME_MODES.province.label(state.currentContinent);
     else region = state.currentContinent === 'World' ? 'The World' : state.currentContinent;
     const total = state.correct + state.wrong;
     const maxScore = state.totalQuestions * 2;
