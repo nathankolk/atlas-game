@@ -37,7 +37,12 @@ Owner: Nathan Kolk. Solo project, family-first orientation (designed in part so 
 ```
 Atlas Game/
 ├── public/
-│   └── index.html              # The game. ~159kb. Source of truth for the frontend.
+│   ├── index.html              # The game. ~190kb. Source of truth for the frontend.
+│   └── data/                   # Map files served same-origin, lazy-loaded per mode
+│       ├── us-states-detail.json   # Natural Earth 10m US states (GeoJSON)
+│       └── provinces-*.json        # Canada/China/India/Russia provinces (TopoJSON)
+├── tools/
+│   └── build-provinces.js      # Regenerates public/data/provinces-*.json from Natural Earth
 ├── functions/
 │   └── api/
 │       └── records.js          # Pages Function. Auto-routes to /api/records.
@@ -48,7 +53,7 @@ Atlas Game/
 └── .wrangler/                  # Local dev state (gitignored).
 ```
 
-There's no `src/`, no build output, no `node_modules/` at the project root. The HTML file IS the build artifact.
+There's no `src/`, no build output, no `node_modules/` at the project root. The HTML file IS the build artifact. `tools/` is one-time data prep, not a build step — the app never runs it.
 
 ---
 
@@ -74,7 +79,7 @@ Before declaring an edit done, syntax-check the JS:
 
 **Primary path: GitHub auto-deploy.** The Pages project is Git-connected (as of 2026-05-23). Every push to `main` on `https://github.com/nathankolk/atlas-game` triggers a production deploy automatically; pushes to other branches generate preview deploys. To ship:
 ```bash
-cd "/Users/nathan.kolk/Documents/Claude/Projects/Atlas Game"
+cd "/Users/nathan/Documents/Claude/Projects/Atlas Game"
 # edit public/index.html
 git add public/index.html
 git commit -m "..."
@@ -84,15 +89,22 @@ Build finishes in ~30–60 seconds. Watch the Deployments tab in the Cloudflare 
 
 **Escape hatch: Manual via Wrangler.** Still works on a Git-connected project, but mixing it with git pushes creates a divergent deploy history that gets confusing fast. Use only if git is unavailable or for testing.
 ```bash
-cd "/Users/nathan.kolk/Documents/Claude/Projects/Atlas Game"
+cd "/Users/nathan/Documents/Claude/Projects/Atlas Game"
 wrangler pages deploy public --branch=main
 ```
 The `--branch=main` flag is still required when using this path.
 
 ### Local dev
 
+Static-only preview (enough for anything that doesn't touch sync):
 ```bash
-cd "/Users/nathan.kolk/Documents/Claude/Projects/Atlas Game"
+cd "/Users/nathan/Documents/Claude/Projects/Atlas Game"
+python3 -m http.server 8788 --directory public
+```
+
+Full preview with the sync Function (needs Wrangler, which isn't installed on the current Mac — `npm install -g wrangler` then `wrangler login` first):
+```bash
+cd "/Users/nathan/Documents/Claude/Projects/Atlas Game"
 wrangler pages dev public
 ```
 
@@ -121,6 +133,8 @@ The token must be 32 hex chars. Anything else returns `400 invalid_token`.
 - **DNS for `atlas.nathankolk.com`** is a CNAME at Squarespace pointing to `atlas-game.pages.dev`. The root domain stays on Squarespace nameservers — we did NOT delegate the whole domain to Cloudflare. This is the cleaner setup because Nathan has email records (Resend DKIM, AWS SES MX/SPF) on `nathankolk.com` that would break if nameservers swapped without migration.
 
 - **localStorage is the source of truth.** When the sync layer is built, the API will mirror localStorage, not replace it. The game must keep working fully offline.
+
+- **Claude's browser-pane preview can't serve straight from `~/Documents`.** macOS privacy protection blocks the spawned `python3` from reading its working directory (`PermissionError` on startup). Copy `public/` into the session scratchpad and serve from there. Running the server yourself in Terminal is unaffected.
 
 - **Direct Upload → Git-connected is a one-way door.** We learned this on 2026-05-23: Cloudflare doesn't let you convert a Direct Upload Pages project to Git-connected in place. The original `atlas-game` Direct Upload project had to be deleted and recreated from GitHub. The KV namespace (`RECORDS_KV`, id `eda12720123441638f8261e2d19efcff`) survived because it lives at the account level, not the project level, and the `wrangler.toml` binding re-attached it on first git-triggered deploy. The Squarespace CNAME for `atlas.nathankolk.com` didn't need to change — same `atlas-game.pages.dev` target since we reused the project name. Downtime was ~3 minutes. Per Cloudflare's docs, going back the other way (Git-connected → Direct Upload) is also blocked.
 
@@ -151,11 +165,10 @@ The token must be 32 hex chars. Anything else returns `400 invalid_token`.
 
 ## Toolchain installed on this machine
 
-- macOS, login `nathan.kolk`. Paths: `/Users/nathan.kolk/...`
-- Homebrew
-- Node + npm (installed via `brew install node`)
-- Wrangler (installed globally via `npm install -g wrangler`)
-- `wrangler login` already done — auth token persists in `~/.wrangler/`
+- macOS, login `nathan`. Paths: `/Users/nathan/...`. Project lives at `/Users/nathan/Documents/Claude/Projects/Atlas Game`. (The original setup in April–June 2026 was on a machine with login `nathan.kolk`; older notes in `atlas_handoff.md` may still show those paths.)
+- Homebrew (`/opt/homebrew`)
+- Node + npm via Homebrew
+- Wrangler: **not installed** on this machine. Not needed for deploys (GitHub auto-deploy handles that); only for local Functions/KV testing or the manual escape hatch. Install with `npm install -g wrangler`, then `wrangler login`.
 - Cloudflare account: yes (also owns Full Stock Amenities project at fullstockamenities.com)
 - Git installed (Apple Git via macOS). Repo initialized on `main`, identity set locally to `Nathan Kolk <275984939+nathankolk@users.noreply.github.com>` (no-reply email — `--local` config, doesn't affect other repos).
 - GitHub CLI (`gh`) installed via Homebrew, authenticated as `nathankolk` via HTTPS.
@@ -169,6 +182,8 @@ The token must be 32 hex chars. Anything else returns `400 invalid_token`.
 For full detail see `atlas_handoff.md`. Highlights:
 
 **Game modes** are registered in a `GAME_MODES = { ... }` object in the JS. Adding a new mode means: (1) entry in the registry, (2) handling in `startGame()` for queue building, (3) prompt logic in `nextCountry()`, (4) menu card in `renderMainMenu()`.
+
+**Provinces & States** (`province` game mode, added Sept 2026): click-the-province rounds for Canada (13), China (33), India (36), and Russia (83, split into three rounds of 27–29 along federal-district lines). Rounds are defined in `PROVINCE_ROUNDS`; countries (data URL, results noun, conic parallels) in `PROVINCE_COUNTRIES`. The round key (`'russia-west'`, etc.) is also the records region, so display labels can change without orphaning bests. Display names and Russia's round groups are baked into the data files by `tools/build-provinces.js` — to add a country, add a config entry there, run it (usage is in the file header; it shells out to `npx mapshaper` for topology-aware simplification and fails loudly if a feature count is off), then add entries to the two registries. Border choices: Crimea and Sevastopol are left out of Russia, Taiwan out of China, Hong Kong and Macau in as SARs, India on Natural Earth's de facto lines.
 
 **Records** live in `localStorage["atlas-records"]` keyed by `gameMode|region|difficulty`. Each entry tracks bestScore, bestTime (clean sweeps only), bestAccuracy, gamesPlayed, lastPlayed.
 
