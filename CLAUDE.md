@@ -165,7 +165,7 @@ The token must be 32 hex chars. Anything else returns `400 invalid_token`.
 
 ## Toolchain installed on this machine
 
-- macOS, login `nathan`. Paths: `/Users/nathan/...`. Project lives at `/Users/nathan/Documents/Claude/Projects/Atlas Game`. (The original setup in April–June 2026 was on a machine with login `nathan.kolk`; older notes in `atlas_handoff.md` may still show those paths.)
+- macOS, login `nathan`. Paths: `/Users/nathan/...`. Project lives at `/Users/nathan/Documents/Claude/Projects/Atlas Game`. (The original setup in April–June 2026 was on a machine with login `nathan.kolk`.)
 - Homebrew (`/opt/homebrew`)
 - Node + npm via Homebrew
 - Wrangler: **not installed** on this machine. Not needed for deploys (GitHub auto-deploy handles that); only for local Functions/KV testing or the manual escape hatch. Install with `npm install -g wrangler`, then `wrangler login`.
