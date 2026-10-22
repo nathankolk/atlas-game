@@ -3853,6 +3853,7 @@
   // (or 'World'). For US modes, pass the mode key; `region` becomes
   // unused and `currentContinent` is the display label.
   // opts.practice: names to quiz instead of the whole level (a focus round).
+  // opts.dailyReplay: date key of a daily puzzle to replay as practice.
   async function startGame(regionOrMode, opts) {
     // Clear any leftover review-mode class so the prompt/score/skip UI
     // shows on the new round (in case the player entered review mode after
@@ -3864,6 +3865,9 @@
     const region = target.region;
     state.startArg = regionOrMode;
     state.practice = false;
+    // Set (or cleared) per start and left in place through finishGame, so
+    // the results screen still knows a daily replay was practice.
+    state.dailyReplay = opts && opts.dailyReplay ? { dateKey: opts.dailyReplay } : null;
 
     state.gameMode = mode;
     state.activeDataset = GAME_MODES[mode].dataset;
@@ -4032,12 +4036,7 @@
   // Allow replaying a past daily puzzle without affecting today's record.
   // Used by the "Replay this puzzle" link on the already-played view.
   function startDailyReplay(dateKey) {
-    state.dailyReplay = { dateKey: dateKey };
-    startGame('daily-five').finally(() => {
-      // Reset the flag once the game is set up, so a future "Daily" tap
-      // from the menu doesn't accidentally inherit replay mode.
-      state.dailyReplay = null;
-    });
+    startGame('daily-five', { dailyReplay: dateKey });
   }
 
   function showLoadingOverlay(text) {
@@ -4819,10 +4818,14 @@
     // What this round says to work on next: misses first, then second tries
     state.roundNeedsWork = state.missed.concat(state.secondTry);
 
-    if (state.practice) {
+    // Focus rounds and daily replays are practice: no records, no sync, no share
+    const isPractice = state.practice || !!state.dailyReplay;
+
+    if (isPractice) {
       // Focus rounds are a subset of the level, so they'd distort the
-      // level's bests. They also leave the saved focus list alone — only a
-      // full game rewrites it.
+      // level's bests; a daily replay is a puzzle you've already seen.
+      // Practice also leaves the saved focus list alone — only a full game
+      // rewrites it.
       state.brokenRecords = {};
       state.priorRecords = null;
       state.currentRecords = null;
@@ -4869,8 +4872,8 @@
     }
 
     // Mirror to cloud after every full game (fire-and-forget; no-op if sync
-    // isn't set up). Focus rounds change nothing worth syncing.
-    if (!state.practice) syncAfterGameEnd();
+    // isn't set up). Practice rounds change nothing worth syncing.
+    if (!isPractice) syncAfterGameEnd();
 
     const modeConfig = GAME_MODES[state.gameMode];
     let regionLabel = modeConfig.label(state.currentContinent);
@@ -4914,10 +4917,11 @@
     }
 
     // Daily mode tweaks the results actions: hide "Study Again" since you
-    // can't replay today's puzzle for record. Replace with a Practice link.
+    // can't replay today's puzzle for record. Replace with a Practice link
+    // (after a practice replay too, so you can go again).
     const replayBtn = document.getElementById('replay-btn');
     const dailyPracticeBtn = document.getElementById('daily-practice-btn');
-    if (state.gameMode === 'daily-five' && !state.dailyReplay) {
+    if (state.gameMode === 'daily-five') {
       if (replayBtn) replayBtn.style.display = 'none';
       if (dailyPracticeBtn) dailyPracticeBtn.style.display = '';
     } else {
@@ -4943,7 +4947,7 @@
 
     // Sharing a practice round would read like a real score for the level
     const shareBtn = document.getElementById('share-btn');
-    if (shareBtn) shareBtn.style.display = state.practice ? 'none' : '';
+    if (shareBtn) shareBtn.style.display = isPractice ? 'none' : '';
 
     // "View Map" button: lets the player go back to the map with all the
     // green/red markers still in place, so they can take a screenshot.
