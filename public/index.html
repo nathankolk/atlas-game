@@ -1339,6 +1339,75 @@
     color: var(--ink-soft);
   }
 
+  /* Dot before each name: sienna = missed, gold = found on the second try */
+  .missed-item::before,
+  .missed-key::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin: 0 6px 2px 0;
+    vertical-align: middle;
+    background: var(--sienna);
+  }
+  .missed-item.second-try::before,
+  .missed-key.second-try::before { background: var(--gold); }
+
+  .missed-legend {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    margin-top: 12px;
+  }
+  .missed-key {
+    font-family: 'Crimson Pro', serif;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+  }
+
+  /* Fresh-vs-focus chooser (frame reuses the sync modal styles) */
+  .focus-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .focus-choice {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 14px 16px;
+    background: rgba(255, 250, 235, 0.55);
+    border: 1px solid var(--land-border);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .focus-choice:hover {
+    border-color: var(--sepia);
+    background: rgba(200, 149, 60, 0.12);
+    transform: translateY(-1px);
+  }
+  .focus-choice.focus {
+    border-left: 3px solid var(--gold);
+  }
+  .focus-choice-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+  .focus-choice-desc {
+    font-family: 'Crimson Pro', serif;
+    font-size: 13px;
+    color: var(--ink-faded);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
   .results-actions {
     display: flex;
     gap: 14px;
@@ -2223,10 +2292,12 @@
       <div class="missed-section" id="missed-section" style="display:none;">
         <div class="missed-heading" id="missed-heading">— Countries to revisit —</div>
         <div class="missed-list" id="missed-list"></div>
+        <div class="missed-legend" id="missed-legend"></div>
       </div>
 
       <div class="results-actions">
         <button class="ctrl-btn share" id="share-btn">Share Results</button>
+        <button class="ctrl-btn primary" id="practice-btn" style="display:none;">Practice These</button>
         <button class="ctrl-btn primary" id="replay-btn">Study Again</button>
         <button class="ctrl-btn primary" id="daily-practice-btn" style="display:none;">Practice Replay</button>
         <button class="ctrl-btn" id="view-map-btn" style="display:none;">View Map</button>
@@ -2244,6 +2315,29 @@
         <button class="sync-modal-close" id="sync-modal-close" aria-label="Close">×</button>
       </div>
       <div class="sync-modal-body" id="sync-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- FOCUS CHOOSER (fresh game vs. practice round; borrows the sync modal frame) -->
+  <div class="sync-modal-overlay" id="focus-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="focus-modal-title">
+    <div class="sync-modal">
+      <div class="sync-modal-header">
+        <h2 class="sync-modal-title" id="focus-modal-title">—</h2>
+        <p class="sync-modal-subtitle" id="focus-modal-subtitle"></p>
+        <button class="sync-modal-close" id="focus-modal-close" aria-label="Close">×</button>
+      </div>
+      <div class="sync-modal-body">
+        <div class="focus-choices">
+          <button class="focus-choice" id="focus-choice-fresh" type="button">
+            <div class="focus-choice-title">Fresh Game</div>
+            <div class="focus-choice-desc" id="focus-choice-fresh-desc"></div>
+          </button>
+          <button class="focus-choice focus" id="focus-choice-focus" type="button">
+            <div class="focus-choice-title" id="focus-choice-focus-title">Focus Practice</div>
+            <div class="focus-choice-desc">Just the ones you missed or found on a second try · practice only, your records stay as they are</div>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2950,7 +3044,11 @@
     wrong: 0,
     score: 0,
     missed: [],               // Countries not found
+    secondTry: [],            // Countries found only on the second attempt
     sequence: [],             // Per-country points: 2 (first try), 1 (second try), 0 (missed)
+    startArg: null,           // What startGame() was called with, so replays restart the same level
+    practice: false,          // True for a focus round (subset of a level; skips records)
+    roundNeedsWork: [],       // missed + secondTry from the round just finished
     startTime: null,
     interactionLocked: false,
     hardMode: false,          // In hard mode, countries are not persistently marked green/red
@@ -3669,7 +3767,7 @@
     screen.classList.toggle('view-sub', state.menuView !== 'main');
 
     document.querySelectorAll('[data-action="play"]').forEach(card => {
-      card.addEventListener('click', () => startGame(card.dataset.region));
+      card.addEventListener('click', () => chooseAndStart(card.dataset.region));
     });
     document.querySelectorAll('[data-action="open-folder"]').forEach(card => {
       card.addEventListener('click', () => {
@@ -3719,40 +3817,53 @@
    * GAME
    * ========================================================= */
 
+  // Map a menu card's data-region value to { mode, region }. `region` is
+  // what records and focus lists are keyed by (and becomes currentContinent).
+  function resolveGameTarget(regionOrMode) {
+    if (regionOrMode === 'daily-five') {
+      return { mode: 'daily-five', region: 'Daily' };
+    }
+    if (regionOrMode === 'us-state' ||
+        regionOrMode === 'us-capital-to-state' ||
+        regionOrMode === 'us-state-to-capital') {
+      return { mode: regionOrMode, region: GAME_MODES[regionOrMode].label() };
+    }
+    if (US_CITY_REGION_KEYS[regionOrMode]) {
+      // Cities mode: the button id like 'northeast-cities' maps to a region
+      // label like 'Northeast'. The label drives queue selection AND becomes
+      // currentContinent so the records key stays per-region.
+      return { mode: 'us-city', region: US_CITY_REGION_KEYS[regionOrMode] };
+    }
+    if (PROVINCE_ROUNDS[regionOrMode]) {
+      // Province mode: the round key (e.g. 'india-states') is the region,
+      // so records stay per-round and GAME_MODES.province.label() can title it.
+      return { mode: 'province', region: regionOrMode };
+    }
+    return { mode: 'world-country', region: regionOrMode };
+  }
+
+  // Plural noun for what a mode asks you to find ("Countries", "States", ...)
+  function targetNoun(mode, region) {
+    if (mode === 'us-city') return 'Cities';
+    if (mode === 'province') return PROVINCE_COUNTRIES[PROVINCE_ROUNDS[region].country].noun;
+    return GAME_MODES[mode].dataset === 'us' ? 'States' : 'Countries';
+  }
+
   // Entry point for all games. For world modes, pass the continent name
   // (or 'World'). For US modes, pass the mode key; `region` becomes
   // unused and `currentContinent` is the display label.
-  async function startGame(regionOrMode) {
+  // opts.practice: names to quiz instead of the whole level (a focus round).
+  async function startGame(regionOrMode, opts) {
     // Clear any leftover review-mode class so the prompt/score/skip UI
     // shows on the new round (in case the player entered review mode after
     // their last game and then started a fresh one without backing out).
     document.getElementById('game-screen').classList.remove('review-mode');
 
-    // Determine game mode
-    let mode, region;
-    if (regionOrMode === 'daily-five') {
-      mode = 'daily-five';
-      region = 'Daily';
-    } else if (regionOrMode === 'us-state' ||
-        regionOrMode === 'us-capital-to-state' ||
-        regionOrMode === 'us-state-to-capital') {
-      mode = regionOrMode;
-      region = GAME_MODES[mode].label();
-    } else if (US_CITY_REGION_KEYS[regionOrMode]) {
-      // Cities mode: the button id like 'northeast-cities' maps to a region
-      // label like 'Northeast'. The label drives queue selection AND becomes
-      // currentContinent so the records key stays per-region.
-      mode = 'us-city';
-      region = US_CITY_REGION_KEYS[regionOrMode];
-    } else if (PROVINCE_ROUNDS[regionOrMode]) {
-      // Province mode: the round key (e.g. 'india-states') is the region,
-      // so records stay per-round and GAME_MODES.province.label() can title it.
-      mode = 'province';
-      region = regionOrMode;
-    } else {
-      mode = 'world-country';
-      region = regionOrMode;
-    }
+    const target = resolveGameTarget(regionOrMode);
+    const mode = target.mode;
+    const region = target.region;
+    state.startArg = regionOrMode;
+    state.practice = false;
 
     state.gameMode = mode;
     state.activeDataset = GAME_MODES[mode].dataset;
@@ -3808,6 +3919,7 @@
     state.wrong = 0;
     state.score = 0;
     state.missed = [];
+    state.secondTry = [];
     state.sequence = [];
     state.attempts = 0;
     state.startTime = Date.now();
@@ -3881,6 +3993,18 @@
       });
       state.queue = shuffle(Array.from(names));
     }
+
+    // Focus round: keep only the requested names. The queue is already
+    // shuffled, and names no longer on the map drop out. If none survive,
+    // fall through to a normal full game.
+    if (opts && opts.practice && mode !== 'daily-five') {
+      const wanted = new Set(opts.practice);
+      const subset = state.queue.filter(n => wanted.has(n));
+      if (subset.length > 0) {
+        state.queue = subset;
+        state.practice = true;
+      }
+    }
     state.totalQuestions = state.queue.length;
 
     switchScreen('game');
@@ -3890,6 +4014,7 @@
       headerLabel = 'Daily #' + dailyPuzzleNumber(state.dailyDateKey);
       if (state.dailyReplay) headerLabel += ' (Practice)';
     }
+    if (state.practice) headerLabel += ' · Practice';
     document.getElementById('region-tag').textContent = headerLabel;
     const zoomHintEl = document.getElementById('zoom-hint');
     if (zoomHintEl) {
@@ -4266,6 +4391,7 @@
       state.correct++;
       state.score += pointsEarned;
       state.sequence.push(pointsEarned);
+      if (pointsEarned === 1) state.secondTry.push(state.current);
       state.interactionLocked = true;
       btn.classList.add('choice-correct');
       const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
@@ -4358,6 +4484,7 @@
       state.correct++;
       state.score += pointsEarned;
       state.sequence.push(pointsEarned);
+      if (pointsEarned === 1) state.secondTry.push(state.current);
       state.interactionLocked = true;
       visiblePath.classed('target-correct', true);
       const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
@@ -4502,6 +4629,7 @@
       state.correct++;
       state.score += pointsEarned;
       state.sequence.push(pointsEarned);
+      if (pointsEarned === 1) state.secondTry.push(state.current);
       state.interactionLocked = true;
       dotSel.classed('target-correct', true);
       const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
@@ -4688,22 +4816,38 @@
     const pct = total > 0 ? Math.round((state.correct / total) * 100) : 0;
     const maxScore = state.totalQuestions * 2;
 
-    // Snapshot previous records BEFORE committing this session so we can
-    // show the user what they beat (or how close they came).
-    const priorRecords = getRecords(state.currentContinent, state.hardMode, state.gameMode);
+    // What this round says to work on next: misses first, then second tries
+    state.roundNeedsWork = state.missed.concat(state.secondTry);
 
-    const commitResult = commitSessionRecords({
-      region: state.currentContinent,
-      hardMode: state.hardMode,
-      gameMode: state.gameMode,
-      score: state.score,
-      correct: state.correct,
-      totalQuestions: state.totalQuestions,
-      timeSeconds: elapsed
-    });
-    state.brokenRecords = commitResult.broken;
-    state.priorRecords = priorRecords;
-    state.currentRecords = commitResult.records;
+    if (state.practice) {
+      // Focus rounds are a subset of the level, so they'd distort the
+      // level's bests. They also leave the saved focus list alone — only a
+      // full game rewrites it.
+      state.brokenRecords = {};
+      state.priorRecords = null;
+      state.currentRecords = null;
+    } else {
+      // Snapshot previous records BEFORE committing this session so we can
+      // show the user what they beat (or how close they came).
+      const priorRecords = getRecords(state.currentContinent, state.hardMode, state.gameMode);
+
+      const commitResult = commitSessionRecords({
+        region: state.currentContinent,
+        hardMode: state.hardMode,
+        gameMode: state.gameMode,
+        score: state.score,
+        correct: state.correct,
+        totalQuestions: state.totalQuestions,
+        timeSeconds: elapsed
+      });
+      state.brokenRecords = commitResult.broken;
+      state.priorRecords = priorRecords;
+      state.currentRecords = commitResult.records;
+
+      if (state.gameMode !== 'daily-five') {
+        saveFocusList(state.gameMode, state.currentContinent, state.roundNeedsWork, state.totalQuestions);
+      }
+    }
 
     // Daily mode: persist this attempt so the player gets the locked-out
     // "already played today" view if they reload or come back later.
@@ -4724,8 +4868,9 @@
       });
     }
 
-    // Mirror to cloud after every game (fire-and-forget; no-op if sync isn't set up)
-    syncAfterGameEnd();
+    // Mirror to cloud after every full game (fire-and-forget; no-op if sync
+    // isn't set up). Focus rounds change nothing worth syncing.
+    if (!state.practice) syncAfterGameEnd();
 
     const modeConfig = GAME_MODES[state.gameMode];
     let regionLabel = modeConfig.label(state.currentContinent);
@@ -4733,6 +4878,7 @@
       regionLabel = 'Daily #' + dailyPuzzleNumber(state.dailyDateKey);
       if (state.dailyReplay) regionLabel += ' (Practice)';
     }
+    if (state.practice) regionLabel += ' · Practice';
     document.getElementById('results-region').textContent =
       regionLabel + (state.hardMode ? ' · Hard Mode' : '');
     document.getElementById('grade-big').textContent = pct;
@@ -4747,19 +4893,21 @@
     const missedSection = document.getElementById('missed-section');
     const missedList = document.getElementById('missed-list');
     const missedHeading = document.getElementById('missed-heading');
-    if (state.missed.length > 0) {
+    const missedLegend = document.getElementById('missed-legend');
+    if (state.roundNeedsWork.length > 0) {
       // Heading word matches what the player was actually identifying.
       // us-city stores city names; us-state/us-capital-to-state/us-state-to-capital
       // all store state names (even when the prompt was a capital).
-      const provinceRound = PROVINCE_ROUNDS[state.currentProvinceRound];
-      const noun =
-        state.gameMode === 'us-city' ? 'Cities' :
-        provinceRound ? PROVINCE_COUNTRIES[provinceRound.country].noun :
-        GAME_MODES[state.gameMode].dataset === 'us' ? 'States' : 'Countries';
+      const noun = targetNoun(state.gameMode, state.currentContinent);
       if (missedHeading) missedHeading.textContent = '— ' + noun + ' to revisit —';
-      missedList.innerHTML = state.missed
-        .map(n => '<span class="missed-item">' + n + '</span>')
-        .join('<span style="opacity:0.3">·</span>');
+      const items = state.missed.map(n => '<span class="missed-item">' + n + '</span>')
+        .concat(state.secondTry.map(n => '<span class="missed-item second-try">' + n + '</span>'));
+      missedList.innerHTML = items.join('<span style="opacity:0.3">·</span>');
+      // Legend names only the kinds that actually appear
+      let legend = '';
+      if (state.missed.length) legend += '<span class="missed-key">Missed</span>';
+      if (state.secondTry.length) legend += '<span class="missed-key second-try">Second try</span>';
+      if (missedLegend) missedLegend.innerHTML = legend;
       missedSection.style.display = 'block';
     } else {
       missedSection.style.display = 'none';
@@ -4776,6 +4924,26 @@
       if (replayBtn) replayBtn.style.display = '';
       if (dailyPracticeBtn) dailyPracticeBtn.style.display = 'none';
     }
+
+    // "Practice These N" drills the list shown just above. After a focus
+    // round, "Study Again" would be ambiguous, so it becomes "Full Game".
+    // Practice is the suggested next step when offered, so it takes the
+    // filled style and Study Again steps back to an outline.
+    const practiceBtn = document.getElementById('practice-btn');
+    const offerPractice = state.gameMode !== 'daily-five' && state.roundNeedsWork.length > 0;
+    if (practiceBtn) {
+      practiceBtn.style.display = offerPractice ? '' : 'none';
+      const n = state.roundNeedsWork.length;
+      practiceBtn.textContent = n === 1 ? 'Practice This One' : 'Practice These ' + n;
+    }
+    if (replayBtn) {
+      replayBtn.textContent = state.practice ? 'Full Game' : 'Study Again';
+      replayBtn.classList.toggle('primary', !offerPractice);
+    }
+
+    // Sharing a practice round would read like a real score for the level
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) shareBtn.style.display = state.practice ? 'none' : '';
 
     // "View Map" button: lets the player go back to the map with all the
     // green/red markers still in place, so they can take a screenshot.
@@ -4975,6 +5143,109 @@
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* =========================================================
+   * FOCUS LISTS (what to practice next, per level)
+   *
+   * Storage shape under key "atlas-focus":
+   * {
+   *   "world-country|World": { names: ["Bhutan", ...], total: 197, savedAt: 1761140000000 },
+   *   "province|russia-east": { names: [], total: 27, savedAt: ... },
+   *   ...
+   * }
+   * names = missed + found-on-second-try from the last FULL game of that
+   * level. Shared by normal and hard mode (it's about what you know, not
+   * the difficulty). Focus rounds never rewrite it.
+   * ========================================================= */
+
+  const FOCUS_KEY = 'atlas-focus';
+
+  function loadFocusLists() {
+    try {
+      const raw = localStorage.getItem(FOCUS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveFocusLists(all) {
+    try {
+      localStorage.setItem(FOCUS_KEY, JSON.stringify(all));
+    } catch (e) { /* storage blocked - ignore silently */ }
+  }
+
+  function focusKeyFor(gameMode, region) {
+    return gameMode + '|' + region;
+  }
+
+  function getFocusList(gameMode, region) {
+    const entry = loadFocusLists()[focusKeyFor(gameMode, region)];
+    return entry && Array.isArray(entry.names) ? entry : null;
+  }
+
+  function saveFocusList(gameMode, region, names, total) {
+    const all = loadFocusLists();
+    all[focusKeyFor(gameMode, region)] = { names: names.slice(), total: total, savedAt: Date.now() };
+    saveFocusLists(all);
+  }
+
+  /* =========================================================
+   * FOCUS CHOOSER (fresh game vs. practice round, on card tap)
+   * ========================================================= */
+
+  // Tapping a level card: offer a focus round when the last full game
+  // there left something to revisit; otherwise start straight away.
+  function chooseAndStart(startArg) {
+    const target = resolveGameTarget(startArg);
+    const focus = target.mode === 'daily-five' ? null : getFocusList(target.mode, target.region);
+    if (!focus || focus.names.length === 0) {
+      startGame(startArg);
+      return;
+    }
+    openFocusChooser(startArg, target, focus);
+  }
+
+  function openFocusChooser(startArg, target, focus) {
+    const count = focus.names.length;
+    const noun = targetNoun(target.mode, target.region).toLowerCase();
+    const savedOn = new Date(focus.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    document.getElementById('focus-modal-title').textContent =
+      GAME_MODES[target.mode].label(target.region);
+    document.getElementById('focus-modal-subtitle').textContent =
+      'Your last full game here (' + savedOn + ') left ' + count + ' to revisit.';
+    document.getElementById('focus-choice-fresh-desc').textContent =
+      'All ' + focus.total + ' ' + noun + ' · counts toward your records';
+    document.getElementById('focus-choice-focus-title').textContent =
+      count === 1 ? 'Focus on That One' : 'Focus on Those ' + count;
+
+    // Buttons are permanent DOM, so swap handlers via onclick (no stacking)
+    document.getElementById('focus-choice-fresh').onclick = () => {
+      closeFocusChooser();
+      startGame(startArg);
+    };
+    document.getElementById('focus-choice-focus').onclick = () => {
+      closeFocusChooser();
+      startGame(startArg, { practice: focus.names });
+    };
+    document.getElementById('focus-modal-overlay').classList.add('show');
+  }
+
+  function closeFocusChooser() {
+    document.getElementById('focus-modal-overlay').classList.remove('show');
+  }
+
+  // Close button, click-outside, and Escape — wired once at module load
+  function wireFocusChooserChrome() {
+    const overlay = document.getElementById('focus-modal-overlay');
+    document.getElementById('focus-modal-close').addEventListener('click', closeFocusChooser);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeFocusChooser();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && overlay.classList.contains('show')) closeFocusChooser();
+    });
   }
 
   /* =========================================================
@@ -5215,7 +5486,12 @@
 
   document.getElementById('back-btn').addEventListener('click', () => switchScreen('menu'));
   document.getElementById('home-btn').addEventListener('click', () => switchScreen('menu'));
-  document.getElementById('replay-btn').addEventListener('click', () => startGame(state.currentContinent));
+  // startArg (not currentContinent) so US and Cities levels restart the
+  // same mode — their currentContinent is a display label, not a card id.
+  document.getElementById('replay-btn').addEventListener('click', () => startGame(state.startArg));
+  document.getElementById('practice-btn').addEventListener('click', () => {
+    startGame(state.startArg, { practice: state.roundNeedsWork });
+  });
 
   // View Map (results → game screen in review mode) + back out of review mode.
   // Review mode hides the prompt panel, score readout, skip button, page hint,
@@ -5426,6 +5702,7 @@
       lastUpdated: Date.now(),
       records: loadAllRecords(),
       dailyAttempts: syncLoadDailyAttempts(),
+      focusLists: loadFocusLists(),
       hardMode: loadHardMode()
     };
   }
@@ -5447,6 +5724,17 @@
       if (!mergedDaily[dateKey]) mergedDaily[dateKey] = remoteDaily[dateKey];
     }
     try { localStorage.setItem(DAILY_KEY, JSON.stringify(mergedDaily)); } catch (e) {}
+
+    // Focus lists: per level, the most recent full game wins
+    const focus = loadFocusLists();
+    const remoteFocus = remote.focusLists || {};
+    for (const key in remoteFocus) {
+      const r = remoteFocus[key];
+      if (r && Array.isArray(r.names) && (!focus[key] || (r.savedAt || 0) > (focus[key].savedAt || 0))) {
+        focus[key] = r;
+      }
+    }
+    saveFocusLists(focus);
   }
 
   function syncMergeRecords(local, remote) {
@@ -5795,6 +6083,7 @@
   }
 
   wireSyncModalChrome();
+  wireFocusChooserChrome();
 
   init();
 

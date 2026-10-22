@@ -73,6 +73,16 @@ Records are surfaced on:
 - Results screen (full panel; broken records glow gold)
 - Share text (🏆 record-broken line for new records)
 
+### Focus practice (replay just the ones you missed)
+Built so big levels like The Whole World stay engaging: drill the shaky ones instead of replaying the 150 you already know.
+- **The focus list** for a level = everything missed **or** found only on the second try in the **last full game** of that level. Stored under `atlas-focus`, keyed `gameMode|region` (shared by normal and hard mode).
+- **Only full games rewrite it.** A perfect full game empties it. Quitting mid-game or playing a practice round leaves it alone.
+- **Results screen:** the "to revisit" list now shows second-try names too (gold dot = second try, sienna dot = missed), and a **Practice These N** button drills exactly that list. After a practice round it drills whatever is *still* shaky, so you can narrow down round by round.
+- **Start of a level:** tapping a card whose saved list is non-empty opens a chooser — **Fresh Game** (all N, counts toward records) or **Focus on Those N** (practice round). Empty list → starts straight away like before.
+- **Practice rounds don't touch records** (a 20-country round would otherwise "beat" the World bests), don't push to sync, and hide Share. Header and results read "· Practice". The full map stays clickable so there's no process of elimination.
+- Not offered for Daily Five (it already has Practice Replay).
+- Focus lists ride along in the sync payload; per level, the newer `savedAt` wins.
+
 ### Share results
 - Native share sheet on mobile (iOS/Android)
 - Clipboard fallback on desktop with "✓ Copied to clipboard" confirmation
@@ -151,7 +161,9 @@ state = {
   // Active game
   activeDataset, gameMode, currentContinent,
   eligibleFeatures, queue, current, currentPromptText,
-  attempts, correct, wrong, score, missed, sequence,
+  attempts, correct, wrong, score, missed, secondTry, sequence,
+  // Focus practice
+  startArg, practice, roundNeedsWork,
   // Daily-specific
   dailyDateKey, dailyReplay,
   // Settings
@@ -198,6 +210,16 @@ localStorage["atlas-daily-attempts"] = {
 ```
 Trimmed to last 30 days.
 
+### Focus lists shape
+```javascript
+localStorage["atlas-focus"] = {
+  "world-country|World": { names: ["Bhutan", ...], total: 197, savedAt: 1761140000000 },
+  "province|russia-east": { names: [], total: 27, savedAt: ... },  // empty = nothing to practice
+  ...
+}
+```
+Key format: `gameMode|region` (no difficulty). `names` is missed first, then second tries.
+
 ### Sync API shape (`functions/api/records.js`)
 - **`GET /api/records?token=<32 hex>`** — returns the stored JSON blob for that token, or the literal string `null` if none exists.
 - **`POST /api/records?token=<32 hex>`** — overwrites the blob with the request body (must be valid JSON). Returns `{ ok: true }`.
@@ -215,3 +237,4 @@ Trimmed to last 30 days.
 - **May 22, 2026:** Migration complete. Site live on Cloudflare Pages at `atlas-game.pages.dev`. Custom subdomain `atlas.nathankolk.com` wired up via CNAME at Squarespace DNS (nameservers stayed at Squarespace to preserve email records on the root domain). Phase 1 backend deployed; client-side sync UI is the next milestone.
 - **May 23, 2026:** GitHub auto-deploy wired. Repo created at `github.com/nathankolk/atlas-game`; original Direct Upload Pages project deleted and recreated as Git-connected (one-way door per Cloudflare — see CLAUDE.md gotchas). Pushes to `main` now auto-deploy to production. KV namespace survived the swap since it's account-level.
 - **June 2, 2026:** Phase 1 shipped end-to-end. Client-side sync UI is wired into the HTML; records now mirror across devices through KV using a 128-bit hex token. localStorage stays source of truth so the game still works fully offline.
+- **Oct 22, 2026:** Focus practice — every level remembers what you missed or needed two tries on in your last full game, and offers a practice round of just those (at the end of a game and when you start the level). Also fixed "Study Again" for US modes and US Cities, which used to restart an empty game.
