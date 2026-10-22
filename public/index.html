@@ -3518,8 +3518,10 @@
   }
 
   // Updates the "Next puzzle in HH:MM:SS" countdown on the daily card.
-  // Self-rebinds via setTimeout(1000) until the menu is left.
+  // Self-rebinds via setTimeout(1000) until the menu is left. Each menu
+  // redraw restarts it, so cancel the previous loop to keep just one.
   function startDailyCountdown() {
+    clearTimeout(startDailyCountdown._t);
     function tick() {
       const el = document.querySelector('[data-countdown]');
       if (!el) return; // Element gone (menu re-rendered or left) - stop ticking
@@ -3536,7 +3538,7 @@
       // If the day rolled over while we were sitting here, refresh
       // the menu so the user gets the fresh-puzzle card
       if (ms <= 0) { renderMenu(); return; }
-      setTimeout(tick, 1000);
+      startDailyCountdown._t = setTimeout(tick, 1000);
     }
     tick();
   }
@@ -3547,8 +3549,7 @@
   // card itself; kept in case we want to enable a tap-to-confirm flow.)
   function showDailyAlreadyPlayed(_attempt, _dateKey) {
     state.menuView = 'main';
-    renderMenu();
-    switchScreen('menu');
+    switchScreen('menu'); // redraws the menu
   }
 
   // Continents sub-menu: back arrow + section heading + 6 continent cards
@@ -5479,6 +5480,9 @@
    * ========================================================= */
 
   function switchScreen(name) {
+    // Redraw the menu on the way back so card bests and the daily card
+    // reflect the game just played (stays in the same folder view)
+    if (name === 'menu') renderMenu();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById(name + '-screen');
     if (target) target.classList.add('active');
