@@ -3324,6 +3324,7 @@
       });
 
       renderMenu();
+      openLinkedLevel();
 
       // Fire-and-forget: pull latest records from server if a sync token is set.
       // syncOnAppLoad re-renders the menu when data arrives.
@@ -3336,6 +3337,80 @@
         '<strong>The map could not be unfurled.</strong><br/>' +
         'The atlas data failed to load. This may be a network issue — please check your connection and refresh the page.' +
         '</div>';
+    }
+  }
+
+  /* =========================================================
+   * LEVEL LINKS (?play=<slug>, shareable per level)
+   *
+   * Every menu card's start argument gets a URL slug: continents are
+   * lowercased and hyphenated ('North America' -> 'north-america'), the
+   * Daily is 'daily', everything else is its card key ('china-provinces',
+   * 'us-state', 'west-cities'). &learn=1 opens a province level in Learn
+   * mode. The address bar tracks the level in play, so copying it works too.
+   * ========================================================= */
+
+  function linkSlugs() {
+    const slugs = { world: 'World', daily: 'daily-five' };
+    CONTINENT_ORDER.forEach(c => { slugs[c.toLowerCase().replace(/ /g, '-')] = c; });
+    ['us-state', 'us-capital-to-state', 'us-state-to-capital']
+      .concat(Object.keys(US_CITY_REGION_KEYS), Object.keys(PROVINCE_ROUNDS))
+      .forEach(k => { slugs[k] = k; });
+    return slugs;
+  }
+
+  function slugForStartArg(startArg) {
+    const slugs = linkSlugs();
+    return Object.keys(slugs).find(k => slugs[k] === startArg) || null;
+  }
+
+  function baseUrl() {
+    return window.location.origin + window.location.pathname;
+  }
+
+  // Shareable URL for a level (falls back to the home page)
+  function levelLink(startArg, learn) {
+    const slug = slugForStartArg(startArg);
+    if (!slug) return baseUrl();
+    return baseUrl() + '?play=' + slug + (learn ? '&learn=1' : '');
+  }
+
+  // Point the address bar at a URL without adding a history entry
+  function setAddressBar(url) {
+    try {
+      if (window.location.href !== url) window.history.replaceState(null, '', url);
+    } catch (e) { /* some embedded browsers block this - harmless */ }
+  }
+
+  // The menu folder a level's card lives in, so "← Atlas" lands beside it
+  function menuViewForStartArg(startArg) {
+    const target = resolveGameTarget(startArg);
+    if (target.mode === 'province') {
+      return PROVINCE_ROUNDS[startArg].country === 'russia' ? 'provinces-russia' : 'provinces';
+    }
+    if (target.mode === 'us-city') return 'us-cities';
+    if (target.mode.indexOf('us-') === 0) return 'us';
+    if (target.mode === 'world-country' && startArg !== 'World') return 'continents';
+    return 'main';
+  }
+
+  // On load: open the level named in ?play=, the same way tapping its card does
+  function openLinkedLevel() {
+    let params;
+    try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+    const slug = (params.get('play') || '').toLowerCase();
+    if (!slug) return;
+    const startArg = linkSlugs()[slug];
+    if (!startArg) {
+      setAddressBar(baseUrl());
+      return;
+    }
+    state.menuView = menuViewForStartArg(startArg);
+    renderMenu();
+    if (params.get('learn') === '1' && PROVINCE_ROUNDS[startArg]) {
+      startGame(startArg, { learn: true });
+    } else {
+      chooseAndStart(startArg);
     }
   }
 
@@ -4071,6 +4146,7 @@
       state.learn = createLearnRun(region, state.queue, !!opts.learnFresh);
     }
     setLearnChrome(!!state.learn);
+    setAddressBar(levelLink(regionOrMode, !!state.learn));
 
     switchScreen('game');
     // Header label - daily mode shows the puzzle number
@@ -5717,8 +5793,8 @@
       ? '🏆 ' + badges.join(' · ')
       : null;
 
-    // Clean URL (no query string or hash fragment)
-    const url = window.location.origin + window.location.pathname;
+    // Link straight to this level so the recipient can play it
+    const url = levelLink(state.startArg);
 
     const lines = [
       '🧭 Cartographer\u2019s Atlas · ' + dateStr,
@@ -5744,7 +5820,7 @@
     const maxScore = opts.total * 2;
     const isPerfect = opts.score === maxScore && opts.total > 0;
     const hardBadge = opts.hardMode ? ' · Hard' : '';
-    const url = window.location.origin + window.location.pathname;
+    const url = levelLink('daily-five');
 
     const headline = isPerfect
       ? 'Perfect! ' + opts.score + '/' + maxScore + ' pts ✨'
@@ -5847,7 +5923,10 @@
   function switchScreen(name) {
     // Redraw the menu on the way back so card bests and the daily card
     // reflect the game just played (stays in the same folder view)
-    if (name === 'menu') renderMenu();
+    if (name === 'menu') {
+      renderMenu();
+      setAddressBar(baseUrl());
+    }
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById(name + '-screen');
     if (target) target.classList.add('active');
