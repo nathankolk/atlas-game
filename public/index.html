@@ -2759,13 +2759,13 @@
     canada: {
       name: 'Canada',
       dataUrl: '/data/provinces-canada.json',
-      noun: 'Provinces',
+      noun: 'Provinces & Territories',
       parallels: [50, 70]
     },
     china: {
       name: 'China',
       dataUrl: '/data/provinces-china.json',
-      noun: 'Provinces',
+      noun: 'Provinces & Regions',
       parallels: [25, 47]
     },
     india: {
@@ -2793,7 +2793,7 @@
       subname: 'ten provinces and three territories'
     },
     'china-provinces': {
-      country: 'china', label: 'Provinces of China', short: 'China', count: 33,
+      country: 'china', label: 'Provinces & Regions of China', short: 'China', count: 33,
       subname: 'provinces, regions, municipalities & SARs'
     },
     'india-states': {
@@ -4939,12 +4939,12 @@
 
   function updateStats() {
     if (state.learn) {
-      // Learn mode: Level · found this pass · restarts so far · left this pass
+      // Learn mode: Level · found this pass · restarts so far · still to learn
       document.getElementById('stat-score').textContent = state.learn.level;
       document.getElementById('stat-correct').textContent = state.correct;
       document.getElementById('stat-wrong').textContent = state.learn.restarts;
-      document.getElementById('stat-remaining').textContent =
-        state.learn.phase === 'quiz' ? Math.max(0, state.totalQuestions - state.correct) : state.learn.level;
+      // Left = provinces not yet introduced, matching "Level n of N" above the map
+      document.getElementById('stat-remaining').textContent = state.learn.order.length - state.learn.level;
       return;
     }
     document.getElementById('stat-score').textContent = state.score;
