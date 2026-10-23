@@ -189,6 +189,8 @@ For full detail see `atlas_handoff.md`. Highlights:
 
 **Focus practice** lives in `localStorage["atlas-focus"]` keyed by `gameMode|region` (no difficulty). Each entry is the missed + second-try names from the last *full* game of that level; practice rounds (`startGame(arg, { practice: names })`, `state.practice`) never rewrite it, skip `commitSessionRecords`, and don't push to sync. Level cards go through `chooseAndStart()`, which opens the Fresh/Focus chooser when the saved list is non-empty. Replays use `state.startArg` (the card's `data-region`), not `currentContinent`, which is a display label for US modes.
 
+**Learn mode** (province levels only) is a ladder: the chooser (always shown for province cards) offers "Learn Them". Level n shows the first n names of a shuffled order on the map, then quizzes all n in random order; one miss (or skip) restarts level n, a clean pass adds the next. Lives in the `LEARN MODE` section (`state.learn`, `startLearnLevel()` → `beginLearnQuiz()` → `nextCountry()`; an empty queue calls `learnLevelPassed()` instead of `finishGame()`). Progress persists in `localStorage["atlas-learn"]` keyed by round (`{ order, level }`), cleared when the ladder is finished. Practice only: no records, focus list, or sync.
+
 **Daily Five** is deterministic: date string → FNV-1a hash → Mulberry32 PRNG → 5 countries with a difficulty ramp (Tier 1 easy → Tier 3 hard, hand-curated tier lists in the source). Daily epoch is `2026-04-26` = Day 1. Attempts live in `localStorage["atlas-daily-attempts"]`, trimmed to last 30 days.
 
 **Sync API** (`functions/api/records.js`):

@@ -1497,6 +1497,51 @@
     stroke-width: 2;
   }
 
+  /* ===== Learn mode (province ladder) =====
+   * Study phase: provinces learned so far are tinted gold and labeled;
+   * the one added this level is brighter with an ink outline. */
+  .country.learn-known {
+    fill: #ead39a !important;
+    stroke: var(--sepia);
+    stroke-width: 1;
+  }
+  .country.learn-new {
+    fill: var(--gold-bright) !important;
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+  .learn-label text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-weight: 600;
+    fill: var(--ink);
+    stroke: var(--parchment);
+    stroke-width: 3px;
+    paint-order: stroke;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+  }
+  .learn-label.new text {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .focus-choice.learn {
+    border-left: 3px solid var(--moss);
+  }
+  .focus-reset-link {
+    display: block;
+    margin: 2px auto 0;
+    background: none;
+    border: none;
+    font-family: 'Crimson Pro', serif;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--ink-faded);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
   /* US mode backdrop */
   .us-ocean {
     fill: #dde8ed;
@@ -2201,7 +2246,7 @@
       </div>
       <div class="hdr-right">
         <div class="stat stat-primary">
-          <div class="stat-label">Score</div>
+          <div class="stat-label" id="stat-score-label">Score</div>
           <div class="stat-value score-color" id="stat-score">0</div>
         </div>
         <div class="stat">
@@ -2209,7 +2254,7 @@
           <div class="stat-value correct-color" id="stat-correct">0</div>
         </div>
         <div class="stat">
-          <div class="stat-label">Missed</div>
+          <div class="stat-label" id="stat-wrong-label">Missed</div>
           <div class="stat-value wrong-color" id="stat-wrong">0</div>
         </div>
         <div class="stat">
@@ -2244,6 +2289,7 @@
 
     <div class="controls">
       <button class="ctrl-btn" id="skip-btn">Skip <span class="ctrl-kbd">S</span></button>
+      <button class="ctrl-btn primary" id="learn-ready-btn" style="display:none;">Quiz Me</button>
     </div>
   </div>
 
@@ -2262,13 +2308,13 @@
 
       <div class="results-grade">
         <div class="grade-big" id="grade-big">—</div>
-        <div class="grade-unit">% accuracy</div>
+        <div class="grade-unit" id="grade-unit">% accuracy</div>
       </div>
 
       <div class="results-stats">
         <div class="r-stat">
           <div class="r-stat-value score" id="r-score">0/0</div>
-          <div class="r-stat-label">Score</div>
+          <div class="r-stat-label" id="r-score-label">Score</div>
         </div>
         <div class="r-stat">
           <div class="r-stat-value good" id="r-correct">0</div>
@@ -2276,7 +2322,7 @@
         </div>
         <div class="r-stat">
           <div class="r-stat-value bad" id="r-wrong">0</div>
-          <div class="r-stat-label">Missed</div>
+          <div class="r-stat-label" id="r-wrong-label">Missed</div>
         </div>
         <div class="r-stat">
           <div class="r-stat-value" id="r-time">0:00</div>
@@ -2336,6 +2382,11 @@
             <div class="focus-choice-title" id="focus-choice-focus-title">Focus Practice</div>
             <div class="focus-choice-desc">Just the ones you missed or found on a second try · practice only, your records stay as they are</div>
           </button>
+          <button class="focus-choice learn" id="focus-choice-learn" type="button" style="display:none;">
+            <div class="focus-choice-title" id="focus-choice-learn-title">Learn Them</div>
+            <div class="focus-choice-desc" id="focus-choice-learn-desc"></div>
+          </button>
+          <button class="focus-reset-link" id="focus-learn-reset" type="button" style="display:none;">Start learning over from one</button>
         </div>
       </div>
     </div>
@@ -3048,6 +3099,7 @@
     sequence: [],             // Per-country points: 2 (first try), 1 (second try), 0 (missed)
     startArg: null,           // What startGame() was called with, so replays restart the same level
     practice: false,          // True for a focus round (subset of a level; skips records)
+    learn: null,              // Learn mode run (province ladder), see LEARN MODE section
     roundNeedsWork: [],       // missed + secondTry from the round just finished
     startTime: null,
     interactionLocked: false,
@@ -3866,6 +3918,7 @@
     const region = target.region;
     state.startArg = regionOrMode;
     state.practice = false;
+    state.learn = null;
     // Set (or cleared) per start and left in place through finishGame, so
     // the results screen still knows a daily replay was practice.
     state.dailyReplay = opts && opts.dailyReplay ? { dateKey: opts.dailyReplay } : null;
@@ -4012,6 +4065,13 @@
     }
     state.totalQuestions = state.queue.length;
 
+    // Learn mode: the queue becomes the ladder order, quizzed one level at
+    // a time (startLearnLevel builds each level's queue).
+    if (opts && opts.learn && mode === 'province') {
+      state.learn = createLearnRun(region, state.queue, !!opts.learnFresh);
+    }
+    setLearnChrome(!!state.learn);
+
     switchScreen('game');
     // Header label - daily mode shows the puzzle number
     let headerLabel = GAME_MODES[mode].label(region);
@@ -4020,6 +4080,7 @@
       if (state.dailyReplay) headerLabel += ' (Practice)';
     }
     if (state.practice) headerLabel += ' · Practice';
+    if (state.learn) headerLabel += ' · Learn';
     document.getElementById('region-tag').textContent = headerLabel;
     const zoomHintEl = document.getElementById('zoom-hint');
     if (zoomHintEl) {
@@ -4030,7 +4091,8 @@
     // Wait for screen transition, then render map
     setTimeout(() => {
       renderMap();
-      nextCountry();
+      if (state.learn) startLearnLevel();
+      else nextCountry();
     }, 80);
   }
 
@@ -4161,6 +4223,7 @@
           const invK = 1 / event.transform.k;
           g.selectAll('.city-dot').attr('r', CITY_DOT_BASE_RADIUS * invK);
         }
+        if (state.learn) scaleLearnLabels(event.transform.k);
       });
 
     svg.call(zoomBehavior);
@@ -4290,7 +4353,8 @@
 
   function nextCountry() {
     if (state.queue.length === 0) {
-      finishGame();
+      if (state.learn) learnLevelPassed();
+      else finishGame();
       return;
     }
     state.current = state.queue.shift();
@@ -4333,7 +4397,9 @@
       highlightPromptedState(state.current);
     } else {
       // World country mode or US state mode
-      promptLabelEl.textContent = 'Find on the map';
+      promptLabelEl.textContent = state.learn
+        ? 'Level ' + state.learn.level + ' of ' + state.learn.order.length + ' · find'
+        : 'Find on the map';
       promptEl.textContent = state.current;
       state.currentPromptText = state.current;
       choicesEl.style.display = 'none';
@@ -4489,9 +4555,10 @@
       visiblePath.classed('target-correct', true);
       const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
       // For capital mode, the toast shows "Capital → State" to reinforce learning
-      const toastMsg = state.gameMode === 'us-capital-to-state'
+      let toastMsg = state.gameMode === 'us-capital-to-state'
         ? '<em>' + state.currentPromptText + '</em> → ' + state.current + ' · ' + pointsLabel
         : 'Well done — <em>' + state.current + '</em> · ' + pointsLabel;
+      if (state.learn) toastMsg = 'Well done — <em>' + state.current + '</em>';
       showToast('correct', toastMsg);
       updateStats();
       flashScore();
@@ -4513,14 +4580,19 @@
       void promptEl.offsetWidth;
       promptEl.classList.add('shake');
 
-      if (state.attempts >= 2) {
+      // Learn mode allows no second try: one miss restarts the level
+      if (state.attempts >= 2 || state.learn) {
         state.wrong++;
         state.sequence.push(0);
         state.missed.push(state.current);
         state.interactionLocked = true;
-        const revealMsg = state.gameMode === 'us-capital-to-state'
+        let revealMsg = state.gameMode === 'us-capital-to-state'
           ? '<em>' + state.currentPromptText + '</em> → ' + state.current
           : 'Not quite — this is <em>' + state.current + '</em>';
+        if (state.learn) {
+          revealMsg = (clickedCanonical ? 'That’s <em>' + clickedCanonical + '</em> — ' : '') +
+            'this is <em>' + state.current + '</em>';
+        }
         revealTargetFeature(targetFeature, revealMsg);
       } else {
         const wrongName = clickedCanonical || 'That';
@@ -4542,8 +4614,13 @@
     ensureFeatureVisible(feature);
     showRevealMarker(feature);
 
+    const learnRun = state.learn;
     setTimeout(() => {
       targetPath.classed('reveal', false);
+      if (learnRun) {
+        if (state.learn === learnRun) learnLevelFailed();
+        return;
+      }
       if (!state.hardMode) {
         targetPath.classed('completed-wrong', true);
       }
@@ -4741,6 +4818,7 @@
   function handleSkip() {
     if (state.interactionLocked) return;
     if (!state.current) return;
+    if (state.learn && state.learn.phase !== 'quiz') return;
     state.wrong++;
     state.sequence.push(0);
     state.missed.push(state.current);
@@ -4784,6 +4862,15 @@
   }
 
   function updateStats() {
+    if (state.learn) {
+      // Learn mode: Level · found this pass · restarts so far · left this pass
+      document.getElementById('stat-score').textContent = state.learn.level;
+      document.getElementById('stat-correct').textContent = state.correct;
+      document.getElementById('stat-wrong').textContent = state.learn.restarts;
+      document.getElementById('stat-remaining').textContent =
+        state.learn.phase === 'quiz' ? Math.max(0, state.totalQuestions - state.correct) : state.learn.level;
+      return;
+    }
     document.getElementById('stat-score').textContent = state.score;
     document.getElementById('stat-correct').textContent = state.correct;
     document.getElementById('stat-wrong').textContent = state.wrong;
@@ -4809,6 +4896,8 @@
   }
 
   function finishGame() {
+    setLearnResultsLabels(false);
+    state.lastWasLearn = false;
     const elapsed = Math.round((Date.now() - state.startTime) / 1000);
     const mins = Math.floor(elapsed / 60);
     const secs = elapsed % 60;
@@ -5197,42 +5286,318 @@
   }
 
   /* =========================================================
+   * LEARN MODE (province ladder)
+   *
+   * Level n: study the first n provinces of a shuffled order (named on the
+   * map, newest highlighted), then find all n in random order. One miss
+   * restarts the level with the same n; a clean pass adds the next one.
+   * Practice only: no records, no focus list, no sync.
+   *
+   * Progress persists per round under "atlas-learn":
+   *   { "china-provinces": { order: [...all names], level: 7, savedAt } }
+   * level = the level to resume at. Cleared once the ladder is finished.
+   * ========================================================= */
+
+  const LEARN_KEY = 'atlas-learn';
+
+  function loadLearnAll() {
+    try {
+      const raw = localStorage.getItem(LEARN_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveLearnAll(all) {
+    try {
+      localStorage.setItem(LEARN_KEY, JSON.stringify(all));
+    } catch (e) { /* storage blocked - ignore silently */ }
+  }
+
+  function getLearnProgress(roundKey) {
+    const p = loadLearnAll()[roundKey];
+    if (!p || !Array.isArray(p.order) || !p.order.length || !(p.level >= 1)) return null;
+    return p;
+  }
+
+  function saveLearnProgress(run) {
+    const all = loadLearnAll();
+    all[run.roundKey] = { order: run.order.slice(), level: run.level, savedAt: Date.now() };
+    saveLearnAll(all);
+  }
+
+  function clearLearnProgress(roundKey) {
+    const all = loadLearnAll();
+    delete all[roundKey];
+    saveLearnAll(all);
+  }
+
+  // Province count for a round, from the loaded map if we have it
+  function provinceRoundSize(roundKey) {
+    const round = PROVINCE_ROUNDS[roundKey];
+    const store = round && state.provinceStores[round.country];
+    if (!store) return 0;
+    return store.features.filter(f => !round.group || (f.properties && f.properties.group === round.group)).length;
+  }
+
+  // Resume the saved ladder if it still matches the map; else a new shuffle.
+  function createLearnRun(roundKey, names, fresh) {
+    const saved = fresh ? null : getLearnProgress(roundKey);
+    const nameSet = new Set(names);
+    let order = null;
+    let level = 1;
+    if (saved && saved.order.length === names.length && saved.order.every(n => nameSet.has(n))) {
+      order = saved.order.slice();
+      level = Math.min(saved.level, order.length);
+    }
+    if (!order) order = shuffle(names);
+    const run = { roundKey: roundKey, order: order, level: level, phase: 'study', restarts: 0 };
+    saveLearnProgress(run);
+    return run;
+  }
+
+  // Swap the in-game chrome between learn and normal play
+  function setLearnChrome(on) {
+    document.getElementById('stat-score-label').textContent = on ? 'Level' : 'Score';
+    document.getElementById('stat-wrong-label').textContent = on ? 'Restarts' : 'Missed';
+    document.getElementById('learn-ready-btn').style.display = 'none';
+    document.getElementById('skip-btn').style.display = '';
+  }
+
+  function setLearnResultsLabels(on) {
+    document.getElementById('r-score-label').textContent = on ? 'Levels' : 'Score';
+    document.getElementById('r-wrong-label').textContent = on ? 'Restarts' : 'Missed';
+    document.getElementById('grade-unit').textContent = on ? 'learned' : '% accuracy';
+  }
+
+  // Study phase: show the provinces of this level with their names
+  function startLearnLevel() {
+    const run = state.learn;
+    if (!run) return;
+    run.phase = 'study';
+    state.current = null;
+    state.queue = [];
+    state.correct = 0;
+    state.wrong = 0;
+    state.totalQuestions = run.level;
+    state.interactionLocked = true;
+
+    // Wipe last pass's green/red so the map is clean for studying
+    d3.selectAll('.country').classed('completed-correct', false)
+      .classed('completed-wrong', false).classed('target-correct', false)
+      .classed('target-wrong', false).classed('reveal', false);
+
+    drawLearnStudy();
+
+    const newest = run.order[run.level - 1];
+    const promptLabelEl = document.querySelector('.prompt-panel .prompt-label');
+    const promptEl = document.getElementById('prompt-country');
+    promptLabelEl.textContent = 'Level ' + run.level + ' of ' + run.order.length +
+      (run.level === 1 ? ' · study it' : ' · study all ' + run.level);
+    promptEl.textContent = newest;
+    state.currentPromptText = newest;
+    promptEl.classList.remove('shake', 'pulse');
+    void promptEl.offsetWidth;
+    promptEl.classList.add('pulse');
+
+    document.getElementById('skip-btn').style.display = 'none';
+    document.getElementById('learn-ready-btn').style.display = '';
+
+    const feature = activeFeatureByCanonical().get(newest);
+    if (feature) ensureFeatureVisible(feature);
+    updateStats();
+  }
+
+  // Tint and label this level's provinces (newest brightest)
+  function drawLearnStudy() {
+    const run = state.learn;
+    if (!run || !state.mapG || !state.pathGen) return;
+    clearLearnStudy();
+    const byName = activeFeatureByCanonical();
+    const labelG = state.mapG.append('g').attr('class', 'learn-labels');
+    const k = (state.currentTransform && state.currentTransform.k) || 1;
+    run.order.slice(0, run.level).forEach((name, i) => {
+      const feature = byName.get(name);
+      if (!feature) return;
+      const isNew = i === run.level - 1;
+      d3.select('.country[data-fkey="' + CSS.escape(featureKey(feature)) + '"]')
+        .classed(isNew ? 'learn-new' : 'learn-known', true);
+      const [cx, cy] = state.pathGen.centroid(feature);
+      if (isNaN(cx) || isNaN(cy)) return;
+      const label = labelG.append('g')
+        .attr('class', 'learn-label' + (isNew ? ' new' : ''))
+        .attr('data-cx', cx).attr('data-cy', cy)
+        .attr('transform', 'translate(' + cx + ',' + cy + ') scale(' + (1 / k) + ')');
+      label.append('text').text(name);
+    });
+    // Newest label on top so it's never hidden under an older one
+    labelG.select('.learn-label.new').raise();
+  }
+
+  function clearLearnStudy() {
+    d3.selectAll('.country.learn-new, .country.learn-known')
+      .classed('learn-new', false).classed('learn-known', false);
+    if (state.mapG) state.mapG.selectAll('.learn-labels').remove();
+  }
+
+  // Keep labels a constant screen size while zooming
+  function scaleLearnLabels(k) {
+    if (!state.mapG) return;
+    state.mapG.selectAll('.learn-label').attr('transform', function () {
+      return 'translate(' + this.getAttribute('data-cx') + ',' + this.getAttribute('data-cy') +
+        ') scale(' + (1 / k) + ')';
+    });
+  }
+
+  // Study → quiz: hide the names, ask for each of this level's provinces
+  function beginLearnQuiz() {
+    const run = state.learn;
+    if (!run || run.phase !== 'study') return;
+    run.phase = 'quiz';
+    clearLearnStudy();
+    document.getElementById('learn-ready-btn').style.display = 'none';
+    document.getElementById('skip-btn').style.display = '';
+    state.queue = shuffle(run.order.slice(0, run.level));
+    state.totalQuestions = run.level;
+    state.correct = 0;
+    state.wrong = 0;
+    nextCountry();
+  }
+
+  function learnLevelPassed() {
+    const run = state.learn;
+    if (run.level >= run.order.length) {
+      finishLearn();
+      return;
+    }
+    run.level++;
+    saveLearnProgress(run);
+    showToast('correct', 'Level cleared — adding <em>' + run.order[run.level - 1] + '</em>');
+    startLearnLevel();
+  }
+
+  function learnLevelFailed() {
+    state.learn.restarts++;
+    showToast('wrong', 'Back to the start of level ' + state.learn.level);
+    startLearnLevel();
+  }
+
+  // Ladder complete: every province of the round found in one clean pass
+  function finishLearn() {
+    const run = state.learn;
+    clearLearnProgress(run.roundKey);
+    state.lastWasLearn = true;
+    state.roundNeedsWork = [];
+    state.brokenRecords = {};
+    state.currentRecords = null;
+
+    const elapsed = Math.round((Date.now() - state.startTime) / 1000);
+    const total = run.order.length;
+    setLearnResultsLabels(true);
+    document.getElementById('results-region').textContent =
+      GAME_MODES.province.label(run.roundKey) + ' · Learn';
+    document.getElementById('grade-big').textContent = total;
+    document.getElementById('r-score').textContent = total + '/' + total;
+    document.getElementById('r-correct').textContent = total;
+    document.getElementById('r-wrong').textContent = run.restarts;
+    document.getElementById('r-time').textContent = formatTimeSeconds(elapsed);
+
+    renderRecordsBanner();
+    renderBestsSection();
+    document.getElementById('missed-section').style.display = 'none';
+    document.getElementById('practice-btn').style.display = 'none';
+    document.getElementById('daily-practice-btn').style.display = 'none';
+    document.getElementById('share-btn').style.display = 'none';
+    document.getElementById('view-map-btn').style.display = 'none';
+    const replayBtn = document.getElementById('replay-btn');
+    replayBtn.style.display = '';
+    replayBtn.textContent = 'Learn Again';
+    replayBtn.classList.add('primary');
+
+    state.learn = null;
+    setLearnChrome(false);
+    switchScreen('results');
+  }
+
+  /* =========================================================
    * FOCUS CHOOSER (fresh game vs. practice round, on card tap)
    * ========================================================= */
 
   // Tapping a level card: offer a focus round when the last full game
   // there left something to revisit; otherwise start straight away.
+  // Province levels always open the chooser, since Learn mode lives there.
   function chooseAndStart(startArg) {
     const target = resolveGameTarget(startArg);
     const focus = target.mode === 'daily-five' ? null : getFocusList(target.mode, target.region);
-    if (!focus || focus.names.length === 0) {
+    const hasFocus = !!(focus && focus.names.length > 0);
+    if (!hasFocus && target.mode !== 'province') {
       startGame(startArg);
       return;
     }
-    openFocusChooser(startArg, target, focus);
+    openFocusChooser(startArg, target, hasFocus ? focus : null);
   }
 
+  // focus may be null (province level with nothing to revisit yet)
   function openFocusChooser(startArg, target, focus) {
-    const count = focus.names.length;
     const noun = targetNoun(target.mode, target.region).toLowerCase();
-    const savedOn = new Date(focus.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     document.getElementById('focus-modal-title').textContent =
       GAME_MODES[target.mode].label(target.region);
-    document.getElementById('focus-modal-subtitle').textContent =
-      'Your last full game here (' + savedOn + ') left ' + count + ' to revisit.';
+
+    const focusBtn = document.getElementById('focus-choice-focus');
+    if (focus) {
+      const count = focus.names.length;
+      const savedOn = new Date(focus.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      document.getElementById('focus-modal-subtitle').textContent =
+        'Your last full game here (' + savedOn + ') left ' + count + ' to revisit.';
+      document.getElementById('focus-choice-focus-title').textContent =
+        count === 1 ? 'Focus on That One' : 'Focus on Those ' + count;
+      focusBtn.style.display = '';
+    } else {
+      document.getElementById('focus-modal-subtitle').textContent = 'How would you like to play?';
+      focusBtn.style.display = 'none';
+    }
+    const total = focus ? focus.total : provinceRoundSize(target.region);
     document.getElementById('focus-choice-fresh-desc').textContent =
-      'All ' + focus.total + ' ' + noun + ' · counts toward your records';
-    document.getElementById('focus-choice-focus-title').textContent =
-      count === 1 ? 'Focus on That One' : 'Focus on Those ' + count;
+      'All ' + (total ? total + ' ' : '') + noun + ' · counts toward your records';
+
+    // Learn mode (province levels only): resume where the ladder left off
+    const learnBtn = document.getElementById('focus-choice-learn');
+    const resetBtn = document.getElementById('focus-learn-reset');
+    if (target.mode === 'province') {
+      const progress = getLearnProgress(target.region);
+      const ladderDesc = 'Start with one, add one each level. A miss restarts the level · practice only';
+      if (progress) {
+        document.getElementById('focus-choice-learn-title').textContent = 'Keep Learning';
+        document.getElementById('focus-choice-learn-desc').textContent =
+          'Pick up at level ' + progress.level + ' of ' + progress.order.length + ' · ' + ladderDesc.split(' · ')[0];
+      } else {
+        document.getElementById('focus-choice-learn-title').textContent = 'Learn Them';
+        document.getElementById('focus-choice-learn-desc').textContent = ladderDesc;
+      }
+      learnBtn.style.display = '';
+      resetBtn.style.display = progress ? '' : 'none';
+      learnBtn.onclick = () => {
+        closeFocusChooser();
+        startGame(startArg, { learn: true });
+      };
+      resetBtn.onclick = () => {
+        closeFocusChooser();
+        startGame(startArg, { learn: true, learnFresh: true });
+      };
+    } else {
+      learnBtn.style.display = 'none';
+      resetBtn.style.display = 'none';
+    }
 
     // Buttons are permanent DOM, so swap handlers via onclick (no stacking)
     document.getElementById('focus-choice-fresh').onclick = () => {
       closeFocusChooser();
       startGame(startArg);
     };
-    document.getElementById('focus-choice-focus').onclick = () => {
+    focusBtn.onclick = () => {
       closeFocusChooser();
-      startGame(startArg, { practice: focus.names });
+      if (focus) startGame(startArg, { practice: focus.names });
     };
     document.getElementById('focus-modal-overlay').classList.add('show');
   }
@@ -5496,7 +5861,11 @@
   document.getElementById('home-btn').addEventListener('click', () => switchScreen('menu'));
   // startArg (not currentContinent) so US and Cities levels restart the
   // same mode — their currentContinent is a display label, not a card id.
-  document.getElementById('replay-btn').addEventListener('click', () => startGame(state.startArg));
+  document.getElementById('replay-btn').addEventListener('click', () => {
+    if (state.lastWasLearn) startGame(state.startArg, { learn: true, learnFresh: true });
+    else startGame(state.startArg);
+  });
+  document.getElementById('learn-ready-btn').addEventListener('click', beginLearnQuiz);
   document.getElementById('practice-btn').addEventListener('click', () => {
     startGame(state.startArg, { practice: state.roundNeedsWork });
   });
@@ -5535,7 +5904,10 @@
     const gameActive = document.getElementById('game-screen').classList.contains('active');
     if (!gameActive) return;
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-    if (e.key === 's' || e.key === 'S') {
+    if (e.key === 'Enter' && state.learn && state.learn.phase === 'study') {
+      e.preventDefault();
+      beginLearnQuiz();
+    } else if (e.key === 's' || e.key === 'S') {
       e.preventDefault();
       handleSkip();
     } else if (e.key === '+' || e.key === '=') {
@@ -5605,6 +5977,7 @@
       reapplyPath(correctKeys, 'completed-correct');
       reapplyPath(wrongKeys, 'completed-wrong');
       reapplyPath(promptKeys, 'prompt-highlight');
+      if (state.learn && state.learn.phase === 'study') drawLearnStudy();
 
       const reapplyDot = (names, cls) => {
         names.forEach(n => {
