@@ -227,10 +227,13 @@
     opacity: 0.5;
   }
 
-  /* Hard mode toggle */
+  /* Difficulty picker + satellite switch */
   .mode-toggle-row {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
+    align-items: stretch;
+    gap: 10px;
     margin: 0 auto 22px;
     opacity: 0;
     animation: fadeUp 0.7s 0.52s ease forwards;
@@ -317,6 +320,61 @@
     color: var(--ink-faded);
     letter-spacing: 0.01em;
   }
+
+  /* Satellite switch is forced on (and locked) in Uncharted */
+  .mode-toggle.is-locked { cursor: default; opacity: 0.6; }
+  .mode-toggle.is-locked:hover {
+    background: rgba(255, 250, 235, 0.35);
+    border-color: var(--land-border);
+  }
+
+  /* Three-way difficulty selector, in the same dashed frame as the switch */
+  .difficulty-picker {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 16px 9px;
+    background: rgba(255, 250, 235, 0.35);
+    border: 1px dashed var(--land-border);
+    border-radius: 2px;
+  }
+
+  .difficulty-segs {
+    display: inline-flex;
+    border: 1px solid rgba(107, 68, 35, 0.35);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .difficulty-seg {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-style: italic;
+    font-weight: 500;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    border-left: 1px solid rgba(107, 68, 35, 0.25);
+    padding: 3px 14px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .difficulty-seg:first-child { border-left: none; }
+  .difficulty-seg:hover { background: rgba(255, 250, 235, 0.7); }
+
+  .difficulty-seg.active,
+  .difficulty-seg.active:hover {
+    background: var(--ink);
+    color: var(--parchment);
+  }
+
+  .difficulty-seg.active[data-difficulty="uncharted"] { color: var(--gold-bright); }
+
+  .difficulty-picker .switch-desc { text-align: center; }
 
   .regions {
     display: grid;
@@ -973,6 +1031,125 @@
     100% { opacity: 0; }
   }
 
+  /* ===== Satellite map =====
+   * .sat-on      real imagery (drawn to #sat-canvas) shows through
+   *              see-through country polygons with light borders.
+   * .no-borders  Uncharted: no strokes and no hover, so the only way to
+   *              see a shape is to answer. Flashes and reveals still fill.
+   * If imagery fails to load, .sat-on drops off but .no-borders stays,
+   * leaving a parchment silhouette with no internal borders.
+   */
+  .sat-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    pointer-events: none;
+    transform-origin: 0 0;
+    z-index: 0;
+  }
+
+  .map-wrap.sat-on { background: var(--ink); }
+  .map-wrap.sat-on .sat-canvas { display: block; }
+  .map-wrap.sat-on #world-map { position: relative; z-index: 1; }
+
+  .map-wrap.sat-on .sphere-bg { fill: none; stroke: rgba(241,231,210,0.35); }
+  .map-wrap.sat-on .graticule { display: none; }
+  .map-wrap.sat-on .us-ocean { fill: none; }
+
+  .map-wrap.sat-on .country {
+    fill: transparent;
+    stroke: rgba(255,248,230,0.7);
+    stroke-width: 0.8;
+  }
+  .map-wrap.sat-on .country.eligible:hover { fill: rgba(241,231,210,0.22); }
+  .map-wrap.sat-on .country.ineligible {
+    fill: rgba(16,22,30,0.5);
+    stroke: rgba(255,248,230,0.25);
+    opacity: 1;
+  }
+
+  /* Answer colors go see-through so the land underneath stays readable */
+  .map-wrap.sat-on .country.target-correct,
+  .map-wrap.sat-on .country.completed-correct {
+    fill: rgba(95,138,75,0.55) !important;
+    stroke: #b6dd98;
+    stroke-width: 1.4;
+  }
+  .map-wrap.sat-on .country.completed-correct:hover { fill: rgba(111,156,89,0.68) !important; }
+  .map-wrap.sat-on .country.target-wrong,
+  .map-wrap.sat-on .country.completed-wrong {
+    fill: rgba(160,49,30,0.55) !important;
+    stroke: #f0a08c;
+    stroke-width: 1.4;
+  }
+  .map-wrap.sat-on .country.completed-wrong:hover { fill: rgba(178,61,40,0.68) !important; }
+  .map-wrap.sat-on .country.reveal {
+    fill: rgba(224,168,74,0.5) !important;
+    stroke: var(--gold-bright);
+    stroke-width: 2.5;
+  }
+  .map-wrap.sat-on .country.prompt-highlight {
+    fill: rgba(208,220,196,0.35) !important;
+    stroke: #d6f0c0;
+    stroke-width: 2;
+  }
+  .map-wrap.sat-on .reveal-marker .pulse-ring { stroke: var(--parchment); }
+
+  /* Albers USA inset frames: the imagery changes abruptly at their edges */
+  .inset-frame { display: none; }
+  .map-wrap.sat-on .inset-frame {
+    display: block;
+    fill: none;
+    stroke: rgba(241,231,210,0.45);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+  }
+
+  .map-wrap.no-borders #world-map { cursor: crosshair; }
+  .map-wrap.no-borders .country { stroke: none; cursor: crosshair; }
+  .map-wrap.no-borders .country.eligible:hover { fill: var(--land); }
+  .map-wrap.no-borders.sat-on .country.eligible:hover { fill: transparent; }
+  .map-wrap.no-borders .country.ineligible { stroke: none; }
+  .map-wrap.no-borders .country.target-correct,
+  .map-wrap.no-borders .country.target-wrong,
+  .map-wrap.no-borders .country.reveal,
+  .map-wrap.no-borders .country.prompt-highlight {
+    stroke-width: 1.6;
+  }
+  .map-wrap.no-borders .country.target-correct { stroke: #b6dd98; }
+  .map-wrap.no-borders .country.target-wrong { stroke: #f0a08c; }
+  .map-wrap.no-borders .country.reveal { stroke: var(--ink); stroke-width: 2.5; }
+  .map-wrap.no-borders.sat-on .country.reveal { stroke: var(--gold-bright); }
+  .map-wrap.no-borders .country.prompt-highlight { stroke: var(--moss); }
+  .map-wrap.no-borders.sat-on .country.prompt-highlight { stroke: #d6f0c0; }
+
+  /* Imagery credit (required by the tile provider) + loading note */
+  .sat-credit {
+    position: absolute;
+    right: 8px;
+    bottom: 6px;
+    z-index: 2;
+    display: none;
+    font-family: 'Crimson Pro', serif;
+    font-size: 10px;
+    color: rgba(241,231,210,0.75);
+    background: rgba(31,42,58,0.55);
+    padding: 1px 6px;
+    border-radius: 1px;
+    pointer-events: none;
+    letter-spacing: 0.02em;
+  }
+  .map-wrap.sat-on .sat-credit { display: block; }
+
+  /* In-game Parchment ⇄ Satellite button (hidden in Uncharted) */
+  .zoom-btn.is-active { color: var(--gold-bright); }
+  .map-wrap.no-borders #map-style-btn { display: none; }
+
   /* ===== Review mode (post-game map view for screenshots) =====
    * Entered from the results screen via "View Map". The map keeps its green
    * /red markers and zoom; everything else (prompt, score, skip button,
@@ -1526,6 +1703,22 @@
     font-size: 16px;
     font-weight: 700;
   }
+  /* On satellite the study tints go see-through so you learn what the land
+     looks like; their outlines survive Uncharted's no-borders rule. */
+  .map-wrap.sat-on .country.learn-known {
+    fill: rgba(234,211,154,0.3) !important;
+    stroke: #ead39a;
+    stroke-width: 1;
+  }
+  .map-wrap.sat-on .country.learn-new {
+    fill: rgba(224,168,74,0.45) !important;
+    stroke: var(--gold-bright);
+    stroke-width: 2;
+  }
+  .map-wrap.no-borders .country.learn-known { stroke: var(--sepia); stroke-width: 1; }
+  .map-wrap.no-borders .country.learn-new { stroke: var(--ink); stroke-width: 2; }
+  .map-wrap.no-borders.sat-on .country.learn-known { stroke: #ead39a; }
+  .map-wrap.no-borders.sat-on .country.learn-new { stroke: var(--gold-bright); }
   .focus-choice.learn {
     border-left: 3px solid var(--moss);
   }
@@ -2270,7 +2463,8 @@
       <div class="choices-panel" id="choices-panel" style="display:none;"></div>
     </div>
 
-    <div class="map-wrap">
+    <div class="map-wrap" id="map-wrap">
+      <canvas id="sat-canvas" class="sat-canvas" aria-hidden="true"></canvas>
       <svg id="world-map" preserveAspectRatio="xMidYMid meet"></svg>
       <div class="zoom-controls">
         <button class="zoom-btn" id="zoom-in-btn" title="Zoom in" aria-label="Zoom in">
@@ -2282,8 +2476,12 @@
         <button class="zoom-btn" id="zoom-reset-btn" title="Reset view" aria-label="Reset view">
           <svg viewBox="0 0 24 24"><path d="M12 4 L12 20 M4 12 L20 12"/><circle cx="12" cy="12" r="8"/></svg>
         </button>
+        <button class="zoom-btn" id="map-style-btn" title="Satellite view (M)" aria-label="Toggle satellite view" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><path d="M12 3 L21 8 L12 13 L3 8 Z"/><path d="M3 12 L12 17 L21 12"/><path d="M3 16 L12 21 L21 16"/></svg>
+        </button>
       </div>
       <div class="zoom-hint" id="zoom-hint">Scroll to zoom · drag to pan</div>
+      <div class="sat-credit" id="sat-credit">Imagery © Esri, Maxar, Earthstar Geographics</div>
       <div class="toast" id="toast"></div>
     </div>
 
@@ -3104,6 +3302,8 @@
     startTime: null,
     interactionLocked: false,
     hardMode: false,          // In hard mode, countries are not persistently marked green/red
+    difficulty: 'normal',     // 'normal' | 'hard' | 'uncharted' (hardMode is true for both hard and uncharted)
+    mapStyle: 'parchment',    // 'parchment' | 'satellite' (Uncharted always shows satellite)
     menuView: 'main',         // 'main' | 'continents' | 'us' | 'us-cities' | 'provinces' | 'provinces-russia'
 
     svg: null,
@@ -3437,7 +3637,7 @@
   // Build a short "best" label summarizing the standout record
   // for this region × current mode. Prefers accuracy → score.
   function bestLabel(region, gameMode) {
-    const rec = getRecords(region, state.hardMode, gameMode);
+    const rec = getRecords(region, state.difficulty, gameMode);
     if (!rec) return '';
     const parts = [];
     if (rec.bestAccuracy && rec.bestAccuracy.pct === 100 && rec.bestTime) {
@@ -3460,7 +3660,7 @@
     let totalGames = 0;
     if (folder === 'continents') {
       CONTINENT_ORDER.forEach(c => {
-        const rec = getRecords(c, state.hardMode, 'world-country');
+        const rec = getRecords(c, state.difficulty, 'world-country');
         if (!rec) return;
         totalGames += rec.gamesPlayed || 0;
         if (rec.bestAccuracy && rec.bestAccuracy.pct > bestPct) {
@@ -3476,7 +3676,7 @@
         'us-state-to-capital': 'St→Cap'
       };
       modes.forEach(m => {
-        const rec = getRecords('The United States', state.hardMode, m);
+        const rec = getRecords('The United States', state.difficulty, m);
         if (!rec) return;
         totalGames += rec.gamesPlayed || 0;
         if (rec.bestAccuracy && rec.bestAccuracy.pct > bestPct) {
@@ -3488,7 +3688,7 @@
       Object.keys(PROVINCE_ROUNDS).forEach(key => {
         const round = PROVINCE_ROUNDS[key];
         if (folder === 'provinces-russia' && round.country !== 'russia') return;
-        const rec = getRecords(key, state.hardMode, 'province');
+        const rec = getRecords(key, state.difficulty, 'province');
         if (!rec) return;
         totalGames += rec.gamesPlayed || 0;
         if (rec.bestAccuracy && rec.bestAccuracy.pct > bestPct) {
@@ -3532,7 +3732,7 @@
 
     html += '<div class="section-label"><span>Choose Your Study</span></div>';
 
-    html += renderHardModeToggle();
+    html += renderModeToggles();
     html += renderSyncEntry();
 
     html += '<div class="regions">';
@@ -3684,7 +3884,7 @@
     const container = document.getElementById('menu-content');
     let html = '';
     html += renderSubMenuHeader('By Continent', 'Six regions of the known world');
-    html += renderHardModeToggle();
+    html += renderModeToggles();
     html += '<div class="regions">';
     CONTINENT_ORDER.forEach(c => {
       const count = countEligibleInContinent(c);
@@ -3727,7 +3927,7 @@
     ];
     let html = '';
     html += renderSubMenuHeader('The United States', 'A closer study of the fifty states');
-    html += renderHardModeToggle();
+    html += renderModeToggles();
     html += '<div class="regions">';
     usModes.forEach(m => {
       const best = bestLabel('The United States', m.mode);
@@ -3772,7 +3972,7 @@
     ];
     let html = '';
     html += renderSubMenuHeader('US Cities', 'Four regions of the United States', 'us');
-    html += renderHardModeToggle();
+    html += renderModeToggles();
     html += '<div class="regions">';
     regions.forEach(r => {
       if (r.enabled) {
@@ -3821,7 +4021,7 @@
     const russiaBest = folderBestLabel('provinces-russia');
     let html = '';
     html += renderSubMenuHeader('Provinces & States', 'The inner divisions of great nations');
-    html += renderHardModeToggle();
+    html += renderModeToggles();
     html += '<div class="regions">';
     html += renderProvinceRoundCard('canada-provinces');
     html += renderProvinceRoundCard('china-provinces');
@@ -3843,7 +4043,7 @@
     const container = document.getElementById('menu-content');
     let html = '';
     html += renderSubMenuHeader('Russia', 'Eleven time zones in three rounds', 'provinces');
-    html += renderHardModeToggle();
+    html += renderModeToggles();
     html += '<div class="regions">';
     html += renderProvinceRoundCard('russia-west');
     html += renderProvinceRoundCard('russia-south');
@@ -3869,18 +4069,40 @@
     );
   }
 
-  function renderHardModeToggle() {
+  const DIFFICULTY_INFO = {
+    normal: { label: 'Normal', desc: 'Found targets stay marked on the map' },
+    hard: { label: 'Hard', desc: 'No process of elimination — completed targets stay unmarked' },
+    uncharted: { label: 'Uncharted', desc: 'Satellite only, no borders — a shape shows only once you answer' }
+  };
+
+  // Difficulty picker (Normal / Hard / Uncharted) and the satellite switch.
+  // Uncharted forces satellite on, so the switch shows locked there.
+  function renderModeToggles() {
+    const uncharted = state.difficulty === 'uncharted';
+    const satOn = uncharted || state.mapStyle === 'satellite';
+    let segs = '';
+    Object.keys(DIFFICULTY_INFO).forEach(key => {
+      segs += '<button type="button" class="difficulty-seg' + (state.difficulty === key ? ' active' : '') +
+        '" data-difficulty="' + key + '" aria-pressed="' + (state.difficulty === key) + '">' +
+        DIFFICULTY_INFO[key].label + '</button>';
+    });
     return (
       '<div class="mode-toggle-row">' +
-        '<label class="mode-toggle">' +
-          '<input type="checkbox" id="hard-mode-toggle"' +
-            (state.hardMode ? ' checked' : '') + ' />' +
+        '<div class="difficulty-picker" role="group" aria-label="Difficulty">' +
+          '<div class="difficulty-segs">' + segs + '</div>' +
+          '<span class="switch-desc">' + DIFFICULTY_INFO[state.difficulty].desc + '</span>' +
+        '</div>' +
+        '<label class="mode-toggle' + (uncharted ? ' is-locked' : '') + '">' +
+          '<input type="checkbox" id="satellite-toggle"' +
+            (satOn ? ' checked' : '') + (uncharted ? ' disabled' : '') + ' />' +
           '<span class="switch-box">' +
             '<span class="switch-knob"></span>' +
           '</span>' +
           '<span class="switch-text">' +
-            '<span class="switch-title">Hard Mode</span>' +
-            '<span class="switch-desc">No process of elimination — completed targets stay unmarked</span>' +
+            '<span class="switch-title">Satellite Map</span>' +
+            '<span class="switch-desc">' +
+              (uncharted ? 'Always on in Uncharted' : 'Real imagery under the borders') +
+            '</span>' +
           '</span>' +
         '</label>' +
       '</div>'
@@ -3928,7 +4150,7 @@
       });
     });
 
-    initHardModeToggle();
+    initModeToggles();
     wireSyncEntryButton();
   }
 
@@ -4148,6 +4370,11 @@
     setLearnChrome(!!state.learn);
     setAddressBar(levelLink(regionOrMode, !!state.learn));
 
+    // Satellite / borderless classes go on before the map draws; give the
+    // imagery a fresh chance if it failed last game
+    sat.failed = false;
+    applyMapStyle();
+
     switchScreen('game');
     // Header label - daily mode shows the puzzle number
     let headerLabel = GAME_MODES[mode].label(region);
@@ -4300,10 +4527,15 @@
           g.selectAll('.city-dot').attr('r', CITY_DOT_BASE_RADIUS * invK);
         }
         if (state.learn) scaleLearnLabels(event.transform.k);
+        satOnZoom();
       });
 
     svg.call(zoomBehavior);
     state.zoomBehavior = zoomBehavior;
+    // The <svg> element outlives each game, and d3 keeps the last zoom on
+    // it. Start every fresh map at 1× so stored and drawn zoom agree (the
+    // resize handler restores the player's zoom after calling us).
+    svg.call(zoomBehavior.transform, d3.zoomIdentity);
 
     // Sphere backdrop - only for world projections. Albers USA isn't a
     // true globe projection so a Sphere would just be a big blue box, and
@@ -4322,6 +4554,20 @@
         .attr('class', 'us-ocean')
         .attr('x', -width * 2).attr('y', -height * 2)
         .attr('width', width * 5).attr('height', height * 5);
+    }
+
+    // Frames around Albers USA's Alaska and Hawaii insets (constants from
+    // d3.geoAlbersUsa). Only shown over satellite imagery, which otherwise
+    // changes abruptly at the inset edges.
+    if (state.activeDataset === 'us') {
+      const k = projection.scale();
+      const [x, y] = projection.translate();
+      const rect = (x0, y0, x1, y1) =>
+        'M' + (x + x0 * k) + ',' + (y + y0 * k) + 'H' + (x + x1 * k) +
+        'V' + (y + y1 * k) + 'H' + (x + x0 * k) + 'Z';
+      g.append('path')
+        .attr('class', 'inset-frame')
+        .attr('d', rect(-0.425, 0.120, -0.214, 0.234) + rect(-0.214, 0.166, -0.115, 0.234));
     }
 
     // Hit-zone overlay for tiny eligible features. Rendered first (so it sits
@@ -4391,6 +4637,8 @@
         .attr('data-city', d => d.name)
         .on('click', handleCityClick);
     }
+
+    satReset();
   }
 
   // Base radius for city dots, in screen pixels at zoom k=1.
@@ -4998,11 +5246,11 @@
     } else {
       // Snapshot previous records BEFORE committing this session so we can
       // show the user what they beat (or how close they came).
-      const priorRecords = getRecords(state.currentContinent, state.hardMode, state.gameMode);
+      const priorRecords = getRecords(state.currentContinent, state.difficulty, state.gameMode);
 
       const commitResult = commitSessionRecords({
         region: state.currentContinent,
-        hardMode: state.hardMode,
+        difficulty: state.difficulty,
         gameMode: state.gameMode,
         score: state.score,
         correct: state.correct,
@@ -5033,6 +5281,7 @@
         total: state.totalQuestions,
         timeSeconds: elapsed,
         hardMode: state.hardMode,
+        difficulty: state.difficulty,
         completedAt: Date.now()
       });
     }
@@ -5048,8 +5297,9 @@
       if (state.dailyReplay) regionLabel += ' (Practice)';
     }
     if (state.practice) regionLabel += ' · Practice';
-    document.getElementById('results-region').textContent =
-      regionLabel + (state.hardMode ? ' · Hard Mode' : '');
+    const difficultyLabel = state.difficulty === 'uncharted' ? ' · Uncharted'
+      : state.hardMode ? ' · Hard Mode' : '';
+    document.getElementById('results-region').textContent = regionLabel + difficultyLabel;
     document.getElementById('grade-big').textContent = pct;
     document.getElementById('r-correct').textContent = state.correct;
     document.getElementById('r-wrong').textContent = state.wrong;
@@ -5204,6 +5454,404 @@
   }
 
   /* =========================================================
+   * SATELLITE IMAGERY (raster layer under the SVG map)
+   *
+   * Imagery comes from Esri World Imagery tiles, which are Web Mercator.
+   * Our maps use other projections (Natural Earth, Albers USA, conics), so
+   * the tiles can't simply be laid down — they're reprojected: each canvas
+   * pixel is inverted through the current projection to lon/lat, then
+   * sampled from the matching tile pixel. Inverting every pixel is slow,
+   * so we invert a coarse grid and interpolate inside each cell, dropping
+   * to per-pixel only where the projection jumps (the globe's edge,
+   * Albers USA's Alaska/Hawaii insets).
+   *
+   * The canvas is redrawn once zooming settles; mid-gesture it's just
+   * CSS-transformed to follow the SVG.
+   * ========================================================= */
+
+  const SAT_TILE_URL = (z, x, y) =>
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' +
+    z + '/' + y + '/' + x;
+  const SAT_CREDIT = 'Imagery © Esri, Maxar, Earthstar Geographics';
+  const SAT_MAX_ZOOM = 15;     // deepest tile level we ask for
+  const SAT_GRID = 8;          // canvas px between inverted grid points
+  const SAT_MAX_TILES = 72;    // per redraw (the whole world at zoom 3 is 64); we drop a level past this
+  const SAT_CACHE_TILES = 160; // decoded tiles kept in memory (256KB each)
+  const SAT_SETTLE_MS = 160;   // wait this long after zooming stops to redraw
+
+  const sat = {
+    tiles: new Map(),  // 'z/x/y' -> { status: 'loading'|'ok'|'error', pixels, promise }; Map order = LRU
+    drawnAt: null,     // zoom transform the canvas content was drawn at
+    timer: null,
+    gen: 0,            // bumped by every redraw/reset; stale async draws bail
+    failed: false,     // last redraw found no imagery at all (offline?)
+    scratch: null      // 256×256 canvas for decoding tiles to pixels
+  };
+
+  // Satellite is on for this game: the player's choice, or forced by Uncharted
+  function satEnabled() {
+    return state.difficulty === 'uncharted' || state.mapStyle === 'satellite';
+  }
+
+  // Sync the map's CSS classes and the in-game button with the settings
+  function applyMapStyle() {
+    const wrap = document.getElementById('map-wrap');
+    const on = satEnabled();
+    wrap.classList.toggle('sat-on', on && !sat.failed);
+    wrap.classList.toggle('no-borders', state.difficulty === 'uncharted');
+    const btn = document.getElementById('map-style-btn');
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-pressed', String(on));
+    btn.title = on ? 'Parchment view (M)' : 'Satellite view (M)';
+  }
+
+  // In-game Parchment ⇄ Satellite flip (Uncharted is always satellite)
+  function toggleMapStyle() {
+    if (state.difficulty === 'uncharted') return;
+    state.mapStyle = state.mapStyle === 'satellite' ? 'parchment' : 'satellite';
+    saveMapStyle(state.mapStyle);
+    sat.failed = false;
+    applyMapStyle();
+    satRedrawSoon(0);
+  }
+
+  // Called from renderMap(): the projection changed, so old pixels are wrong
+  function satReset() {
+    const canvas = document.getElementById('sat-canvas');
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    canvas.style.transform = '';
+    sat.drawnAt = null;
+    sat.gen++;
+    satRedrawSoon(0);
+  }
+
+  // Zoom-handler hook: follow the gesture now, redraw sharp once it settles
+  function satOnZoom() {
+    if (!satEnabled()) return;
+    satFollowTransform();
+    satRedrawSoon(SAT_SETTLE_MS);
+  }
+
+  // CSS-transform the canvas (drawn at sat.drawnAt) onto the current view
+  function satFollowTransform() {
+    const canvas = document.getElementById('sat-canvas');
+    const t0 = sat.drawnAt;
+    const t = state.currentTransform || d3.zoomIdentity;
+    if (!t0) { canvas.style.transform = ''; return; }
+    const s = t.k / t0.k;
+    canvas.style.transform =
+      'translate(' + (t.x - s * t0.x) + 'px,' + (t.y - s * t0.y) + 'px) scale(' + s + ')';
+  }
+
+  function satRedrawSoon(delay) {
+    clearTimeout(sat.timer);
+    if (!satEnabled()) return;
+    sat.timer = setTimeout(satRedraw, delay);
+  }
+
+  function satSetLoading(on) {
+    document.getElementById('sat-credit').textContent = (on ? 'Loading imagery… · ' : '') + SAT_CREDIT;
+  }
+
+  // Fetch (or reuse) one tile, decoded to raw pixels for fast sampling
+  function satTile(z, x, y) {
+    const key = z + '/' + x + '/' + y;
+    let e = sat.tiles.get(key);
+    if (e) {
+      sat.tiles.delete(key); // move to the fresh end of the LRU order
+      sat.tiles.set(key, e);
+      return e;
+    }
+    e = { status: 'loading', pixels: null, promise: null };
+    e.promise = new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous'; // the tile server allows CORS, so pixels stay readable
+      img.onload = () => {
+        try {
+          if (!sat.scratch) {
+            sat.scratch = document.createElement('canvas');
+            sat.scratch.width = sat.scratch.height = 256;
+          }
+          const sctx = sat.scratch.getContext('2d', { willReadFrequently: true });
+          sctx.clearRect(0, 0, 256, 256);
+          sctx.drawImage(img, 0, 0, 256, 256);
+          e.pixels = new Uint32Array(sctx.getImageData(0, 0, 256, 256).data.buffer);
+          e.status = 'ok';
+        } catch (err) {
+          e.status = 'error';
+        }
+        resolve();
+      };
+      img.onerror = () => { e.status = 'error'; resolve(); };
+      img.src = SAT_TILE_URL(z, x, y);
+    });
+    sat.tiles.set(key, e);
+    while (sat.tiles.size > SAT_CACHE_TILES) sat.tiles.delete(sat.tiles.keys().next().value);
+    return e;
+  }
+
+  // Redraw for the current view: right away with whatever's cached
+  // (blurry parent tiles stand in for missing ones), then again once the
+  // missing tiles arrive.
+  function satRedraw() {
+    if (!satEnabled() || !state.projection) return;
+    const gen = ++sat.gen;
+    const plan = satPlan();
+    if (!plan) return;
+    const pending = [];
+    plan.tiles.forEach(([z, x, y]) => {
+      const e = satTile(z, x, y);
+      if (e.status === 'loading') pending.push(e.promise);
+    });
+    if (pending.length === 0) {
+      satDraw(plan, false);
+      return;
+    }
+    satSetLoading(true);
+    satDraw(plan, true);
+    Promise.all(pending).then(() => {
+      if (gen === sat.gen) satDraw(plan, false);
+    });
+  }
+
+  // Work out which tiles the view needs, and where every grid point of
+  // the canvas lands in Web Mercator.
+  function satPlan() {
+    const wrap = document.getElementById('map-wrap');
+    const cssW = wrap.clientWidth, cssH = wrap.clientHeight;
+    if (!cssW || !cssH) return null;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = Math.round(cssW * dpr), H = Math.round(cssH * dpr);
+    const t = state.currentTransform || d3.zoomIdentity;
+    const proj = state.projection;
+    // Unwrap longitudes around the projection's own center so they run
+    // continuously across the view; the seam lands on the far side of the
+    // globe. (Albers USA has no rotate(); its lower 48 center on 96°W.)
+    const lon0 = typeof proj.rotate === 'function' ? -proj.rotate()[0] : -96;
+    // Inverting a point off the edge of the globe still returns a lon/lat,
+    // so check it projects back to where we started. Albers USA skips the
+    // check: its forward projection rejects anything outside its insets,
+    // and we want imagery across the whole frame there.
+    const roundTrip = state.activeDataset !== 'us';
+    const tol = 0.5 / (t.k * dpr) + 1e-3;
+    const DEG = Math.PI / 180;
+
+    // Canvas pixel → Web Mercator [x, y] in world units (x unwrapped), or null
+    function invert(cx, cy) {
+      const mx = (cx / dpr - t.x) / t.k;
+      const my = (cy / dpr - t.y) / t.k;
+      const ll = proj.invert([mx, my]);
+      if (!ll || !isFinite(ll[0]) || !(Math.abs(ll[1]) <= 90)) return null;
+      if (roundTrip) {
+        const p = proj(ll);
+        if (!p || Math.abs(p[0] - mx) > tol || Math.abs(p[1] - my) > tol) return null;
+      }
+      let dl = ll[0] - lon0;
+      dl -= 360 * Math.floor((dl + 180) / 360);
+      const lat = Math.max(-85.0511, Math.min(85.0511, ll[1]));
+      const s = Math.sin(lat * DEG);
+      return [(lon0 + dl + 180) / 360, 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)];
+    }
+
+    // Coarse grid, one column/row past the canvas edge so every cell is whole
+    const G = SAT_GRID;
+    const cols = Math.floor(W / G) + 2, rows = Math.floor(H / G) + 2;
+    const gx = new Float64Array(cols * rows), gy = new Float64Array(cols * rows);
+    for (let r = 0, i = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++, i++) {
+        const m = invert(c * G, r * G);
+        gx[i] = m ? m[0] : NaN;
+        gy[i] = m ? m[1] : NaN;
+      }
+    }
+
+    // Tile zoom: match tile pixels to canvas pixels (median over the view)
+    const dens = [];
+    for (let r = 0; r < rows; r += 2) {
+      for (let c = 0; c + 1 < cols; c += 2) {
+        const i = r * cols + c;
+        const d = Math.hypot(gx[i + 1] - gx[i], gy[i + 1] - gy[i]);
+        if (d > 0 && d < 0.1) dens.push(d); // NaN fails both; big jumps are seams
+      }
+    }
+    if (!dens.length) return null;
+    dens.sort((a, b) => a - b);
+    const dMid = dens[dens.length >> 1];
+    let z = Math.ceil(Math.log2(G / (256 * dMid)) - 0.3);
+    z = Math.max(1, Math.min(SAT_MAX_ZOOM, z));
+
+    // Tiles touched by grid points; step down a zoom level if too many
+    let n, tiles, tx0, tx1, ty0, ty1;
+    for (;;) {
+      n = 1 << z;
+      tiles = new Map();
+      tx0 = Infinity; tx1 = -Infinity; ty0 = Infinity; ty1 = -Infinity;
+      for (let i = 0; i < gx.length; i++) {
+        if (gx[i] !== gx[i]) continue;
+        const tx = Math.floor(gx[i] * n);
+        const ty = Math.min(n - 1, Math.max(0, Math.floor(gy[i] * n)));
+        const wx = ((tx % n) + n) % n;
+        tiles.set(wx + '/' + ty, [z, wx, ty]);
+        if (tx < tx0) tx0 = tx;
+        if (tx > tx1) tx1 = tx;
+        if (ty < ty0) ty0 = ty;
+        if (ty > ty1) ty1 = ty;
+      }
+      if (tiles.size <= SAT_MAX_TILES || z <= 1) break;
+      z--;
+    }
+
+    return {
+      W, H, t, cols, rows, gx, gy, z, n, invert,
+      tx0, ty0, nx: tx1 - tx0 + 1, ny: ty1 - ty0 + 1,
+      tiles: Array.from(tiles.values()),
+      // Filled in by the first satDraw and reused by the next one:
+      cellKind: new Uint8Array(cols * rows), // 0 unknown, 1 interpolate, 2 per-pixel
+      cellPix: new Map()                     // per-pixel cell -> Mercator coords
+    };
+  }
+
+  // Paint the canvas from the plan. `interim` draws only if some imagery is
+  // cached, so a zoom-in shows upscaled parents instead of a blank frame.
+  function satDraw(plan, interim) {
+    const { W, H, cols, rows, gx, gy, z, n, tx0, ty0, nx, ny } = plan;
+
+    // One lookup slot per tile in the view's bounding box: the tile's own
+    // pixels, or a cached ancestor's (sampled at 2^dz scale) meanwhile.
+    const slots = nx * ny;
+    const slotPix = new Array(slots).fill(null);
+    const slotDz = new Uint8Array(slots);
+    const slotOx = new Uint16Array(slots);
+    const slotOy = new Uint16Array(slots);
+    let found = 0;
+    for (let j = 0; j < ny; j++) {
+      for (let i = 0; i < nx; i++) {
+        const x = (((tx0 + i) % n) + n) % n, y = ty0 + j;
+        for (let dz = 0; dz <= 6 && dz <= z; dz++) {
+          const e = sat.tiles.get((z - dz) + '/' + (x >> dz) + '/' + (y >> dz));
+          if (e && e.status === 'ok') {
+            const s = j * nx + i;
+            slotPix[s] = e.pixels;
+            slotDz[s] = dz;
+            slotOx[s] = x & ((1 << dz) - 1);
+            slotOy[s] = y & ((1 << dz) - 1);
+            found++;
+            break;
+          }
+        }
+      }
+    }
+    if (interim && !found) return;
+
+    const canvas = document.getElementById('sat-canvas');
+    if (canvas.width !== W) canvas.width = W;
+    if (canvas.height !== H) canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const img = ctx.createImageData(W, H);
+    const out = new Uint32Array(img.data.buffer);
+    const scale = n * 256;        // world units → tile pixels at zoom z
+    const maxY = scale - 1e-6;
+
+    // Copy the tile pixel under Mercator point (X, Y) into output pixel o
+    function put(o, X, Y) {
+      if (Y < 0) Y = 0; else if (Y > maxY) Y = maxY;
+      const tx = Math.floor(X / 256), ty = Math.floor(Y / 256);
+      const i = tx - tx0, j = ty - ty0;
+      if (i < 0 || i >= nx || j < 0 || j >= ny) return;
+      const s = j * nx + i;
+      const pix = slotPix[s];
+      if (!pix) return;
+      const k = 1 << slotDz[s];
+      const u = ((slotOx[s] * 256 + X - tx * 256) / k) | 0;
+      const v = ((slotOy[s] * 256 + Y - ty * 256) / k) | 0;
+      out[o] = pix[(v << 8) | u];
+    }
+
+    const G = SAT_GRID;
+    for (let r = 0; r + 1 < rows; r++) {
+      const y0 = r * G;
+      if (y0 >= H) break;
+      const y1 = Math.min(y0 + G, H);
+      for (let c = 0; c + 1 < cols; c++) {
+        const x0 = c * G;
+        if (x0 >= W) break;
+        const x1 = Math.min(x0 + G, W);
+        const a = r * cols + c, b = a + 1, cc = a + cols, d = cc + 1;
+        const ax = gx[a] * scale, ay = gy[a] * scale;
+        const bx = gx[b] * scale, by = gy[b] * scale;
+        const cx = gx[cc] * scale, cy = gy[cc] * scale;
+        const dx = gx[d] * scale, dy = gy[d] * scale;
+        let kind = plan.cellKind[a];
+        if (kind === 0) {
+          const va = ax === ax, vb = bx === bx, vc = cx === cx, vd = dx === dx;
+          if (!va && !vb && !vc && !vd) {
+            kind = 3; // wholly off the globe: nothing to paint
+          } else if (va && vb && vc && vd) {
+            // Interpolate only if the real center lands within a pixel of
+            // the interpolated one (no seam or inset edge inside the cell)
+            const m = plan.invert(x0 + G / 2, y0 + G / 2);
+            kind = m &&
+              Math.abs(m[0] * scale - (ax + bx + cx + dx) / 4) +
+              Math.abs(m[1] * scale - (ay + by + cy + dy) / 4) < 1 ? 1 : 2;
+          } else {
+            kind = 2; // straddles the globe's edge
+          }
+          plan.cellKind[a] = kind;
+        }
+        if (kind === 1) {
+          for (let py = y0; py < y1; py++) {
+            const v = (py - y0) / G;
+            const lx = ax + (cx - ax) * v, ly = ay + (cy - ay) * v;
+            const rx = bx + (dx - bx) * v, ry = by + (dy - by) * v;
+            const sx = (rx - lx) / G, sy = (ry - ly) / G;
+            let X = lx, Y = ly, o = py * W + x0;
+            for (let px = x0; px < x1; px++, o++, X += sx, Y += sy) put(o, X, Y);
+          }
+        } else if (kind === 2) {
+          let cell = plan.cellPix.get(a);
+          if (!cell) {
+            cell = new Float64Array(2 * G * G).fill(NaN);
+            for (let py = y0, q = 0; py < y0 + G; py++) {
+              for (let px = x0; px < x0 + G; px++, q += 2) {
+                const m = plan.invert(px, py);
+                if (m) { cell[q] = m[0]; cell[q + 1] = m[1]; }
+              }
+            }
+            plan.cellPix.set(a, cell);
+          }
+          for (let py = y0; py < y1; py++) {
+            let o = py * W + x0, q = (py - y0) * G * 2;
+            for (let px = x0; px < x1; px++, o++, q += 2) {
+              if (cell[q] === cell[q]) put(o, cell[q] * scale, cell[q + 1] * scale);
+            }
+          }
+        }
+      }
+    }
+
+    ctx.putImageData(img, 0, 0);
+    sat.drawnAt = plan.t;
+    satFollowTransform();
+
+    if (interim) return;
+    satSetLoading(false);
+    // Forget failed tiles so a later redraw retries them
+    plan.tiles.forEach(([tz, tx, ty]) => {
+      const key = tz + '/' + tx + '/' + ty;
+      const e = sat.tiles.get(key);
+      if (e && e.status === 'error') sat.tiles.delete(key);
+    });
+    // No imagery at all: fall back to parchment (Uncharted keeps its
+    // borderless silhouette) until a later redraw succeeds
+    const failed = found === 0;
+    if (failed !== sat.failed) {
+      sat.failed = failed;
+      applyMapStyle();
+      if (failed) showToast('wrong', 'Satellite imagery couldn’t load — showing the parchment map');
+    }
+  }
+
+  /* =========================================================
    * PERSONAL RECORDS (best score, time, accuracy per region × mode)
    *
    * Storage shape under key "atlas-records":
@@ -5238,16 +5886,21 @@
     } catch (e) { /* storage blocked - ignore silently */ }
   }
 
-  function recordsKeyFor(region, hardMode, gameMode) {
+  // `difficulty` is 'normal' | 'hard' | 'uncharted'; a boolean (the old
+  // hardMode flag) still works and maps to hard/normal.
+  function recordsKeyFor(region, difficulty, gameMode) {
     // Include mode so US quiz types don't collide with each other
     // or with world country games. Defaults to world-country if omitted.
     const mode = gameMode || 'world-country';
-    return mode + '|' + region + '|' + (hardMode ? 'hard' : 'normal');
+    const diff = difficulty === true ? 'hard'
+      : (difficulty === 'hard' || difficulty === 'uncharted') ? difficulty
+      : 'normal';
+    return mode + '|' + region + '|' + diff;
   }
 
-  function getRecords(region, hardMode, gameMode) {
+  function getRecords(region, difficulty, gameMode) {
     const all = loadAllRecords();
-    return all[recordsKeyFor(region, hardMode, gameMode)] || null;
+    return all[recordsKeyFor(region, difficulty, gameMode)] || null;
   }
 
   // Commit the session's results against the stored records for this
@@ -5255,7 +5908,7 @@
   // so the results screen can celebrate them.
   function commitSessionRecords(session) {
     const all = loadAllRecords();
-    const key = recordsKeyFor(session.region, session.hardMode, session.gameMode);
+    const key = recordsKeyFor(session.region, session.difficulty, session.gameMode);
     const existing = all[key] || { gamesPlayed: 0 };
     const today = new Date().toISOString().slice(0, 10);
     const maxScore = session.totalQuestions * 2;
@@ -5695,7 +6348,12 @@
   }
 
   /* =========================================================
-   * HARD MODE PREFERENCE (persisted across sessions)
+   * DIFFICULTY & MAP STYLE PREFERENCES (persisted across sessions)
+   *
+   * "atlas-difficulty" is 'normal' | 'hard' | 'uncharted'. Older installs
+   * only have "atlas-hard-mode", so fall back to it; we keep writing it
+   * too because the sync payload still reads loadHardMode().
+   * "atlas-map-style" is 'parchment' | 'satellite' (per device, not synced).
    * ========================================================= */
 
   function loadHardMode() {
@@ -5706,25 +6364,64 @@
     }
   }
 
-  function saveHardMode(val) {
+  function loadDifficulty() {
     try {
-      localStorage.setItem('atlas-hard-mode', val ? 'true' : 'false');
+      const d = localStorage.getItem('atlas-difficulty');
+      if (DIFFICULTY_INFO[d]) return d;
+    } catch (e) { /* storage blocked - fall through */ }
+    return loadHardMode() ? 'hard' : 'normal';
+  }
+
+  function saveDifficulty(d) {
+    try {
+      localStorage.setItem('atlas-difficulty', d);
+      localStorage.setItem('atlas-hard-mode', d !== 'normal' ? 'true' : 'false');
     } catch (e) { /* private mode or disabled storage - ignore */ }
   }
 
-  function initHardModeToggle() {
-    const toggle = document.getElementById('hard-mode-toggle');
-    if (!toggle) return;
-    // Apply persisted preference to the freshly-rendered checkbox
-    state.hardMode = loadHardMode();
-    toggle.checked = state.hardMode;
-    // The toggle DOM element is recreated on every renderMenu(), so it's
-    // safe (and required) to attach a fresh listener every time.
-    toggle.addEventListener('change', (e) => {
-      state.hardMode = e.target.checked;
-      saveHardMode(state.hardMode);
-      renderMenu();
+  function setDifficulty(d) {
+    state.difficulty = DIFFICULTY_INFO[d] ? d : 'normal';
+    state.hardMode = state.difficulty !== 'normal';
+  }
+
+  function loadMapStyle() {
+    try {
+      return localStorage.getItem('atlas-map-style') === 'satellite' ? 'satellite' : 'parchment';
+    } catch (e) {
+      return 'parchment';
+    }
+  }
+
+  function saveMapStyle(style) {
+    try {
+      localStorage.setItem('atlas-map-style', style);
+    } catch (e) { /* ignore */ }
+  }
+
+  // Load once at startup, before the first menu render reads them
+  setDifficulty(loadDifficulty());
+  state.mapStyle = loadMapStyle();
+
+  // The menu DOM is recreated on every renderMenu(), so it's safe (and
+  // required) to attach fresh listeners every time.
+  function initModeToggles() {
+    document.querySelectorAll('.difficulty-seg').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.difficulty === state.difficulty) return;
+        setDifficulty(btn.dataset.difficulty);
+        saveDifficulty(state.difficulty);
+        renderMenu();
+      });
     });
+    const satToggle = document.getElementById('satellite-toggle');
+    if (satToggle) {
+      satToggle.addEventListener('change', (e) => {
+        if (state.difficulty === 'uncharted') return;
+        state.mapStyle = e.target.checked ? 'satellite' : 'parchment';
+        saveMapStyle(state.mapStyle);
+        renderMenu();
+      });
+    }
   }
 
   /* =========================================================
@@ -5742,7 +6439,8 @@
         score: state.score,
         correct: state.correct,
         total: state.totalQuestions,
-        hardMode: state.hardMode
+        hardMode: state.hardMode,
+        difficulty: state.difficulty
       });
     }
 
@@ -5778,7 +6476,7 @@
 
     // Perfect score (all 2s) gets a flourish
     const isPerfect = state.score === maxScore && state.totalQuestions > 0;
-    const modeBadge = state.hardMode ? ' · Hard' : '';
+    const modeBadge = difficultyBadge(state.difficulty, state.hardMode);
     const headline = isPerfect
       ? region + modeBadge + ' · Perfect! ' + state.score + '/' + maxScore + ' pts in ' + timeStr + ' ✨'
       : region + modeBadge + ' · ' + state.score + '/' + maxScore + ' pts · ' + state.correct + '/' + state.totalQuestions + ' found · ' + timeStr;
@@ -5812,6 +6510,13 @@
     return lines.join('\n');
   }
 
+  // " · Hard" / " · Uncharted" suffix for share headlines. Older daily
+  // attempts only stored the hardMode flag, so fall back to it.
+  function difficultyBadge(difficulty, hardMode) {
+    if (difficulty === 'uncharted') return ' · Uncharted';
+    return (difficulty === 'hard' || hardMode) ? ' · Hard' : '';
+  }
+
   // Wordle-style compact share format for the daily puzzle, used both
   // from the in-game share button and from the menu's "Share Result" button.
   function buildDailyShareText(opts) {
@@ -5819,7 +6524,7 @@
     const grid = (opts.sequence || []).map(r => EMOJI[r] || '⬜').join('');
     const maxScore = opts.total * 2;
     const isPerfect = opts.score === maxScore && opts.total > 0;
-    const hardBadge = opts.hardMode ? ' · Hard' : '';
+    const hardBadge = difficultyBadge(opts.difficulty, opts.hardMode);
     const url = levelLink('daily-five');
 
     const headline = isPerfect
@@ -5847,7 +6552,8 @@
       score: attempt.score,
       correct: attempt.correct,
       total: attempt.total,
-      hardMode: attempt.hardMode
+      hardMode: attempt.hardMode,
+      difficulty: attempt.difficulty
     });
     await shareTextOrCopy(text, 'Atlas Daily');
   }
@@ -5978,6 +6684,7 @@
   document.getElementById('zoom-in-btn').addEventListener('click', () => zoomBy(1.6));
   document.getElementById('zoom-out-btn').addEventListener('click', () => zoomBy(1 / 1.6));
   document.getElementById('zoom-reset-btn').addEventListener('click', zoomReset);
+  document.getElementById('map-style-btn').addEventListener('click', toggleMapStyle);
 
   document.addEventListener('keydown', (e) => {
     const gameActive = document.getElementById('game-screen').classList.contains('active');
@@ -5998,6 +6705,9 @@
     } else if (e.key === '0') {
       e.preventDefault();
       zoomReset();
+    } else if (e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      toggleMapStyle();
     } else if (e.key === 'Escape') {
       switchScreen('menu');
     }

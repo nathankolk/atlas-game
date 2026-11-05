@@ -44,7 +44,8 @@ The whole game lives in **one HTML file** (`public/index.html`) with embedded CS
 - **Two-tries scoring** — 2 pts first try, 1 pt second try, 0 if missed twice
 - **Skip button** — counts as missed (0 pts)
 - **Persistent green/red marking** of correct/missed countries throughout a round
-- **Hard Mode toggle** — countries don't stay green/red after answering, preventing process-of-elimination
+- **Difficulty picker** (Normal / Hard / Uncharted) — Hard: countries don't stay green/red after answering, preventing process-of-elimination. Uncharted: Hard plus satellite imagery with no borders (see "Satellite map" below)
+- **Satellite Map switch** — real imagery under the borders, any mode; flip mid-game with the layers button or `M`
 - **Prominent reveal animation** when a country is missed — gold flash with pulsing concentric rings at the centroid, plus auto-pan if the country is off-screen at high zoom
 - **Zoom & pan** — wheel/pinch zoom up to 20×, click-drag pan, on-map +/-/reset buttons, keyboard shortcuts (`+`, `-`, `0`, `s` for skip, `Esc` to menu)
 - **Vector-effect non-scaling-stroke** keeps borders crisp at any zoom level
@@ -60,8 +61,16 @@ Main menu
 ```
 Sub-views collapse the top header to ~60% to give cards more room.
 
+### Satellite map & Uncharted
+Built for maptap.gg-style practice: learn what places actually look like, not just their outlines.
+- **Satellite Map** (menu switch, per device, `atlas-map-style`): Esri World Imagery under see-through country polygons with light borders. Purely visual — shares records with the parchment map. Missed/found fills go semi-transparent so the land stays readable; Albers USA's Alaska/Hawaii insets get dashed frames.
+- **Uncharted** (third difficulty, `atlas-difficulty`): satellite forced on, no borders, no hover highlight, crosshair cursor, nothing stays marked. A shape only appears when you answer: green flash on a correct click, red flash on the one you wrongly clicked, gold reveal on a miss — then it disappears. Out-of-play land is dimmed so you know the round's area. Own records key (`|uncharted`); share badge "· Uncharted".
+- **How the imagery is drawn:** tiles are Web Mercator but our maps aren't, so the canvas (`#sat-canvas`, under the SVG) is reprojected: a grid of canvas points is inverted through the current D3 projection to lon/lat, cells are interpolated, and cells with a seam (globe edge, inset edge) fall back to per-pixel. Redraws once zooming settles; mid-gesture the canvas is CSS-transformed. Tile zoom is picked to match screen pixels, capped at 72 tiles per redraw.
+- **Offline:** if no tiles load, the map falls back to parchment (Uncharted keeps a borderless silhouette) with a toast.
+- **Terms:** Esri's public tile endpoint, used without an API key; the credit line on the map is required.
+
 ### Personal records (localStorage)
-Stored under key `atlas-records`. Tracks per **region × game mode × difficulty (normal/hard)**:
+Stored under key `atlas-records`. Tracks per **region × game mode × difficulty (normal/hard/uncharted)**:
 - **Best Score** — highest points earned
 - **Best Time** — fastest completion (only counted for clean sweeps where all countries were found)
 - **Best Accuracy** — highest percent correct
@@ -167,7 +176,10 @@ state = {
   // Daily-specific
   dailyDateKey, dailyReplay,
   // Settings
-  hardMode, menuView,
+  hardMode,     // true for Hard and Uncharted
+  difficulty,   // 'normal' | 'hard' | 'uncharted'
+  mapStyle,     // 'parchment' | 'satellite' (Uncharted is always satellite)
+  menuView,
   // Map rendering
   svg, projection, pathGen, mapG, zoomBehavior, currentTransform
 }
@@ -203,7 +215,7 @@ localStorage["atlas-daily-attempts"] = {
   "2026-04-28": {
     dateKey, puzzleNumber, countries,
     sequence, score, correct, wrong, total,
-    timeSeconds, hardMode, completedAt
+    timeSeconds, hardMode, difficulty, completedAt   // difficulty added Nov 2026; older entries only have hardMode
   },
   ...
 }
@@ -240,3 +252,4 @@ Key format: `gameMode|region` (no difficulty). `names` is missed first, then sec
 - **Oct 22, 2026:** Focus practice — every level remembers what you missed or needed two tries on in your last full game, and offers a practice round of just those (at the end of a game and when you start the level). Also fixed "Study Again" for US modes and US Cities, which used to restart an empty game.
 - **Oct 22, 2026:** Fixed Daily Five Practice Replay overwriting the day's real result. The replay flag was cleared as soon as the game was set up, so finishing a practice round saved it as the real attempt (and counted it in the daily records). The flag now lives until the next game starts, and practice replays skip records, sync, and Share.
 - **Oct 22, 2026:** The menu now redraws whenever you return to it (`switchScreen('menu')`), so card bests and the Daily card reflect the game you just played. The Daily countdown keeps a single timer instead of stacking a new one on every redraw.
+- **Nov 5, 2026:** Satellite map and Uncharted difficulty (for maptap.gg practice). The Hard Mode switch became a Normal / Hard / Uncharted picker; the old `atlas-hard-mode` setting carries over. Also fixed each new game inheriting the previous game's stored zoom (the first scroll would jump).
