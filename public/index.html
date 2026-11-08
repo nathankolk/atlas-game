@@ -1743,12 +1743,13 @@
 
   /* ===== Pin the City ===== */
   #game-screen.pin-mode #world-map { cursor: crosshair; }
-  #game-screen.pin-mode .country,
-  #game-screen.pin-mode .country.eligible:hover {
-    fill: var(--land);
-    cursor: crosshair;
-  }
-  #game-screen.pin-mode .country.ineligible { fill: #ede3cc; }
+  #game-screen.pin-mode .country { cursor: crosshair; }
+  /* Parchment: plain land, and no hover tint to hint at a country's shape.
+     On satellite the land stays see-through so the imagery shows. */
+  #game-screen.pin-mode .map-wrap:not(.sat-on) .country,
+  #game-screen.pin-mode .map-wrap:not(.sat-on) .country.eligible:hover { fill: var(--land); }
+  #game-screen.pin-mode .map-wrap:not(.sat-on) .country.ineligible { fill: #ede3cc; }
+  #game-screen.pin-mode .map-wrap.sat-on .country.eligible:hover { fill: transparent; }
   /* Hard Mode: no borders, so only coastlines show */
   #game-screen.pin-hard .country { stroke: none; }
   .pin-prompt-country {
@@ -1793,6 +1794,9 @@
     vector-effect: non-scaling-stroke;
   }
   .pin-layer { pointer-events: none; }
+  /* On satellite, light lines and rings read against dark imagery */
+  .map-wrap.sat-on .pin-line { stroke: var(--parchment); }
+  .map-wrap.sat-on .pin-truth-ring { stroke: var(--parchment); }
   .pin-scoring-note {
     margin: 18px auto 0;
     max-width: 560px;
