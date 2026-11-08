@@ -1719,6 +1719,12 @@
   .map-wrap.no-borders .country.learn-new { stroke: var(--ink); stroke-width: 2; }
   .map-wrap.no-borders.sat-on .country.learn-known { stroke: #ead39a; }
   .map-wrap.no-borders.sat-on .country.learn-new { stroke: var(--gold-bright); }
+  .learn-dot {
+    fill: var(--ink);
+    stroke: var(--parchment);
+    stroke-width: 1.5px;
+    pointer-events: none;
+  }
   .focus-choice.learn {
     border-left: 3px solid var(--moss);
   }
@@ -1734,6 +1740,78 @@
     text-decoration: underline;
     cursor: pointer;
   }
+
+  /* ===== Pin the City ===== */
+  #game-screen.pin-mode #world-map { cursor: crosshair; }
+  #game-screen.pin-mode .country,
+  #game-screen.pin-mode .country.eligible:hover {
+    fill: var(--land);
+    cursor: crosshair;
+  }
+  #game-screen.pin-mode .country.ineligible { fill: #ede3cc; }
+  /* Hard Mode: no borders, so only coastlines show */
+  #game-screen.pin-hard .country { stroke: none; }
+  .pin-prompt-country {
+    display: block;
+    font-size: 0.42em;
+    font-style: italic;
+    letter-spacing: 0.04em;
+    color: var(--ink-faded);
+    margin-top: 2px;
+  }
+  .pin-guess path {
+    fill: var(--sienna);
+    stroke: var(--parchment);
+    stroke-width: 1.5px;
+  }
+  .pin-guess circle { fill: var(--parchment); }
+  .pin-truth-ring {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2px;
+  }
+  .pin-truth-dot {
+    fill: var(--gold-bright);
+    stroke: var(--ink);
+    stroke-width: 1.5px;
+  }
+  .pin-truth-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    font-weight: 700;
+    fill: var(--ink);
+    stroke: var(--parchment);
+    stroke-width: 3px;
+    paint-order: stroke;
+    text-anchor: middle;
+  }
+  .pin-line {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.5px;
+    stroke-dasharray: 5 4;
+    vector-effect: non-scaling-stroke;
+  }
+  .pin-layer { pointer-events: none; }
+  .pin-scoring-note {
+    margin: 18px auto 0;
+    max-width: 560px;
+    text-align: center;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-faded);
+  }
+  .pin-weak {
+    display: block;
+    margin-top: 8px;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-faded);
+  }
+  .pin-trend.up { color: var(--moss); }
+  .pin-trend.down { color: var(--sienna); }
 
   /* US mode backdrop */
   .us-ocean {
@@ -2443,7 +2521,7 @@
           <div class="stat-value score-color" id="stat-score">0</div>
         </div>
         <div class="stat">
-          <div class="stat-label">Found</div>
+          <div class="stat-label" id="stat-correct-label">Found</div>
           <div class="stat-value correct-color" id="stat-correct">0</div>
         </div>
         <div class="stat">
@@ -2482,12 +2560,14 @@
       </div>
       <div class="zoom-hint" id="zoom-hint">Scroll to zoom · drag to pan</div>
       <div class="sat-credit" id="sat-credit">Imagery © Esri, Maxar, Earthstar Geographics</div>
+      <div class="zoom-hint" id="learn-hint" style="display:none;">Zoom in to see every name</div>
       <div class="toast" id="toast"></div>
     </div>
 
     <div class="controls">
       <button class="ctrl-btn" id="skip-btn">Skip <span class="ctrl-kbd">S</span></button>
       <button class="ctrl-btn primary" id="learn-ready-btn" style="display:none;">Quiz Me</button>
+      <button class="ctrl-btn primary" id="pin-btn" style="display:none;" disabled>Drop Pin</button>
     </div>
   </div>
 
@@ -2516,7 +2596,7 @@
         </div>
         <div class="r-stat">
           <div class="r-stat-value good" id="r-correct">0</div>
-          <div class="r-stat-label">Found</div>
+          <div class="r-stat-label" id="r-correct-label">Found</div>
         </div>
         <div class="r-stat">
           <div class="r-stat-value bad" id="r-wrong">0</div>
@@ -2529,7 +2609,7 @@
       </div>
 
       <div class="bests-section" id="bests-section" style="display:none;">
-        <div class="bests-heading">— Your Personal Bests —</div>
+        <div class="bests-heading" id="bests-heading">— Your Personal Bests —</div>
         <div class="bests-grid"></div>
       </div>
 
@@ -2934,6 +3014,189 @@
   };
 
   /* =========================================================
+   * PIN THE CITY (city-pin mode)
+   *
+   * A blank map (country borders, no names; Hard Mode hides the borders
+   * too) and a city name: tap where it is, then Drop Pin. Points fall off
+   * with distance (pinPoints). A round is every city of one continent, or
+   * 20 drawn from all of them for World. Each city is
+   * [name, country, lat, lon], checked against Natural Earth borders.
+   *
+   * Scores live in their own store ("atlas-pin", see PIN STORE), not in
+   * atlas-records: these are points out of 100 per city, not found/missed.
+   * ========================================================= */
+
+  const PIN_CITIES = {
+    'Africa': [
+      ['Cairo', 'Egypt', 30.0444, 31.2357],
+      ['Lagos', 'Nigeria', 6.5244, 3.3792],
+      ['Kinshasa', 'DR Congo', -4.4419, 15.2663],
+      ['Johannesburg', 'South Africa', -26.2041, 28.0473],
+      ['Luanda', 'Angola', -8.839, 13.2894],
+      ['Dar es Salaam', 'Tanzania', -6.7924, 39.2083],
+      ['Khartoum', 'Sudan', 15.5007, 32.5599],
+      ['Abidjan', 'Côte d\'Ivoire', 5.36, -4.0083],
+      ['Alexandria', 'Egypt', 31.2001, 29.9187],
+      ['Nairobi', 'Kenya', -1.2921, 36.8219],
+      ['Addis Ababa', 'Ethiopia', 9.03, 38.74],
+      ['Casablanca', 'Morocco', 33.5731, -7.5898],
+      ['Cape Town', 'South Africa', -33.9249, 18.4241],
+      ['Accra', 'Ghana', 5.6037, -0.187],
+      ['Algiers', 'Algeria', 36.7538, 3.0588],
+      ['Dakar', 'Senegal', 14.7167, -17.4677],
+      ['Tripoli', 'Libya', 32.8872, 13.1913],
+      ['Tunis', 'Tunisia', 36.8065, 10.1815],
+      ['Kampala', 'Uganda', 0.3476, 32.5825],
+      ['Antananarivo', 'Madagascar', -18.8792, 47.5079]
+    ],
+    'Asia': [
+      ['Tokyo', 'Japan', 35.6762, 139.6503],
+      ['Delhi', 'India', 28.6139, 77.209],
+      ['Shanghai', 'China', 31.2304, 121.4737],
+      ['Beijing', 'China', 39.9042, 116.4074],
+      ['Mumbai', 'India', 19.076, 72.8777],
+      ['Dhaka', 'Bangladesh', 23.8103, 90.4125],
+      ['Karachi', 'Pakistan', 24.8607, 67.0011],
+      ['Istanbul', 'Turkey', 41.0082, 28.9784],
+      ['Seoul', 'South Korea', 37.5665, 126.978],
+      ['Jakarta', 'Indonesia', -6.2088, 106.8456],
+      ['Manila', 'Philippines', 14.5995, 120.9842],
+      ['Bangkok', 'Thailand', 13.7563, 100.5018],
+      ['Ho Chi Minh City', 'Vietnam', 10.8231, 106.6297],
+      ['Tehran', 'Iran', 35.6892, 51.389],
+      ['Kolkata', 'India', 22.5726, 88.3639],
+      ['Guangzhou', 'China', 23.1291, 113.2644],
+      ['Singapore', 'Singapore', 1.3521, 103.8198],
+      ['Riyadh', 'Saudi Arabia', 24.7136, 46.6753],
+      ['Baghdad', 'Iraq', 33.3152, 44.3661],
+      ['Dubai', 'United Arab Emirates', 25.2048, 55.2708]
+    ],
+    'Europe': [
+      ['Moscow', 'Russia', 55.7558, 37.6173],
+      ['London', 'United Kingdom', 51.5074, -0.1278],
+      ['Paris', 'France', 48.8566, 2.3522],
+      ['Madrid', 'Spain', 40.4168, -3.7038],
+      ['Berlin', 'Germany', 52.52, 13.405],
+      ['Rome', 'Italy', 41.9028, 12.4964],
+      ['Saint Petersburg', 'Russia', 59.9311, 30.3609],
+      ['Barcelona', 'Spain', 41.3874, 2.1686],
+      ['Kyiv', 'Ukraine', 50.4501, 30.5234],
+      ['Milan', 'Italy', 45.4642, 9.19],
+      ['Vienna', 'Austria', 48.2082, 16.3738],
+      ['Warsaw', 'Poland', 52.2297, 21.0122],
+      ['Budapest', 'Hungary', 47.4979, 19.0402],
+      ['Bucharest', 'Romania', 44.4268, 26.1025],
+      ['Munich', 'Germany', 48.1351, 11.582],
+      ['Prague', 'Czechia', 50.0755, 14.4378],
+      ['Amsterdam', 'Netherlands', 52.3676, 4.9041],
+      ['Stockholm', 'Sweden', 59.3293, 18.0686],
+      ['Athens', 'Greece', 37.9838, 23.7275],
+      ['Lisbon', 'Portugal', 38.7223, -9.1393]
+    ],
+    'North America': [
+      ['Mexico City', 'Mexico', 19.4326, -99.1332],
+      ['New York', 'United States', 40.7128, -74.006],
+      ['Los Angeles', 'United States', 34.0522, -118.2437],
+      ['Toronto', 'Canada', 43.6532, -79.3832],
+      ['Chicago', 'United States', 41.8781, -87.6298],
+      ['Houston', 'United States', 29.7604, -95.3698],
+      ['Havana', 'Cuba', 23.1136, -82.3666],
+      ['Montreal', 'Canada', 45.5017, -73.5673],
+      ['Guadalajara', 'Mexico', 20.6597, -103.3496],
+      ['Monterrey', 'Mexico', 25.6866, -100.3161],
+      ['Washington, D.C.', 'United States', 38.9072, -77.0369],
+      ['Phoenix', 'United States', 33.4484, -112.074],
+      ['Guatemala City', 'Guatemala', 14.6349, -90.5069],
+      ['Santo Domingo', 'Dominican Republic', 18.4861, -69.9312],
+      ['Vancouver', 'Canada', 49.2827, -123.1207],
+      ['Miami', 'United States', 25.7617, -80.1918],
+      ['Dallas', 'United States', 32.7767, -96.797],
+      ['San Francisco', 'United States', 37.7749, -122.4194],
+      ['Panama City', 'Panama', 8.9824, -79.5199],
+      ['Seattle', 'United States', 47.6062, -122.3321]
+    ],
+    'South America': [
+      ['São Paulo', 'Brazil', -23.5505, -46.6333],
+      ['Buenos Aires', 'Argentina', -34.6037, -58.3816],
+      ['Rio de Janeiro', 'Brazil', -22.9068, -43.1729],
+      ['Lima', 'Peru', -12.0464, -77.0428],
+      ['Bogotá', 'Colombia', 4.711, -74.0721],
+      ['Santiago', 'Chile', -33.4489, -70.6693],
+      ['Belo Horizonte', 'Brazil', -19.9167, -43.9345],
+      ['Caracas', 'Venezuela', 10.4806, -66.9036],
+      ['Brasília', 'Brazil', -15.7939, -47.8828],
+      ['Salvador', 'Brazil', -12.9777, -38.5016],
+      ['Fortaleza', 'Brazil', -3.7319, -38.5267],
+      ['Medellín', 'Colombia', 6.2442, -75.5812],
+      ['Guayaquil', 'Ecuador', -2.171, -79.9224],
+      ['Quito', 'Ecuador', -0.1807, -78.4678],
+      ['Recife', 'Brazil', -8.0476, -34.877],
+      ['Manaus', 'Brazil', -3.119, -60.0217],
+      ['Montevideo', 'Uruguay', -34.9011, -56.1645],
+      ['La Paz', 'Bolivia', -16.4897, -68.1193],
+      ['Asunción', 'Paraguay', -25.2637, -57.5759],
+      ['Córdoba', 'Argentina', -31.4201, -64.1888]
+    ],
+    'Oceania': [
+      ['Sydney', 'Australia', -33.8688, 151.2093],
+      ['Melbourne', 'Australia', -37.8136, 144.9631],
+      ['Brisbane', 'Australia', -27.4698, 153.0251],
+      ['Perth', 'Australia', -31.9505, 115.8605],
+      ['Auckland', 'New Zealand', -36.8485, 174.7633],
+      ['Adelaide', 'Australia', -34.9285, 138.6007],
+      ['Gold Coast', 'Australia', -28.0167, 153.4],
+      ['Canberra', 'Australia', -35.2809, 149.13],
+      ['Wellington', 'New Zealand', -41.2865, 174.7762],
+      ['Christchurch', 'New Zealand', -43.5321, 172.6362],
+      ['Hobart', 'Australia', -42.8821, 147.3272],
+      ['Darwin', 'Australia', -12.4634, 130.8456],
+      ['Port Moresby', 'Papua New Guinea', -9.4438, 147.1803],
+      ['Suva', 'Fiji', -18.1248, 178.4501],
+      ['Newcastle', 'Australia', -32.9283, 151.7817],
+      ['Townsville', 'Australia', -19.259, 146.8169],
+      ['Cairns', 'Australia', -16.9186, 145.7781],
+      ['Nouméa', 'New Caledonia', -22.2758, 166.458],
+      ['Alice Springs', 'Australia', -23.698, 133.8807],
+      ['Dunedin', 'New Zealand', -45.8788, 170.5028]
+    ]
+  };
+
+  // Card key -> region. The key is also the ?play= slug.
+  const PIN_ROUNDS = {
+    'pin-world': 'World',
+    'pin-africa': 'Africa',
+    'pin-asia': 'Asia',
+    'pin-europe': 'Europe',
+    'pin-north-america': 'North America',
+    'pin-south-america': 'South America',
+    'pin-oceania': 'Oceania'
+  };
+
+  const PIN_ROUND_SIZE = 20;
+  const PIN_PERFECT_KM = 25;    // within this, full marks
+  const PIN_FALLOFF_KM = 400;   // past it, points fall by ~63% every 400 km
+
+  // 100 points within 25 km, then exponential falloff:
+  // 100 km -> 83, 250 km -> 57, 500 km -> 30, 1,000 km -> 9
+  function pinPoints(km) {
+    if (km <= PIN_PERFECT_KM) return 100;
+    return Math.round(100 * Math.exp(-(km - PIN_PERFECT_KM) / PIN_FALLOFF_KM));
+  }
+
+  // Every city as { name, country, lat, lon, region }, keyed by name
+  const PIN_CITY_BY_NAME = new Map();
+  Object.keys(PIN_CITIES).forEach(region => {
+    PIN_CITIES[region].forEach(c => {
+      PIN_CITY_BY_NAME.set(c[0], { name: c[0], country: c[1], lat: c[2], lon: c[3], region: region });
+    });
+  });
+
+  function pinCitiesFor(region) {
+    if (region === 'World') return Array.from(PIN_CITY_BY_NAME.values());
+    return (PIN_CITIES[region] || []).map(c => PIN_CITY_BY_NAME.get(c[0]));
+  }
+
+  /* =========================================================
    * PROVINCES OF NATIONS (province mode)
    *
    * Click-the-province rounds for other countries, same mechanic as The
@@ -2957,13 +3220,13 @@
     canada: {
       name: 'Canada',
       dataUrl: '/data/provinces-canada.json',
-      noun: 'Provinces',
+      noun: 'Provinces & Territories',
       parallels: [50, 70]
     },
     china: {
       name: 'China',
       dataUrl: '/data/provinces-china.json',
-      noun: 'Provinces',
+      noun: 'Provinces & Regions',
       parallels: [25, 47]
     },
     india: {
@@ -2991,7 +3254,7 @@
       subname: 'ten provinces and three territories'
     },
     'china-provinces': {
-      country: 'china', label: 'Provinces of China', short: 'China', count: 33,
+      country: 'china', label: 'Provinces & Regions of China', short: 'China', count: 33,
       subname: 'provinces, regions, municipalities & SARs'
     },
     'india-states': {
@@ -3245,6 +3508,13 @@
       promptLabel: 'Find the city',
       recordsLabelSuffix: ' · Cities',
     },
+    'city-pin': {
+      dataset: 'world',
+      // currentContinent is the region ('Europe', 'World', ...)
+      label: (region) => 'Pin the City · ' + (region || 'World'),
+      promptLabel: 'Pin the city',
+      recordsLabelSuffix: ' · Pin',
+    },
     'province': {
       dataset: 'province',
       // currentContinent holds the PROVINCE_ROUNDS key (e.g. 'russia-west');
@@ -3298,6 +3568,7 @@
     startArg: null,           // What startGame() was called with, so replays restart the same level
     practice: false,          // True for a focus round (subset of a level; skips records)
     learn: null,              // Learn mode run (province ladder), see LEARN MODE section
+    pin: null,                // Pin the City round: { phase, guess, results }
     roundNeedsWork: [],       // missed + secondTry from the round just finished
     startTime: null,
     interactionLocked: false,
@@ -3554,7 +3825,7 @@
     const slugs = { world: 'World', daily: 'daily-five' };
     CONTINENT_ORDER.forEach(c => { slugs[c.toLowerCase().replace(/ /g, '-')] = c; });
     ['us-state', 'us-capital-to-state', 'us-state-to-capital']
-      .concat(Object.keys(US_CITY_REGION_KEYS), Object.keys(PROVINCE_ROUNDS))
+      .concat(Object.keys(US_CITY_REGION_KEYS), Object.keys(PROVINCE_ROUNDS), Object.keys(PIN_ROUNDS))
       .forEach(k => { slugs[k] = k; });
     return slugs;
   }
@@ -3589,6 +3860,7 @@
       return PROVINCE_ROUNDS[startArg].country === 'russia' ? 'provinces-russia' : 'provinces';
     }
     if (target.mode === 'us-city') return 'us-cities';
+    if (target.mode === 'city-pin') return 'pins';
     if (target.mode.indexOf('us-') === 0) return 'us';
     if (target.mode === 'world-country' && startArg !== 'World') return 'continents';
     return 'main';
@@ -3707,6 +3979,7 @@
     if (state.menuView === 'us') return renderUsMenu();
     if (state.menuView === 'us-cities') return renderUsCitiesMenu();
     if (state.menuView === 'provinces') return renderProvincesMenu();
+    if (state.menuView === 'pins') return renderPinsMenu();
     if (state.menuView === 'provinces-russia') return renderRussiaMenu();
     return renderMainMenu();
   }
@@ -3820,6 +4093,20 @@
           '<div class="r-subname">states, capitals, and more</div>' +
           '<div class="r-count">3 study modes</div>' +
           (usBest ? '<div class="r-best">' + usBest + '</div>' : '') +
+        '</div>' +
+        '<div class="folder-arrow">›</div>' +
+      '</button>';
+
+    // Folder card: Pin the City
+    const pinsBest = pinBestLabel('World');
+    html +=
+      '<button class="region-card folder-card" data-action="open-folder" data-folder="pins">' +
+        '<div class="folder-icon">⌾</div>' +
+        '<div class="folder-body">' +
+          '<div class="r-name">Pin the City</div>' +
+          '<div class="r-subname">a blank map · scored by how close you land</div>' +
+          '<div class="r-count">' + PIN_CITY_BY_NAME.size + ' cities · 6 continents</div>' +
+          (pinsBest ? '<div class="r-best">World ' + pinsBest + '</div>' : '') +
         '</div>' +
         '<div class="folder-arrow">›</div>' +
       '</button>';
@@ -4038,6 +4325,41 @@
     attachMenuHandlers();
   }
 
+  // Pin the City sub-menu: the whole world, then one card per continent
+  function renderPinsMenu() {
+    const container = document.getElementById('menu-content');
+    let html = '';
+    html += renderSubMenuHeader('Pin the City', 'A blank map, a city name, and a pin');
+    html += renderModeToggles({
+      normal: 'Country borders drawn, no names',
+      hard: 'No borders — just coastlines and your memory',
+      uncharted: 'Satellite only, no borders'
+    });
+    html += '<div class="regions">';
+    Object.keys(PIN_ROUNDS).forEach(key => {
+      const region = PIN_ROUNDS[key];
+      const cities = pinCitiesFor(region);
+      const best = pinBestLabel(region);
+      const sample = region === 'World'
+        ? 'a mix from every continent'
+        : cities.slice(0, 3).map(c => c.name).join(', ') + '…';
+      const n = Math.min(PIN_ROUND_SIZE, cities.length);
+      html +=
+        '<button class="region-card pin-card" data-action="play" data-region="' + key + '">' +
+          '<div class="r-name">' + (region === 'World' ? 'The Whole World' : region) + '</div>' +
+          '<div class="r-subname">' + sample + '</div>' +
+          '<div class="r-count">' + n + ' cities · ' + (n * 100).toLocaleString('en-US') + ' pts</div>' +
+          (best ? '<div class="r-best">' + best + '</div>' : '') +
+        '</button>';
+    });
+    html += '</div>';
+    html += '<div class="pin-scoring-note">100 points within ' + PIN_PERFECT_KM + ' km of the city · ' +
+      pinPoints(100) + ' at 100 km · ' + pinPoints(250) + ' at 250 km · ' + pinPoints(500) + ' at 500 km · ' +
+      pinPoints(1000) + ' at 1,000 km</div>';
+    container.innerHTML = html;
+    attachMenuHandlers();
+  }
+
   // Russia sub-menu, nested under Provinces & States (back returns there)
   function renderRussiaMenu() {
     const container = document.getElementById('menu-content');
@@ -4077,7 +4399,8 @@
 
   // Difficulty picker (Normal / Hard / Uncharted) and the satellite switch.
   // Uncharted forces satellite on, so the switch shows locked there.
-  function renderModeToggles() {
+  // descs: optional per-difficulty descriptions for this view
+  function renderModeToggles(descs) {
     const uncharted = state.difficulty === 'uncharted';
     const satOn = uncharted || state.mapStyle === 'satellite';
     let segs = '';
@@ -4090,7 +4413,7 @@
       '<div class="mode-toggle-row">' +
         '<div class="difficulty-picker" role="group" aria-label="Difficulty">' +
           '<div class="difficulty-segs">' + segs + '</div>' +
-          '<span class="switch-desc">' + DIFFICULTY_INFO[state.difficulty].desc + '</span>' +
+          '<span class="switch-desc">' + ((descs && descs[state.difficulty]) || DIFFICULTY_INFO[state.difficulty].desc) + '</span>' +
         '</div>' +
         '<label class="mode-toggle' + (uncharted ? ' is-locked' : '') + '">' +
           '<input type="checkbox" id="satellite-toggle"' +
@@ -4184,6 +4507,9 @@
       // currentContinent so the records key stays per-region.
       return { mode: 'us-city', region: US_CITY_REGION_KEYS[regionOrMode] };
     }
+    if (PIN_ROUNDS[regionOrMode]) {
+      return { mode: 'city-pin', region: PIN_ROUNDS[regionOrMode] };
+    }
     if (PROVINCE_ROUNDS[regionOrMode]) {
       // Province mode: the round key (e.g. 'india-states') is the region,
       // so records stay per-round and GAME_MODES.province.label() can title it.
@@ -4194,7 +4520,7 @@
 
   // Plural noun for what a mode asks you to find ("Countries", "States", ...)
   function targetNoun(mode, region) {
-    if (mode === 'us-city') return 'Cities';
+    if (mode === 'us-city' || mode === 'city-pin') return 'Cities';
     if (mode === 'province') return PROVINCE_COUNTRIES[PROVINCE_ROUNDS[region].country].noun;
     return GAME_MODES[mode].dataset === 'us' ? 'States' : 'Countries';
   }
@@ -4216,6 +4542,7 @@
     state.startArg = regionOrMode;
     state.practice = false;
     state.learn = null;
+    state.pin = null;
     // Set (or cleared) per start and left in place through finishGame, so
     // the results screen still knows a daily replay was practice.
     state.dailyReplay = opts && opts.dailyReplay ? { dateKey: opts.dailyReplay } : null;
@@ -4313,6 +4640,15 @@
       state.cityStateByName = new Map();
       cities.forEach(c => state.cityStateByName.set(c.name, c.state));
       state.queue = shuffle(cities.map(c => c.name));
+    } else if (mode === 'city-pin') {
+      // Countries are only scenery here (the whole map takes pins); the
+      // continent's countries are drawn as land, the rest grayed out.
+      state.eligibleFeatures = state.allFeatures.filter(f => {
+        const continent = state.continentByFeature.get(featureKey(f));
+        return region === 'World' ? !!continent : continent === region;
+      });
+      state.queue = shuffle(pinCitiesFor(region).map(c => c.name)).slice(0, PIN_ROUND_SIZE);
+      state.pin = { phase: 'aim', guess: null, results: [] };
     } else if (mode === 'province') {
       // Every feature in the country's file is quizzable; Russia's rounds
       // narrow it to one group (isEligible handles that).
@@ -4445,7 +4781,7 @@
     state.svg = svg;
 
     // Feature lists for fitting and background rendering
-    const fitCollection = {
+    let fitCollection = {
       type: 'FeatureCollection',
       features: state.eligibleFeatures
     };
@@ -4453,6 +4789,12 @@
       type: 'FeatureCollection',
       features: activeFeatures()
     };
+
+    // Pin the City frames the round's cities, not the continent's land, so
+    // Europe isn't shrunk to fit all of Russia out to the Pacific
+    if (state.gameMode === 'city-pin' && state.currentContinent !== 'World') {
+      fitCollection = pinFitGeometry(state.currentContinent);
+    }
 
     // Pick projection based on active dataset
     let projection;
@@ -4528,6 +4870,7 @@
         }
         if (state.learn) scaleLearnLabels(event.transform.k);
         satOnZoom();
+        if (state.pin) scalePinMarkers(event.transform.k);
       });
 
     svg.call(zoomBehavior);
@@ -4612,6 +4955,13 @@
       .attr('data-fkey', f => featureKey(f))
       .on('click', handleCountryClick);
 
+    // Pin the City: a tap anywhere (land or sea) aims the pin. Country
+    // clicks bubble up here; d3.zoom swallows the click that ends a drag.
+    if (state.gameMode === 'city-pin') {
+      svg.on('click', handlePinClick);
+      drawPinLayer();
+    }
+
     // City-dot layer (us-city mode only). Sits on top of the country
     // polygons so each city is clickable. Each dot's radius
     // is set in map-space units, so on subsequent zoom events we
@@ -4678,6 +5028,7 @@
   function nextCountry() {
     if (state.queue.length === 0) {
       if (state.learn) learnLevelPassed();
+      else if (state.pin) finishPinGame();
       else finishGame();
       return;
     }
@@ -4691,7 +5042,17 @@
     const choicesEl = document.getElementById('choices-panel');
 
     // Configure the prompt based on mode
-    if (mode === 'us-city') {
+    if (mode === 'city-pin') {
+      const city = PIN_CITY_BY_NAME.get(state.current);
+      promptLabelEl.textContent = 'Pin the city';
+      promptEl.innerHTML = escapeHtml(city.name) + '<span class="pin-prompt-country">' + escapeHtml(city.country) + '</span>';
+      state.currentPromptText = city.name;
+      choicesEl.style.display = 'none';
+      state.pin.phase = 'aim';
+      state.pin.guess = null;
+      drawPinLayer();
+      setPinButton('Drop Pin', true);
+    } else if (mode === 'us-city') {
       // City mode: prompt shows "City, State" to disambiguate same-name
       // cities and give the player geographic context as part of the
       // question. The dot lookup still uses just the city name.
@@ -4841,6 +5202,7 @@
   }
 
   function handleCountryClick(event, f) {
+    if (state.gameMode === 'city-pin') return;   // the map-wide pin handler takes it
     if (state.interactionLocked) return;
     if (!state.current) return;
     if (!isEligible(f)) return;
@@ -5143,6 +5505,10 @@
     if (state.interactionLocked) return;
     if (!state.current) return;
     if (state.learn && state.learn.phase !== 'quiz') return;
+    if (state.pin) {
+      if (state.pin.phase === 'aim') pinReveal(null);
+      return;
+    }
     state.wrong++;
     state.sequence.push(0);
     state.missed.push(state.current);
@@ -5186,13 +5552,29 @@
   }
 
   function updateStats() {
+    if (state.pin) {
+      // Pin the City: points · average miss · last miss · cities left
+      const rs = state.pin.results;
+      const kms = rs.filter(r => r.km != null).map(r => r.km);
+      const last = rs.length ? rs[rs.length - 1] : null;
+      document.getElementById('stat-score').textContent = state.score;
+      // Header values are bare numbers; the labels say km
+      const n = (km) => Math.round(km).toLocaleString('en-US');
+      document.getElementById('stat-correct').textContent =
+        kms.length ? n(kms.reduce((a, b) => a + b, 0) / kms.length) : '—';
+      document.getElementById('stat-wrong').textContent =
+        last ? (last.km == null ? 'skip' : n(last.km)) : '—';
+      document.getElementById('stat-remaining').textContent =
+        Math.max(0, state.totalQuestions - rs.length);
+      return;
+    }
     if (state.learn) {
-      // Learn mode: Level · found this pass · restarts so far · left this pass
+      // Learn mode: Level · found this pass · restarts so far · still to learn
       document.getElementById('stat-score').textContent = state.learn.level;
       document.getElementById('stat-correct').textContent = state.correct;
       document.getElementById('stat-wrong').textContent = state.learn.restarts;
-      document.getElementById('stat-remaining').textContent =
-        state.learn.phase === 'quiz' ? Math.max(0, state.totalQuestions - state.correct) : state.learn.level;
+      // Left = provinces not yet introduced, matching "Level n of N" above the map
+      document.getElementById('stat-remaining').textContent = state.learn.order.length - state.learn.level;
       return;
     }
     document.getElementById('stat-score').textContent = state.score;
@@ -6015,6 +6397,369 @@
   }
 
   /* =========================================================
+   * PIN THE CITY — play
+   * ========================================================= */
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // "8 km", "412 km", "1,240 km"
+  function formatKm(km) {
+    return Math.round(km).toLocaleString('en-US') + ' km';
+  }
+
+  // What to fit the map to: every city of the region plus a margin, so
+  // the frame doesn't hint at where any one city is
+  function pinFitGeometry(region) {
+    const cities = pinCitiesFor(region);
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    cities.forEach(c => {
+      x0 = Math.min(x0, c.lon); x1 = Math.max(x1, c.lon);
+      y0 = Math.min(y0, c.lat); y1 = Math.max(y1, c.lat);
+    });
+    const padX = Math.max(4, (x1 - x0) * 0.12);
+    const padY = Math.max(3, (y1 - y0) * 0.12);
+    return {
+      type: 'MultiPoint',
+      coordinates: cities.map(c => [c.lon, c.lat]).concat([
+        [x0 - padX, y0 - padY], [x1 + padX, y0 - padY], [x0 - padX, y1 + padY], [x1 + padX, y1 + padY]
+      ])
+    };
+  }
+
+  // Tap on the map: move the aiming pin there (not scored until Drop Pin)
+  function handlePinClick(event) {
+    if (!state.pin || state.pin.phase !== 'aim' || !state.current) return;
+    const pt = d3.pointer(event, state.mapG.node());
+    const ll = state.projection.invert(pt);
+    if (!ll || !isFinite(ll[0]) || !isFinite(ll[1])) return;
+    // Taps off the edge of the globe invert to nonsense: require a round trip
+    const back = state.projection(ll);
+    if (!back || Math.abs(back[0] - pt[0]) > 1 || Math.abs(back[1] - pt[1]) > 1) return;
+    state.pin.guess = ll;
+    drawPinLayer();
+    setPinButton('Drop Pin', false);
+  }
+
+  // The one button under the map: Drop Pin while aiming, Next after a reveal
+  function handlePinButton() {
+    if (!state.pin) return;
+    if (state.pin.phase === 'aim') {
+      if (state.pin.guess) pinReveal(state.pin.guess);
+    } else if (state.pin.phase === 'reveal') {
+      nextCountry();
+    }
+  }
+
+  function setPinButton(label, disabled) {
+    const btn = document.getElementById('pin-btn');
+    btn.textContent = label;
+    btn.disabled = disabled;
+  }
+
+  // Score the guess (null = skipped), then show the city and the miss
+  function pinReveal(guess) {
+    const city = PIN_CITY_BY_NAME.get(state.current);
+    const truth = [city.lon, city.lat];
+    const km = guess ? d3.geoDistance(guess, truth) * 6371 : null;
+    const pts = guess ? pinPoints(km) : 0;
+    state.score += pts;
+    state.pin.results.push({ name: city.name, km: km, pts: pts });
+    state.pin.phase = 'reveal';
+    drawPinLayer();
+
+    let msg;
+    if (!guess) msg = '<em>' + escapeHtml(city.name) + '</em> — here it is';
+    else if (pts === 100) msg = 'Bullseye — <em>' + escapeHtml(city.name) + '</em> · +100';
+    else msg = '<em>' + escapeHtml(city.name) + '</em> · ' + formatKm(km) + ' off · +' + pts;
+    showToast(pts >= 50 ? 'correct' : 'wrong', msg);
+    if (pts > 0) flashScore();
+
+    const t = state.currentTransform || d3.zoomIdentity;
+    if (t.k > 1.05) ensureFeatureVisible({ type: 'Feature', geometry: { type: 'Point', coordinates: truth } });
+
+    document.getElementById('skip-btn').disabled = true;
+    setPinButton(state.queue.length ? 'Next' : 'Finish', false);
+    updateStats();
+  }
+
+  // Draw the aiming pin, and after a reveal the real spot, the great-circle
+  // line between them and the city's name. Rebuilt from state each time
+  // (also after a resize rebuilds the map).
+  function drawPinLayer() {
+    if (!state.mapG || !state.pin) return;
+    state.mapG.selectAll('.pin-layer').remove();
+    const layer = state.mapG.append('g').attr('class', 'pin-layer');
+    const k = (state.currentTransform && state.currentTransform.k) || 1;
+    const scaleAt = (p) => 'translate(' + p[0] + ',' + p[1] + ') scale(' + (1 / k) + ')';
+    const guess = state.pin.guess;
+    const city = state.current ? PIN_CITY_BY_NAME.get(state.current) : null;
+
+    if (state.pin.phase === 'reveal' && city) {
+      const truth = [city.lon, city.lat];
+      if (guess) {
+        layer.append('path')
+          .attr('class', 'pin-line')
+          .attr('d', state.pathGen({ type: 'LineString', coordinates: [guess, truth] }));
+      }
+      const tp = state.projection(truth);
+      const target = layer.append('g').attr('class', 'pin-scaled pin-truth')
+        .attr('data-x', tp[0]).attr('data-y', tp[1]).attr('transform', scaleAt(tp));
+      target.append('circle').attr('class', 'pin-truth-ring').attr('r', 9);
+      target.append('circle').attr('class', 'pin-truth-dot').attr('r', 4);
+      target.append('text').attr('class', 'pin-truth-label').attr('y', -14).text(city.name);
+    }
+    if (guess) {
+      const gp = state.projection(guess);
+      const pin = layer.append('g').attr('class', 'pin-scaled pin-guess')
+        .attr('data-x', gp[0]).attr('data-y', gp[1]).attr('transform', scaleAt(gp));
+      pin.append('path').attr('d', 'M0,0 C-2,-6 -8,-10 -8,-16 A8,8 0 1 1 8,-16 C8,-10 2,-6 0,0 Z');
+      pin.append('circle').attr('cx', 0).attr('cy', -16).attr('r', 3);
+    }
+  }
+
+  // Keep pins and markers a constant screen size while zooming
+  function scalePinMarkers(k) {
+    if (!state.mapG) return;
+    state.mapG.selectAll('.pin-scaled').attr('transform', function () {
+      return 'translate(' + this.getAttribute('data-x') + ',' + this.getAttribute('data-y') + ') scale(' + (1 / k) + ')';
+    });
+  }
+
+  // Round over: save it, then the results screen
+  function finishPinGame() {
+    const region = state.currentContinent;
+    const results = state.pin.results;
+    const elapsed = Math.round((Date.now() - state.startTime) / 1000);
+    const max = results.length * 100;
+    const kms = results.filter(r => r.km != null).map(r => r.km);
+    const avgKm = kms.length ? kms.reduce((a, b) => a + b, 0) / kms.length : null;
+
+    const prior = pinRegionStats(region, state.difficulty);
+    recordPinGame({
+      at: Date.now(), region: region, diff: state.difficulty,
+      score: state.score, max: max, avgKm: avgKm == null ? null : Math.round(avgKm)
+    }, results);
+    syncAfterGameEnd();
+    const now = pinRegionStats(region, state.difficulty);
+    const newBest = prior.games > 0 && state.score > prior.best;
+
+    state.lastWasLearn = false;
+    state.roundNeedsWork = [];
+    setLearnResultsLabels(false);
+
+    document.getElementById('results-region').textContent =
+      GAME_MODES['city-pin'].label(region) + difficultyBadge(state.difficulty, false);
+    document.getElementById('grade-big').textContent = state.score.toLocaleString('en-US');
+    document.getElementById('grade-unit').textContent = 'of ' + max.toLocaleString('en-US') + ' points';
+    document.getElementById('r-score-label').textContent = 'Avg Miss';
+    document.getElementById('r-score').textContent = avgKm == null ? '—' : formatKm(avgKm);
+    document.getElementById('r-correct-label').textContent = 'Within 100 km';
+    document.getElementById('r-correct').textContent = results.filter(r => r.km != null && r.km <= 100).length;
+    document.getElementById('r-wrong-label').textContent = 'Skipped';
+    document.getElementById('r-wrong').textContent = results.filter(r => r.km == null).length;
+    document.getElementById('r-time').textContent = formatTimeSeconds(elapsed);
+
+    // "New Best" banner reuses the records banner
+    state.brokenRecords = {};
+    const banner = document.getElementById('new-record-banner');
+    if (newBest) {
+      banner.innerHTML =
+        '<div class="record-laurel">❧</div>' +
+        '<div class="record-text">New Best Score!</div>' +
+        '<div class="record-laurel flipped">❧</div>';
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+
+    // Progress over time for this region (and difficulty)
+    const bests = document.getElementById('bests-section');
+    document.getElementById('bests-heading').textContent = '— Your Progress —';
+    const recentN = Math.min(10, now.games);
+    const items = [{ label: 'Best Game', value: now.best.toLocaleString('en-US'), broken: newBest }];
+    if (recentN >= 2) {
+      items.push({ label: 'Avg, Last ' + recentN, value: Math.round(now.recentAvg).toLocaleString('en-US') + pinTrendArrow(now) });
+      items.push({ label: 'Avg Miss, Last ' + recentN, value: now.recentKm == null ? '—' : formatKm(now.recentKm) });
+    }
+    items.push({ label: 'Games Played', value: String(now.games) });
+    bests.querySelector('.bests-grid').innerHTML = items.map(it =>
+      '<div class="best-item' + (it.broken ? ' broken' : '') + '">' +
+        '<div class="best-value">' + it.value + (it.broken ? ' <span class="best-star">★</span>' : '') + '</div>' +
+        '<div class="best-label">' + it.label + '</div>' +
+      '</div>'
+    ).join('');
+    bests.style.display = 'block';
+
+    // Farthest misses this round, then the cities that have been hardest lately
+    const worst = results.slice().sort((a, b) => (b.km == null ? Infinity : b.km) - (a.km == null ? Infinity : a.km))
+      .filter(r => r.pts < 80).slice(0, 6);
+    const missedSection = document.getElementById('missed-section');
+    if (worst.length) {
+      document.getElementById('missed-heading').textContent = '— Farthest off —';
+      document.getElementById('missed-list').innerHTML = worst.map(r =>
+        '<span class="missed-item">' + escapeHtml(r.name) + ' · ' + (r.km == null ? 'skipped' : formatKm(r.km)) + '</span>'
+      ).join('<span style="opacity:0.3">·</span>');
+      const weak = pinWeakestCities(region, 5);
+      document.getElementById('missed-legend').innerHTML = weak.length
+        ? '<span class="pin-weak">Hardest over your last few tries: ' +
+          weak.map(w => escapeHtml(w.name) + ' (' + (w.allSkipped ? 'skipped' : 'avg ' + formatKm(w.avgKm)) + ')').join(', ') + '</span>'
+        : '';
+      missedSection.style.display = 'block';
+    } else {
+      missedSection.style.display = 'none';
+    }
+
+    const replayBtn = document.getElementById('replay-btn');
+    replayBtn.style.display = '';
+    replayBtn.textContent = 'Play Again';
+    replayBtn.classList.add('primary');
+    document.getElementById('practice-btn').style.display = 'none';
+    document.getElementById('daily-practice-btn').style.display = 'none';
+    document.getElementById('share-btn').style.display = '';
+    document.getElementById('view-map-btn').style.display = 'none';
+    document.getElementById('pin-btn').style.display = 'none';
+
+    switchScreen('results');
+  }
+
+  // ↑ / ↓ when the last 5 games beat / trail the 5 before them by 5%+
+  function pinTrendArrow(stats) {
+    const g = stats.recentScores;
+    if (g.length < 6) return '';
+    const a = g.slice(-5), b = g.slice(-10, -5);
+    const avg = arr => arr.reduce((x, y) => x + y, 0) / arr.length;
+    const ratio = avg(a) / Math.max(1, avg(b));
+    if (ratio >= 1.05) return ' <span class="pin-trend up">↑</span>';
+    if (ratio <= 0.95) return ' <span class="pin-trend down">↓</span>';
+    return '';
+  }
+
+  // Wordle-style share: one square per city by points
+  function buildPinShareText() {
+    const rs = state.pin ? state.pin.results : [];
+    const sq = r => r.pts >= 80 ? '🟩' : r.pts >= 50 ? '🟨' : r.pts >= 20 ? '🟧' : '🟥';
+    const rows = [];
+    for (let i = 0; i < rs.length; i += 10) rows.push(rs.slice(i, i + 10).map(sq).join(''));
+    const kms = rs.filter(r => r.km != null).map(r => r.km);
+    const avgKm = kms.length ? kms.reduce((a, b) => a + b, 0) / kms.length : null;
+    const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return [
+      '🧭 Cartographer’s Atlas · ' + dateStr,
+      'Pin the City · ' + state.currentContinent + difficultyBadge(state.difficulty, false) +
+        ' · ' + state.score.toLocaleString('en-US') + '/' + (rs.length * 100).toLocaleString('en-US') + ' pts' +
+        (avgKm == null ? '' : ' · avg ' + formatKm(avgKm) + ' off'),
+      '',
+      ...rows,
+      '',
+      levelLink(state.startArg)
+    ].join('\n');
+  }
+
+  /* =========================================================
+   * PIN STORE (Pin the City history)
+   *
+   * Storage shape under key "atlas-pin" (synced; merges are unions):
+   * {
+   *   games: [{ at, region, diff, score, max, avgKm }, ...],   // newest last, capped
+   *   cities: { "Lagos": [[at, km], ...] }                      // last 5 tries; km null = skipped
+   * }
+   * ========================================================= */
+
+  const PIN_KEY = 'atlas-pin';
+  const PIN_MAX_GAMES = 200;
+  const PIN_CITY_TRIES = 5;
+  const PIN_SKIP_KM = 2000;   // a skip counts as this far off in "hardest lately"
+
+  function loadPinStore() {
+    try {
+      const raw = localStorage.getItem(PIN_KEY);
+      const st = raw ? JSON.parse(raw) : null;
+      if (st && Array.isArray(st.games) && st.cities && typeof st.cities === 'object') return st;
+    } catch (e) { /* fall through */ }
+    return { games: [], cities: {} };
+  }
+
+  function savePinStore(st) {
+    try {
+      localStorage.setItem(PIN_KEY, JSON.stringify(st));
+    } catch (e) { /* storage blocked - ignore silently */ }
+  }
+
+  function recordPinGame(game, results) {
+    const st = loadPinStore();
+    st.games.push(game);
+    if (st.games.length > PIN_MAX_GAMES) st.games = st.games.slice(-PIN_MAX_GAMES);
+    results.forEach(r => {
+      const tries = (st.cities[r.name] || []).concat([[game.at, r.km == null ? null : Math.round(r.km)]]);
+      st.cities[r.name] = tries.slice(-PIN_CITY_TRIES);
+    });
+    savePinStore(st);
+  }
+
+  function mergePinStores(a, b) {
+    const seen = new Set();
+    const games = a.games.concat(Array.isArray(b.games) ? b.games : [])
+      .filter(g => {
+        if (!g || typeof g.at !== 'number') return false;
+        const key = g.at + '|' + g.region;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((x, y) => x.at - y.at)
+      .slice(-PIN_MAX_GAMES);
+    const cities = Object.assign({}, a.cities);
+    const bc = (b.cities && typeof b.cities === 'object') ? b.cities : {};
+    Object.keys(bc).forEach(name => {
+      if (!Array.isArray(bc[name])) return;
+      const byAt = new Map();
+      (cities[name] || []).concat(bc[name]).forEach(t => { if (Array.isArray(t)) byAt.set(t[0], t); });
+      cities[name] = Array.from(byAt.values()).sort((x, y) => x[0] - y[0]).slice(-PIN_CITY_TRIES);
+    });
+    return { games: games, cities: cities };
+  }
+
+  // { games, best, recentScores (last 10), recentAvg, recentKm } for a
+  // region at one difficulty ('normal' | 'hard' | 'uncharted')
+  function pinRegionStats(region, difficulty) {
+    const games = loadPinStore().games.filter(g => g.region === region && (g.diff || 'normal') === difficulty);
+    const recent = games.slice(-10);
+    const kms = recent.filter(g => g.avgKm != null).map(g => g.avgKm);
+    return {
+      games: games.length,
+      best: games.reduce((m, g) => Math.max(m, g.score), 0),
+      recentScores: recent.map(g => g.score),
+      recentAvg: recent.length ? recent.reduce((a, g) => a + g.score, 0) / recent.length : 0,
+      recentKm: kms.length ? kms.reduce((a, b) => a + b, 0) / kms.length : null
+    };
+  }
+
+  // The region's cities with the worst average miss over their last tries
+  function pinWeakestCities(region, n) {
+    const store = loadPinStore().cities;
+    return pinCitiesFor(region)
+      .map(c => {
+        const tries = store[c.name] || [];
+        if (tries.length < 2) return null;   // one try is just this round's miss
+        const avgKm = tries.reduce((a, t) => a + (t[1] == null ? PIN_SKIP_KM : t[1]), 0) / tries.length;
+        return { name: c.name, avgKm: avgKm, allSkipped: tries.every(t => t[1] == null) };
+      })
+      .filter(x => x && x.avgKm > PIN_PERFECT_KM * 4)
+      .sort((x, y) => y.avgKm - x.avgKm)
+      .slice(0, n);
+  }
+
+  // Menu card line: "Best 1,640 · last 10 avg 1,420"
+  function pinBestLabel(region) {
+    const st = pinRegionStats(region, state.difficulty);
+    if (!st.games) return '';
+    return 'Best ' + st.best.toLocaleString('en-US') +
+      (st.games > 1 ? ' · avg ' + Math.round(st.recentAvg).toLocaleString('en-US') : '');
+  }
+
+  /* =========================================================
    * LEARN MODE (province ladder)
    *
    * Level n: study the first n provinces of a shuffled order (named on the
@@ -6087,17 +6832,27 @@
   }
 
   // Swap the in-game chrome between learn and normal play
+  // (Pin the City's chrome is set here too, from state.gameMode.)
   function setLearnChrome(on) {
+    const pin = state.gameMode === 'city-pin' && !!state.pin;
     document.getElementById('stat-score-label').textContent = on ? 'Level' : 'Score';
-    document.getElementById('stat-wrong-label').textContent = on ? 'Restarts' : 'Missed';
+    document.getElementById('stat-correct-label').textContent = pin ? 'Avg km' : 'Found';
+    document.getElementById('stat-wrong-label').textContent = on ? 'Restarts' : (pin ? 'Last km' : 'Missed');
     document.getElementById('learn-ready-btn').style.display = 'none';
+    document.getElementById('pin-btn').style.display = pin ? '' : 'none';
     document.getElementById('skip-btn').style.display = '';
+    const gameScreen = document.getElementById('game-screen');
+    gameScreen.classList.toggle('pin-mode', pin);
+    // Hard: no borders on parchment (Uncharted's satellite no-borders is generic)
+    gameScreen.classList.toggle('pin-hard', pin && state.difficulty === 'hard');
   }
 
   function setLearnResultsLabels(on) {
     document.getElementById('r-score-label').textContent = on ? 'Levels' : 'Score';
+    document.getElementById('r-correct-label').textContent = 'Found';
     document.getElementById('r-wrong-label').textContent = on ? 'Restarts' : 'Missed';
     document.getElementById('grade-unit').textContent = on ? 'learned' : '% accuracy';
+    document.getElementById('bests-heading').textContent = '— Your Personal Bests —';
   }
 
   // Study phase: show the provinces of this level with their names
@@ -6117,13 +6872,11 @@
       .classed('completed-wrong', false).classed('target-correct', false)
       .classed('target-wrong', false).classed('reveal', false);
 
-    drawLearnStudy();
-
     const newest = run.order[run.level - 1];
     const promptLabelEl = document.querySelector('.prompt-panel .prompt-label');
     const promptEl = document.getElementById('prompt-country');
-    promptLabelEl.textContent = 'Level ' + run.level + ' of ' + run.order.length +
-      (run.level === 1 ? ' · study it' : ' · study all ' + run.level);
+    promptLabelEl.textContent = learnStudyPromptLabel(run);
+    drawLearnStudy();
     promptEl.textContent = newest;
     state.currentPromptText = newest;
     promptEl.classList.remove('shake', 'pulse');
@@ -6133,8 +6886,11 @@
     document.getElementById('skip-btn').style.display = 'none';
     document.getElementById('learn-ready-btn').style.display = '';
 
+    // Zoomed in: bring the new one into view. Zoomed out, the whole round
+    // is already on screen, so leave the framing alone.
     const feature = activeFeatureByCanonical().get(newest);
-    if (feature) ensureFeatureVisible(feature);
+    const k = (state.currentTransform && state.currentTransform.k) || 1;
+    if (feature && k > 1.05) ensureFeatureVisible(feature);
     updateStats();
   }
 
@@ -6144,39 +6900,231 @@
     if (!run || !state.mapG || !state.pathGen) return;
     clearLearnStudy();
     const byName = activeFeatureByCanonical();
-    const labelG = state.mapG.append('g').attr('class', 'learn-labels');
-    const k = (state.currentTransform && state.currentTransform.k) || 1;
     run.order.slice(0, run.level).forEach((name, i) => {
       const feature = byName.get(name);
       if (!feature) return;
-      const isNew = i === run.level - 1;
       d3.select('.country[data-fkey="' + CSS.escape(featureKey(feature)) + '"]')
-        .classed(isNew ? 'learn-new' : 'learn-known', true);
-      const [cx, cy] = state.pathGen.centroid(feature);
-      if (isNaN(cx) || isNaN(cy)) return;
+        .classed(i === run.level - 1 ? 'learn-new' : 'learn-known', true);
+    });
+    placeLearnLabels();
+  }
+
+  // Lay out this level's name labels for the current zoom. Each label
+  // anchors on the province's largest piece, at its most-inside point (a
+  // centroid can fall outside a thin or scattered shape — Puducherry's
+  // enclaves average out to the middle of Tamil Nadu). A name that fits
+  // sits on its province; one that doesn't gets a dot on the province and
+  // sits beside it. Labels are placed newest first, each taking the first
+  // spot that doesn't collide with one already placed.
+  function placeLearnLabels() {
+    const run = state.learn;
+    if (!run || run.phase !== 'study' || !state.mapG || !state.pathGen) return;
+    state.mapG.selectAll('.learn-labels').remove();
+    const labelG = state.mapG.append('g').attr('class', 'learn-labels');
+    const t = state.currentTransform || d3.zoomIdentity;
+    const k = t.k;
+    const svgNode = state.svg.node();
+    const viewW = svgNode.clientWidth || svgNode.getBoundingClientRect().width;
+    const viewH = svgNode.clientHeight || svgNode.getBoundingClientRect().height;
+    const byName = activeFeatureByCanonical();
+
+    // Build every label first (measured, not yet positioned), newest first
+    const items = [];
+    run.order.slice(0, run.level).reverse().forEach((name, i) => {
+      const feature = byName.get(name);
+      const anchor = feature && learnLabelAnchor(feature);
+      if (!anchor) return;
       const label = labelG.append('g')
-        .attr('class', 'learn-label' + (isNew ? ' new' : ''))
-        .attr('data-cx', cx).attr('data-cy', cy)
-        .attr('transform', 'translate(' + cx + ',' + cy + ') scale(' + (1 / k) + ')');
-      label.append('text').text(name);
+        .attr('class', 'learn-label' + (i === 0 ? ' new' : ''))
+        .attr('data-cx', anchor.x).attr('data-cy', anchor.y)
+        .attr('transform', 'translate(' + anchor.x + ',' + anchor.y + ') scale(' + (1 / k) + ')');
+      const text = label.append('text').text(name);
+      const bb = text.node().getBBox();
+      const w = bb.width + 8;    // room for the parchment halo
+      const h = bb.height + 2;
+      // Screen position of the anchor (the zoom transform applied)
+      const sx = anchor.x * k + t.x;
+      const sy = anchor.y * k + t.y;
+      // Big enough to hold its name: the clear area around the anchor
+      // covers the text height and most of its width (wide, short text
+      // can run a little past a curve in the border)
+      const room = anchor.radius * k * 2;
+      const fits = room >= h * 1.2 && room >= w * 0.6;
+      items.push({ label, text, w, h, sx, sy, fits, isNew: i === 0 });
+    });
+
+    // Placement order: the newest name, then names that sit inside their
+    // province (they have the fewest options), then the dotted ones
+    items.sort((a, b) => (b.isNew - a.isNew) || (b.fits - a.fits));
+
+    // Dots go down before any text, so no name ever covers another's dot
+    const placed = [];
+    items.forEach(it => {
+      if (!it.fits) placed.push({ x0: it.sx - 5, y0: it.sy - 5, x1: it.sx + 5, y1: it.sy + 5 });
+    });
+    const overlapArea = (b) => placed.reduce((sum, p) => {
+      const ox = Math.min(b.x1, p.x1) - Math.max(b.x0, p.x0);
+      const oy = Math.min(b.y1, p.y1) - Math.max(b.y0, p.y0);
+      return sum + (ox > 0 && oy > 0 ? ox * oy : 0);
+    }, 0);
+    // Off-screen parts count as collisions, so names stay readable
+    const offscreen = (b) => (Math.max(0, -b.x0) + Math.max(0, b.x1 - viewW)) * (b.y1 - b.y0) +
+      (Math.max(0, -b.y0) + Math.max(0, b.y1 - viewH)) * (b.x1 - b.x0);
+
+    let hidden = 0;
+    items.forEach(it => {
+      const box = (dx, dy) => ({
+        x0: it.sx + dx - it.w / 2, y0: it.sy + dy - it.h / 2,
+        x1: it.sx + dx + it.w / 2, y1: it.sy + dy + it.h / 2
+      });
+      const gapX = it.w / 2 + 6;
+      const gapY = it.h / 2 + 4;
+      // [dx, dy, needsDot]: inside first when it fits, then beside a dot
+      const candidates = (it.fits ? [[0, 0, false]] : []).concat([
+        [gapX, 0, true], [-gapX, 0, true], [0, -gapY, true], [0, gapY, true],
+        [gapX, -gapY, true], [-gapX, -gapY, true], [gapX, gapY, true], [-gapX, gapY, true]
+      ]);
+      // First clear spot wins. With no clear spot, an older name is left
+      // off until zooming in makes room; the newest takes the least-covered.
+      let choice = null;
+      let leastCost = Infinity;
+      for (const c of candidates) {
+        const b = box(c[0], c[1]);
+        // A dot this label didn't reserve must also land somewhere clear
+        const dotBox = { x0: it.sx - 5, y0: it.sy - 5, x1: it.sx + 5, y1: it.sy + 5 };
+        const cost = overlapArea(b) + offscreen(b) + (c[2] && it.fits ? overlapArea(dotBox) : 0);
+        if (cost === 0) { choice = c; leastCost = 0; break; }
+        if (cost < leastCost) { leastCost = cost; choice = c; }
+      }
+      // A sliver of overlap still reads fine; a fifth of the name doesn't
+      if (leastCost > it.w * it.h * 0.2 && !it.isNew) {
+        it.label.remove();
+        const onScreen = it.sx >= 0 && it.sx <= viewW && it.sy >= 0 && it.sy <= viewH;
+        if (onScreen) hidden++;
+        return;
+      }
+      it.text.attr('x', choice[0]).attr('y', choice[1]);
+      if (choice[2]) {
+        it.label.insert('circle', 'text').attr('class', 'learn-dot').attr('r', it.isNew ? 4 : 3);
+        if (it.fits) placed.push({ x0: it.sx - 5, y0: it.sy - 5, x1: it.sx + 5, y1: it.sy + 5 });
+      }
+      placed.push(box(choice[0], choice[1]));
     });
     // Newest label on top so it's never hidden under an older one
     labelG.select('.learn-label.new').raise();
+    setLearnHint(hidden > 0);
+  }
+
+  // "Zoom in" pill on the map while some study names are left off
+  function setLearnHint(on) {
+    const hint = document.getElementById('learn-hint');
+    if (hint) hint.style.display = on ? '' : 'none';
+    if (on) document.getElementById('zoom-hint').style.display = 'none';
+  }
+
+  function learnStudyPromptLabel(run) {
+    return 'Level ' + run.level + ' of ' + run.order.length +
+      (run.level === 1 ? ' · study it' : ' · study all ' + run.level);
+  }
+
+  // Label anchor for a province, in projected (zoom 1) map units:
+  // { x, y, radius }, where radius is how far the point sits from the
+  // nearest edge. Cached per projection, since resizes rebuild it.
+  function learnLabelAnchor(feature) {
+    if (state.learnAnchorProjection !== state.projection) {
+      state.learnAnchorCache = new Map();
+      state.learnAnchorProjection = state.projection;
+    }
+    const key = featureKey(feature);
+    if (state.learnAnchorCache.has(key)) return state.learnAnchorCache.get(key);
+
+    // Outer ring of the largest piece, projected to screen units
+    const g = feature.geometry;
+    const polys = !g ? [] : g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
+    let best = null;
+    let bestArea = 0;
+    polys.forEach(poly => {
+      const ring = poly[0].map(pt => state.projection(pt)).filter(pt => pt && isFinite(pt[0]) && isFinite(pt[1]));
+      if (ring.length < 3) return;
+      const area = Math.abs(d3.polygonArea(ring));
+      if (area > bestArea) { bestArea = area; best = ring; }
+    });
+
+    let anchor = null;
+    if (best) anchor = poleOfInaccessibility(best);
+    if (!anchor) {
+      const c = state.pathGen.centroid(feature);
+      anchor = isNaN(c[0]) ? null : { x: c[0], y: c[1], radius: 0 };
+    }
+    state.learnAnchorCache.set(key, anchor);
+    return anchor;
+  }
+
+  // Point inside a ring farthest from its edges (coarse grid search, then
+  // two refinements around the best point). Plenty for label placement.
+  function poleOfInaccessibility(ring) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    ring.forEach(p => {
+      if (p[0] < x0) x0 = p[0];
+      if (p[1] < y0) y0 = p[1];
+      if (p[0] > x1) x1 = p[0];
+      if (p[1] > y1) y1 = p[1];
+    });
+    const edgeDist = (x, y) => {
+      let min = Infinity;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const ax = ring[j][0], ay = ring[j][1];
+        const dx = ring[i][0] - ax, dy = ring[i][1] - ay;
+        const len2 = dx * dx + dy * dy;
+        let t = len2 ? ((x - ax) * dx + (y - ay) * dy) / len2 : 0;
+        t = Math.max(0, Math.min(1, t));
+        const ex = ax + t * dx - x, ey = ay + t * dy - y;
+        const d = ex * ex + ey * ey;
+        if (d < min) min = d;
+      }
+      return Math.sqrt(min);
+    };
+    let bestPt = null;
+    let bestD = -1;
+    const search = (cx0, cy0, cx1, cy1, n) => {
+      for (let i = 0; i <= n; i++) {
+        for (let j = 0; j <= n; j++) {
+          const x = cx0 + (cx1 - cx0) * i / n;
+          const y = cy0 + (cy1 - cy0) * j / n;
+          if (!d3.polygonContains(ring, [x, y])) continue;
+          const d = edgeDist(x, y);
+          if (d > bestD) { bestD = d; bestPt = [x, y]; }
+        }
+      }
+    };
+    search(x0, y0, x1, y1, 24);
+    if (!bestPt) return null;
+    let step = Math.max(x1 - x0, y1 - y0) / 24;
+    for (let r = 0; r < 2; r++) {
+      const [bx, by] = bestPt;
+      search(bx - step, by - step, bx + step, by + step, 8);
+      step /= 4;
+    }
+    return { x: bestPt[0], y: bestPt[1], radius: bestD };
   }
 
   function clearLearnStudy() {
+    setLearnHint(false);
     d3.selectAll('.country.learn-new, .country.learn-known')
       .classed('learn-new', false).classed('learn-known', false);
     if (state.mapG) state.mapG.selectAll('.learn-labels').remove();
   }
 
-  // Keep labels a constant screen size while zooming
+  // Keep labels a constant screen size while zooming, then re-lay them out
+  // once the zoom settles (more room between provinces when zoomed in)
   function scaleLearnLabels(k) {
     if (!state.mapG) return;
     state.mapG.selectAll('.learn-label').attr('transform', function () {
       return 'translate(' + this.getAttribute('data-cx') + ',' + this.getAttribute('data-cy') +
         ') scale(' + (1 / k) + ')';
     });
+    clearTimeout(scaleLearnLabels._t);
+    scaleLearnLabels._t = setTimeout(placeLearnLabels, 150);
   }
 
   // Study → quiz: hide the names, ask for each of this level's provinces
@@ -6429,6 +7377,7 @@
    * ========================================================= */
 
   function buildShareText() {
+    if (state.gameMode === 'city-pin') return buildPinShareText();
     // Daily mode gets its own concise Wordle-style format. The country
     // names are deliberately NOT included so people can share before
     // their friends play without spoiling the puzzle.
@@ -6651,6 +7600,7 @@
     else startGame(state.startArg);
   });
   document.getElementById('learn-ready-btn').addEventListener('click', beginLearnQuiz);
+  document.getElementById('pin-btn').addEventListener('click', handlePinButton);
   document.getElementById('practice-btn').addEventListener('click', () => {
     startGame(state.startArg, { practice: state.roundNeedsWork });
   });
@@ -6693,6 +7643,9 @@
     if (e.key === 'Enter' && state.learn && state.learn.phase === 'study') {
       e.preventDefault();
       beginLearnQuiz();
+    } else if (e.key === 'Enter' && state.pin) {
+      e.preventDefault();
+      handlePinButton();
     } else if (e.key === 's' || e.key === 'S') {
       e.preventDefault();
       handleSkip();
@@ -6873,6 +7826,7 @@
       records: loadAllRecords(),
       dailyAttempts: syncLoadDailyAttempts(),
       focusLists: loadFocusLists(),
+      pin: loadPinStore(),
       hardMode: loadHardMode()
     };
   }
@@ -6905,6 +7859,9 @@
       }
     }
     saveFocusLists(focus);
+
+    // Pin the City: games and per-city misses are unions keyed by time
+    if (remote.pin && typeof remote.pin === 'object') savePinStore(mergePinStores(loadPinStore(), remote.pin));
   }
 
   function syncMergeRecords(local, remote) {
