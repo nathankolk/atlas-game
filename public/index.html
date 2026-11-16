@@ -2163,6 +2163,35 @@
     animation: dots 1.4s steps(4) infinite;
   }
 
+  /* Short message over whichever screen is showing (the game's toast lives inside the map) */
+  .app-notice {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%) translateY(12px);
+    width: max-content;
+    max-width: min(520px, calc(100vw - 32px));
+    background: var(--ink);
+    color: var(--parchment);
+    padding: 12px 20px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    line-height: 1.35;
+    text-align: center;
+    border-radius: 2px;
+    border-left: 3px solid var(--gold);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 90;
+  }
+
+  .app-notice.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   /* ===== Sync entry button (main menu) ===== */
   .sync-entry-row {
     display: flex;
@@ -2735,6 +2764,9 @@
     ]
   };
 
+  // The continents in the order menus and level lists show them
+  const CONTINENT_ORDER = ['Africa','Asia','Europe','North America','South America','Oceania'];
+
   // Aliases: map various TopoJSON names to canonical names used above.
   // Keys are lowercased alternative names.
   const NAME_ALIASES = {
@@ -3008,6 +3040,28 @@
     // Midwest / South / West populated in Stage 2.
   };
 
+  // A name is an item's identity: queues, focus lists and the mastery
+  // store all key on it. Returns `name`, or "name, qualifier" if an earlier
+  // item of the same kind already took it, and marks the result as taken.
+  // The earlier item keeps the bare name, so its saved history stays its
+  // own; list a newcomer that repeats a name after the one it repeats.
+  function claimName(taken, name, qualifier) {
+    const unique = taken.has(name) ? name + ', ' + qualifier : name;
+    taken.add(unique);
+    return unique;
+  }
+
+  // The four regions share one mastery skill, so a city repeating a name
+  // from an earlier region (Springfield, Portland) is told apart by state
+  (function () {
+    const taken = new Set();
+    Object.keys(US_CITIES_BY_REGION).forEach(region => {
+      US_CITIES_BY_REGION[region].forEach(city => {
+        city.name = claimName(taken, city.name, city.state);
+      });
+    });
+  })();
+
   // Maps the data-region attribute on a menu card to the region label.
   // Lets startGame dispatch us-city mode from a single button click.
   const US_CITY_REGION_KEYS = {
@@ -3187,13 +3241,20 @@
     return Math.round(100 * Math.exp(-(km - PIN_PERFECT_KM) / PIN_FALLOFF_KM));
   }
 
-  // Every city as { name, country, lat, lon, region }, keyed by name
+  // Every city as { name, label, country, lat, lon, region }, keyed by
+  // name. label is the name as listed; name has the country added if an
+  // earlier city already has that name (see claimName).
   const PIN_CITY_BY_NAME = new Map();
-  Object.keys(PIN_CITIES).forEach(region => {
-    PIN_CITIES[region].forEach(c => {
-      PIN_CITY_BY_NAME.set(c[0], { name: c[0], country: c[1], lat: c[2], lon: c[3], region: region });
+  (function () {
+    const taken = new Set();
+    Object.keys(PIN_CITIES).forEach(region => {
+      PIN_CITIES[region].forEach(c => {
+        const label = c[0];
+        c[0] = claimName(taken, label, c[1]);
+        PIN_CITY_BY_NAME.set(c[0], { name: c[0], label: label, country: c[1], lat: c[2], lon: c[3], region: region });
+      });
     });
-  });
+  })();
 
   function pinCitiesFor(region) {
     if (region === 'World') return Array.from(PIN_CITY_BY_NAME.values());
@@ -3428,16 +3489,20 @@
     } catch (e) { return {}; }
   }
 
-  function saveDailyAttempt(dateKey, result) {
+  // Stores the attempts, keeping only the newest 30 days so the store
+  // can't grow without bound
+  function saveDailyAttempts(all) {
+    const trimmed = {};
+    Object.keys(all).sort().slice(-30).forEach(k => { trimmed[k] = all[k]; });
     try {
-      const all = loadDailyAttempts();
-      all[dateKey] = result;
-      // Keep only the last 30 days to avoid unbounded growth
-      const sorted = Object.keys(all).sort().slice(-30);
-      const trimmed = {};
-      sorted.forEach(k => { trimmed[k] = all[k]; });
       localStorage.setItem(DAILY_KEY, JSON.stringify(trimmed));
     } catch (e) { /* storage blocked - silently ignore */ }
+  }
+
+  function saveDailyAttempt(dateKey, result) {
+    const all = loadDailyAttempts();
+    all[dateKey] = result;
+    saveDailyAttempts(all);
   }
 
   function getDailyAttempt(dateKey) {
@@ -3532,8 +3597,9 @@
   const state = {
     // World dataset
     allFeatures: [],         // All country features from TopoJSON
-    canonicalByFeature: new Map(), // feature id -> canonical name
-    continentByFeature: new Map(), // feature id -> continent
+    worldLoading: null,      // promise for the world map load, set once at startup
+    canonicalByFeature: new Map(), // feature key -> canonical name
+    continentByFeature: new Map(), // feature key -> continent
     featureByCanonical: new Map(), // canonical name -> feature
 
     // US dataset (loaded lazily when a US mode is first selected)
@@ -3570,6 +3636,7 @@
     secondTry: [],            // Countries found only on the second attempt
     sequence: [],             // Per-country points: 2 (first try), 1 (second try), 0 (missed)
     startArg: null,           // What startGame() was called with, so replays restart the same level
+    roundId: 0,               // Goes up when a round starts and when one is left (see roundTimeout)
     practice: false,          // True for a focus round (subset of a level; skips records)
     learn: null,              // Learn mode run (province ladder), see LEARN MODE section
     pin: null,                // Pin the City round: { phase, guess, results }
@@ -3614,14 +3681,17 @@
     return (round && state.provinceStores[round.country]) || EMPTY_PROVINCE_STORE;
   }
 
-  // For ID, use either feature.id or its numeric identifier if present
-  function featureKey(f) {
-    return f.id != null ? 'id:' + f.id : 'name:' + (f.properties && (f.properties.name || f.properties.NAME));
-  }
-
   function featureName(f) {
     if (!f.properties) return null;
     return f.properties.name || f.properties.NAME || f.properties.NAME_LONG || null;
+  }
+
+  // A feature's key within its dataset. Built from the name, which is
+  // unique in every map file; ids are not (world-atlas gives Australia and
+  // "Ashmore and Cartier Is." the same one, and leaves a few features without).
+  function featureKey(f) {
+    const name = featureName(f);
+    return name != null ? 'name:' + name : 'id:' + f.id;
   }
 
   /* =========================================================
@@ -3778,25 +3848,31 @@
     throw new Error('Could not load topojson library from any CDN');
   }
 
+  // Fetch the world map and index its countries by key and canonical name
+  async function loadWorldFeatures() {
+    await ensureTopojson();
+    const topology = await loadWorldData();
+    const countriesKey = topology.objects.countries ? 'countries' : Object.keys(topology.objects)[0];
+    const geojson = topojson.feature(topology, topology.objects[countriesKey]);
+
+    state.allFeatures = geojson.features.filter(f => featureName(f));
+
+    state.allFeatures.forEach(f => {
+      const raw = featureName(f);
+      const canonical = canonicalize(raw);
+      const continent = getContinent(canonical);
+      state.canonicalByFeature.set(featureKey(f), canonical);
+      state.continentByFeature.set(featureKey(f), continent);
+      if (canonical && !state.featureByCanonical.has(canonical)) {
+        state.featureByCanonical.set(canonical, f);
+      }
+    });
+  }
+
   async function init() {
     try {
-      await ensureTopojson();
-      const topology = await loadWorldData();
-      const countriesKey = topology.objects.countries ? 'countries' : Object.keys(topology.objects)[0];
-      const geojson = topojson.feature(topology, topology.objects[countriesKey]);
-
-      state.allFeatures = geojson.features.filter(f => featureName(f));
-
-      state.allFeatures.forEach(f => {
-        const raw = featureName(f);
-        const canonical = canonicalize(raw);
-        const continent = getContinent(canonical);
-        state.canonicalByFeature.set(featureKey(f), canonical);
-        state.continentByFeature.set(featureKey(f), continent);
-        if (canonical && !state.featureByCanonical.has(canonical)) {
-          state.featureByCanonical.set(canonical, f);
-        }
-      });
+      state.worldLoading = loadWorldFeatures();
+      await state.worldLoading;
 
       renderMenu();
       openLinkedLevel();
@@ -3806,8 +3882,7 @@
       syncOnAppLoad().catch(() => {});
     } catch (err) {
       console.error(err);
-      const container = document.getElementById('regions-container');
-      container.innerHTML =
+      document.getElementById('menu-content').innerHTML =
         '<div class="error-state">' +
         '<strong>The map could not be unfurled.</strong><br/>' +
         'The atlas data failed to load. This may be a network issue — please check your connection and refresh the page.' +
@@ -3816,27 +3891,151 @@
   }
 
   /* =========================================================
-   * LEVEL LINKS (?play=<slug>, shareable per level)
+   * LEVELS (the one list of everything playable)
    *
-   * Every menu card's start argument gets a URL slug: continents are
-   * lowercased and hyphenated ('North America' -> 'north-america'), the
-   * Daily is 'daily', everything else is its card key ('china-provinces',
-   * 'us-state', 'west-cities'). &learn=1 opens a province level in Learn
-   * mode. The address bar tracks the level in play, so copying it works too.
+   * Every playable level, in library order. Menus, level links, stats and
+   * review all read this; nothing else lists levels. The Daily Five is not
+   * here: it is one puzzle a day, not a level to pick and replay.
+   *
+   *   key         the ?play= slug
+   *   collection  key into COLLECTIONS
+   *   title       display name (free to change: nothing is stored under it)
+   *   arg         what startGame() takes
+   *   mode        key into GAME_MODES
+   *   skill       the mastery skill its answers feed; levels that teach the
+   *               same thing share one (every continent feeds 'country')
+   *   noun        plural of what the level asks for, lower case
+   *   available   false while the level has nothing to play yet
+   *   names()     the level's item names, exactly as the game queues them
+   *               and the mastery store keys them. Country and province
+   *               names come from map files, so this is [] until ready().
+   *   ready()     true once names() is complete
+   *   load()      fetches whatever names() needs; resolves when ready()
    * ========================================================= */
 
+  const COLLECTIONS = [
+    { key: 'world', title: 'World & Continents', desc: 'Find every country on the globe' },
+    { key: 'us', title: 'United States', desc: 'States, capitals and cities' },
+    { key: 'provinces', title: 'Provinces & States', desc: 'The inner divisions of Canada, China, India and Russia' },
+    { key: 'pins', title: 'Pin the City', desc: 'A blank map, a city name, and a pin' }
+  ];
+
+  // Canonical names of the countries asked for in one continent, or in all
+  // of them for 'World'; [] until the world map has loaded
+  function countryNames(region) {
+    const names = new Set();
+    state.allFeatures.forEach(f => {
+      const continent = state.continentByFeature.get(featureKey(f));
+      if (continent && (region === 'World' || continent === region)) {
+        names.add(state.canonicalByFeature.get(featureKey(f)));
+      }
+    });
+    return Array.from(names);
+  }
+
+  function usCityNames(region) {
+    return (US_CITIES_BY_REGION[region] || []).map(c => c.name);
+  }
+
+  // Display names of the provinces a round asks for; [] until that
+  // country's map has loaded
+  function provinceRoundNames(roundKey) {
+    const round = PROVINCE_ROUNDS[roundKey];
+    const store = round && state.provinceStores[round.country];
+    if (!store) return [];
+    return store.features
+      .filter(f => !round.group || (f.properties && f.properties.group === round.group))
+      .map(f => featureName(f));
+  }
+
+  const LEVELS = [].concat(
+    ['World'].concat(CONTINENT_ORDER).map(region => ({
+      key: region.toLowerCase().replace(/ /g, '-'),
+      collection: 'world',
+      title: region === 'World' ? 'The World' : region,
+      arg: region, mode: 'world-country', skill: 'country', noun: 'countries',
+      names: () => countryNames(region),
+      ready: () => state.allFeatures.length > 0,
+      load: () => state.worldLoading
+    })),
+    [
+      // The fifty state names are known without the map (every map file the
+      // game can load has all of them), so these are ready from the start
+      { key: 'us-state', title: 'States', skill: 'us-state', noun: 'states' },
+      { key: 'us-state-to-capital', title: 'States → Capitals', skill: 'us-capital', noun: 'capitals' },
+      { key: 'us-capital-to-state', title: 'Capitals → States', skill: 'us-capital', noun: 'capitals' }
+    ].map(def => Object.assign(def, {
+      collection: 'us', arg: def.key, mode: def.key,
+      names: () => US_STATE_NAMES.slice()
+    })),
+    Object.keys(US_CITY_REGION_KEYS).map(key => {
+      const region = US_CITY_REGION_KEYS[key];
+      return {
+        key: key, collection: 'us', title: 'Cities: ' + region,
+        arg: key, mode: 'us-city', skill: 'us-city', noun: 'cities',
+        available: usCityNames(region).length > 0,
+        names: () => usCityNames(region)
+      };
+    }),
+    Object.keys(PROVINCE_ROUNDS).map(key => {
+      const round = PROVINCE_ROUNDS[key];
+      const country = PROVINCE_COUNTRIES[round.country];
+      return {
+        key: key, collection: 'provinces',
+        title: round.group ? round.label : country.name,
+        arg: key, mode: 'province', skill: 'province:' + round.country,
+        noun: country.noun.toLowerCase(),
+        names: () => provinceRoundNames(key),
+        ready: () => !!state.provinceStores[round.country],
+        load: () => loadProvinceData(round.country)
+      };
+    }),
+    // A World round draws 20 of these; a continent round asks them all
+    Object.keys(PIN_ROUNDS).map(key => ({
+      key: key, collection: 'pins', title: PIN_ROUNDS[key],
+      arg: key, mode: 'city-pin', skill: 'city-pin', noun: 'cities',
+      names: () => pinCitiesFor(PIN_ROUNDS[key]).map(c => c.name)
+    }))
+  ).map(def => Object.assign({ available: true, ready: () => true, load: () => Promise.resolve() }, def));
+
+  function levelByKey(key) {
+    return LEVELS.find(level => level.key === key) || null;
+  }
+
+  function levelForStartArg(startArg) {
+    return LEVELS.find(level => level.arg === startArg) || null;
+  }
+
+  // The mastery skill the round in play feeds. The Daily Five has no level
+  // of its own; its countries count toward 'country' like any other round's.
+  function roundSkill() {
+    if (state.gameMode === 'daily-five') return 'country';
+    const level = levelForStartArg(state.startArg);
+    return level ? level.skill : null;
+  }
+
+  /* =========================================================
+   * LEVEL LINKS (?play=<slug>, shareable per level)
+   *
+   * A level's slug is its key in LEVELS: continents lowercased and
+   * hyphenated ('north-america'), 'world', and every other level's card
+   * key ('china-provinces', 'us-state', 'west-cities'). The Daily Five is
+   * 'daily'. A link starts a fresh full round of its level straight away;
+   * &learn=1 opens a province level in Learn mode instead. The address bar
+   * tracks the level in play, so copying it works too.
+   * ========================================================= */
+
+  // slug -> startGame() argument, for every link the app answers
   function linkSlugs() {
-    const slugs = { world: 'World', daily: 'daily-five' };
-    CONTINENT_ORDER.forEach(c => { slugs[c.toLowerCase().replace(/ /g, '-')] = c; });
-    ['us-state', 'us-capital-to-state', 'us-state-to-capital']
-      .concat(Object.keys(US_CITY_REGION_KEYS), Object.keys(PROVINCE_ROUNDS), Object.keys(PIN_ROUNDS))
-      .forEach(k => { slugs[k] = k; });
+    const slugs = { daily: 'daily-five' };
+    LEVELS.forEach(level => { slugs[level.key] = level.arg; });
     return slugs;
   }
 
   function slugForStartArg(startArg) {
-    const slugs = linkSlugs();
-    return Object.keys(slugs).find(k => slugs[k] === startArg) || null;
+    if (startArg === 'daily-five') return 'daily';
+    const level = levelForStartArg(startArg);
+    return level ? level.key : null;
   }
 
   function baseUrl() {
@@ -3870,33 +4069,32 @@
     return 'main';
   }
 
-  // On load: open the level named in ?play=, the same way tapping its card does
+  // On load: start the level named in ?play=. A slug that is no playable
+  // level stays on the menu and says so.
   function openLinkedLevel() {
     let params;
     try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
     const slug = (params.get('play') || '').toLowerCase();
     if (!slug) return;
     const startArg = linkSlugs()[slug];
-    if (!startArg) {
+    const level = startArg ? levelForStartArg(startArg) : null;
+    if (!startArg || (level && !level.available)) {
       setAddressBar(baseUrl());
+      showNotice(level
+        ? level.title + ' isn’t ready to play yet.'
+        : 'That link doesn’t lead to a level.');
       return;
     }
     state.menuView = menuViewForStartArg(startArg);
     renderMenu();
-    if (params.get('learn') === '1' && PROVINCE_ROUNDS[startArg]) {
-      startGame(startArg, { learn: true });
-    } else {
-      chooseAndStart(startArg);
-    }
+    startGame(startArg, params.get('learn') === '1' && PROVINCE_ROUNDS[startArg] ? { learn: true } : null);
   }
 
   /* =========================================================
    * MENU
    * ========================================================= */
 
-  // Continent metadata used by both the main menu (for the folder card)
-  // and the continents sub-menu (for the individual cards).
-  const CONTINENT_ORDER = ['Africa','Asia','Europe','North America','South America','Oceania'];
+  // Continent metadata for the continents sub-menu's cards
   const CONTINENT_ORDINALS = {
     'Africa': 'I', 'Asia': 'II', 'Europe': 'III',
     'North America': 'IV', 'South America': 'V', 'Oceania': 'VI'
@@ -3952,7 +4150,7 @@
         'us-state-to-capital': 'St→Cap'
       };
       modes.forEach(m => {
-        const rec = getRecords('The United States', state.difficulty, m);
+        const rec = getRecords(resolveGameTarget(m).region, state.difficulty, m);
         if (!rec) return;
         totalGames += rec.gamesPlayed || 0;
         if (rec.bestAccuracy && rec.bestAccuracy.pct > bestPct) {
@@ -4221,7 +4419,7 @@
     html += renderModeToggles();
     html += '<div class="regions">';
     usModes.forEach(m => {
-      const best = bestLabel('The United States', m.mode);
+      const best = bestLabel(resolveGameTarget(m.mode).region, m.mode);
       html +=
         '<button class="region-card us-card" data-action="play" data-region="' + m.mode + '">' +
           '<div class="r-name">' + m.name + '</div>' +
@@ -4540,6 +4738,14 @@
     // their last game and then started a fresh one without backing out).
     document.getElementById('game-screen').classList.remove('review-mode');
 
+    // Only the Daily Five and levels that have something to ask can start
+    const level = levelForStartArg(regionOrMode);
+    if (regionOrMode !== 'daily-five' && !(level && level.available)) {
+      refuseLevel(level);
+      return;
+    }
+
+    const round = ++state.roundId;
     const target = resolveGameTarget(regionOrMode);
     const mode = target.mode;
     const region = target.region;
@@ -4581,6 +4787,7 @@
         return;
       }
       hideLoadingOverlay();
+      if (state.roundId !== round) return;
     }
 
     // Lazy-load the country's province map on first play
@@ -4598,6 +4805,7 @@
           return;
         }
         hideLoadingOverlay();
+        if (state.roundId !== round) return;
       }
     }
 
@@ -4611,6 +4819,7 @@
     state.startTime = Date.now();
     state.interactionLocked = false;
     state.totalQuestions = 0;
+    state.current = null;   // nothing can be answered until the first prompt is up
 
     // Build eligible features based on mode
     if (mode === 'daily-five') {
@@ -4643,7 +4852,7 @@
       // geographic context as part of the question.
       state.cityStateByName = new Map();
       cities.forEach(c => state.cityStateByName.set(c.name, c.state));
-      state.queue = shuffle(cities.map(c => c.name));
+      state.queue = shuffle(usCityNames(region));
     } else if (mode === 'city-pin') {
       // Countries are only scenery here (the whole map takes pins); the
       // continent's countries are drawn as land, the rest grayed out.
@@ -4656,37 +4865,27 @@
     } else if (mode === 'province') {
       // Every feature in the country's file is quizzable; Russia's rounds
       // narrow it to one group (isEligible handles that).
-      const store = currentProvinceStore();
-      state.eligibleFeatures = store.features.filter(isEligible);
-      state.queue = shuffle(state.eligibleFeatures.map(f => store.canonicalByFeature.get(featureKey(f))));
+      state.eligibleFeatures = currentProvinceStore().features.filter(isEligible);
+      state.queue = shuffle(provinceRoundNames(region));
     } else if (state.activeDataset === 'us') {
       state.eligibleFeatures = state.usFeatures.filter(f => {
         const name = state.usCanonicalByFeature.get(featureKey(f));
         return US_STATE_SET.has(name);
       });
-      const names = new Set();
-      const byCanonical = activeCanonicalByFeature();
-      state.eligibleFeatures.forEach(f => {
-        const c = byCanonical.get(featureKey(f));
-        if (c) names.add(c);
-      });
-      state.queue = shuffle(Array.from(names));
-    } else if (region === 'World') {
-      state.eligibleFeatures = state.allFeatures.filter(f => state.continentByFeature.get(featureKey(f)));
-      const names = new Set();
-      state.eligibleFeatures.forEach(f => {
-        const c = state.canonicalByFeature.get(featureKey(f));
-        if (c) names.add(c);
-      });
-      state.queue = shuffle(Array.from(names));
+      state.queue = shuffle(US_STATE_NAMES.filter(name => state.usFeatureByCanonical.has(name)));
     } else {
-      state.eligibleFeatures = state.allFeatures.filter(f => state.continentByFeature.get(featureKey(f)) === region);
-      const names = new Set();
-      state.eligibleFeatures.forEach(f => {
-        const c = state.canonicalByFeature.get(featureKey(f));
-        if (c) names.add(c);
+      // The World, or one continent
+      state.eligibleFeatures = state.allFeatures.filter(f => {
+        const continent = state.continentByFeature.get(featureKey(f));
+        return region === 'World' ? !!continent : continent === region;
       });
-      state.queue = shuffle(Array.from(names));
+      state.queue = shuffle(countryNames(region));
+    }
+
+    // The map held none of the level's items: nothing to play or to save
+    if (state.queue.length === 0) {
+      refuseLevel(level);
+      return;
     }
 
     // Focus round: keep only the requested names. The queue is already
@@ -4732,11 +4931,18 @@
     }
 
     // Wait for screen transition, then render map
-    setTimeout(() => {
+    roundTimeout(() => {
       renderMap();
       if (state.learn) startLearnLevel();
       else nextCountry();
     }, 80);
+  }
+
+  // Back to the menu with a word of explanation, for a level that can't
+  // be played (level is null when the name matched none)
+  function refuseLevel(level) {
+    switchScreen('menu');
+    showNotice((level ? level.title : 'That level') + ' isn’t ready to play yet.');
   }
 
   // Allow replaying a past daily puzzle without affecting today's record.
@@ -4759,6 +4965,37 @@
   function hideLoadingOverlay() {
     const el = document.getElementById('loading-overlay');
     if (el) el.classList.remove('visible');
+  }
+
+  // A short plain-text message over whichever screen is showing; fades by itself
+  function showNotice(text) {
+    let el = document.getElementById('app-notice');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'app-notice';
+      el.className = 'app-notice';
+      el.setAttribute('role', 'status');
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    void el.offsetWidth;
+    el.classList.add('show');
+    clearTimeout(showNotice._t);
+    showNotice._t = setTimeout(hideNotice, 4500);
+  }
+
+  function hideNotice() {
+    const el = document.getElementById('app-notice');
+    if (el) el.classList.remove('show');
+  }
+
+  // setTimeout for work that belongs to the round in play: the callback is
+  // dropped if that round has been left or another has started by then
+  function roundTimeout(fn, ms) {
+    const round = state.roundId;
+    return setTimeout(() => {
+      if (state.roundId === round) fn();
+    }, ms);
   }
 
   function shuffle(arr) {
@@ -5049,7 +5286,7 @@
     if (mode === 'city-pin') {
       const city = PIN_CITY_BY_NAME.get(state.current);
       promptLabelEl.textContent = 'Pin the city';
-      promptEl.innerHTML = escapeHtml(city.name) + '<span class="pin-prompt-country">' + escapeHtml(city.country) + '</span>';
+      promptEl.innerHTML = escapeHtml(city.label) + '<span class="pin-prompt-country">' + escapeHtml(city.country) + '</span>';
       state.currentPromptText = city.name;
       choicesEl.style.display = 'none';
       state.pin.phase = 'aim';
@@ -5064,7 +5301,10 @@
       const cityState = state.cityStateByName
         ? state.cityStateByName.get(state.current)
         : null;
-      const display = cityState ? state.current + ', ' + cityState : state.current;
+      // A name that already carries its state (see claimName) is shown as it is
+      const display = cityState && !state.current.endsWith(', ' + cityState)
+        ? state.current + ', ' + cityState
+        : state.current;
       promptEl.textContent = display;
       state.currentPromptText = display;
       choicesEl.style.display = 'none';
@@ -5101,6 +5341,31 @@
 
     updateStats();
     document.getElementById('skip-btn').disabled = false;
+  }
+
+  // Books a resolved question: 2 points for a first-try find, 1 for a
+  // second-try find, 0 for a miss (two wrong tries, or a skip). Locks the
+  // map until the next prompt and hands the outcome to the mastery store.
+  function scoreAnswer(points) {
+    if (points > 0) {
+      state.correct++;
+      state.score += points;
+      if (points === 1) state.secondTry.push(state.current);
+    } else {
+      state.wrong++;
+      state.missed.push(state.current);
+    }
+    state.sequence.push(points);
+    state.interactionLocked = true;
+
+    if (state.learn) {
+      // Counted toward the level's session only (see learnLevelPassed)
+      state.learn.asked++;
+      if (points > 0) state.learn.found++;
+      return;
+    }
+    const skill = roundSkill();
+    if (skill) mastery.record(skill, state.current, Mastery.OUTCOMES[points]);
   }
 
   // Highlights the currently-prompted state in the state-to-capital mode
@@ -5143,11 +5408,7 @@
     const correctCapital = US_CAPITALS[state.current];
     if (capital === correctCapital) {
       const pointsEarned = state.attempts === 0 ? 2 : 1;
-      state.correct++;
-      state.score += pointsEarned;
-      state.sequence.push(pointsEarned);
-      if (pointsEarned === 1) state.secondTry.push(state.current);
-      state.interactionLocked = true;
+      scoreAnswer(pointsEarned);
       btn.classList.add('choice-correct');
       const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
       showToast('correct', '<em>' + state.current + '</em> → ' + capital + ' · ' + pointsLabel);
@@ -5160,13 +5421,13 @@
         const targetKey = featureKey(feature);
         const p = d3.select('.country[data-fkey="' + CSS.escape(targetKey) + '"]');
         p.classed('target-correct', true);
-        setTimeout(() => {
+        roundTimeout(() => {
           p.classed('target-correct', false);
           if (!state.hardMode) p.classed('completed-correct', true);
         }, 700);
       }
 
-      setTimeout(nextCountry, 1100);
+      roundTimeout(nextCountry, 1100);
     } else {
       state.attempts++;
       btn.classList.add('choice-wrong');
@@ -5179,10 +5440,7 @@
 
       if (state.attempts >= 2) {
         // Reveal the correct answer
-        state.wrong++;
-        state.sequence.push(0);
-        state.missed.push(state.current);
-        state.interactionLocked = true;
+        scoreAnswer(0);
 
         // Highlight the correct capital button
         const container = document.getElementById('choices-panel');
@@ -5197,7 +5455,7 @@
             '<em>' + state.current + '</em> → ' + correctCapital);
         } else {
           showToast('wrong', '<em>' + state.current + '</em> → ' + correctCapital);
-          setTimeout(nextCountry, 1800);
+          roundTimeout(nextCountry, 1800);
         }
       } else {
         showToast('wrong', 'Not quite — try again');
@@ -5237,11 +5495,7 @@
 
     if (clickedCanonical === state.current) {
       const pointsEarned = state.attempts === 0 ? 2 : 1;
-      state.correct++;
-      state.score += pointsEarned;
-      state.sequence.push(pointsEarned);
-      if (pointsEarned === 1) state.secondTry.push(state.current);
-      state.interactionLocked = true;
+      scoreAnswer(pointsEarned);
       visiblePath.classed('target-correct', true);
       const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
       // For capital mode, the toast shows "Capital → State" to reinforce learning
@@ -5253,7 +5507,7 @@
       updateStats();
       flashScore();
 
-      setTimeout(() => {
+      roundTimeout(() => {
         visiblePath.classed('target-correct', false);
         if (!state.hardMode) {
           visiblePath.classed('completed-correct', true);
@@ -5263,7 +5517,7 @@
     } else {
       state.attempts++;
       visiblePath.classed('target-wrong', true);
-      setTimeout(() => visiblePath.classed('target-wrong', false), 700);
+      roundTimeout(() => visiblePath.classed('target-wrong', false), 700);
 
       const promptEl = document.getElementById('prompt-country');
       promptEl.classList.remove('shake');
@@ -5272,10 +5526,7 @@
 
       // Learn mode allows no second try: one miss restarts the level
       if (state.attempts >= 2 || state.learn) {
-        state.wrong++;
-        state.sequence.push(0);
-        state.missed.push(state.current);
-        state.interactionLocked = true;
+        scoreAnswer(0);
         let revealMsg = state.gameMode === 'us-capital-to-state'
           ? '<em>' + state.currentPromptText + '</em> → ' + state.current
           : 'Not quite — this is <em>' + state.current + '</em>';
@@ -5304,11 +5555,10 @@
     ensureFeatureVisible(feature);
     showRevealMarker(feature);
 
-    const learnRun = state.learn;
-    setTimeout(() => {
+    roundTimeout(() => {
       targetPath.classed('reveal', false);
-      if (learnRun) {
-        if (state.learn === learnRun) learnLevelFailed();
+      if (state.learn) {
+        learnLevelFailed();
         return;
       }
       if (!state.hardMode) {
@@ -5370,7 +5620,7 @@
     marker.append('circle').attr('class', 'pulse-ring delayed');
     marker.append('circle').attr('class', 'center-dot').attr('r', 5);
 
-    setTimeout(() => {
+    roundTimeout(() => {
       marker.transition().duration(300).style('opacity', 0).remove();
     }, 2400);
   }
@@ -5393,18 +5643,14 @@
 
     if (clickedName === state.current) {
       const pointsEarned = state.attempts === 0 ? 2 : 1;
-      state.correct++;
-      state.score += pointsEarned;
-      state.sequence.push(pointsEarned);
-      if (pointsEarned === 1) state.secondTry.push(state.current);
-      state.interactionLocked = true;
+      scoreAnswer(pointsEarned);
       dotSel.classed('target-correct', true);
       const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
       showToast('correct', 'Well done — <em>' + clickedName + '</em> · ' + pointsLabel);
       updateStats();
       flashScore();
 
-      setTimeout(() => {
+      roundTimeout(() => {
         dotSel.classed('target-correct', false);
         if (!state.hardMode) dotSel.classed('completed-correct', true);
         nextCountry();
@@ -5412,7 +5658,7 @@
     } else {
       state.attempts++;
       dotSel.classed('target-wrong', true);
-      setTimeout(() => dotSel.classed('target-wrong', false), 700);
+      roundTimeout(() => dotSel.classed('target-wrong', false), 700);
 
       const promptEl = document.getElementById('prompt-country');
       promptEl.classList.remove('shake');
@@ -5420,10 +5666,7 @@
       promptEl.classList.add('shake');
 
       if (state.attempts >= 2) {
-        state.wrong++;
-        state.sequence.push(0);
-        state.missed.push(state.current);
-        state.interactionLocked = true;
+        scoreAnswer(0);
         revealMissedCity(state.current);
       } else {
         showToast('wrong', '<em>' + clickedName + '</em> — try again');
@@ -5438,7 +5681,7 @@
     const cityData = cities.find(c => c.name === cityName);
     if (!cityData) {
       showToast('wrong', 'Not quite — this is <em>' + cityName + '</em>');
-      setTimeout(nextCountry, 1800);
+      roundTimeout(nextCountry, 1800);
       return;
     }
 
@@ -5450,7 +5693,7 @@
     ensureCoordsVisible(cityData.coords);
     showRevealMarkerAtCoords(cityData.coords);
 
-    setTimeout(() => {
+    roundTimeout(() => {
       dotSel.classed('reveal', false);
       if (!state.hardMode) dotSel.classed('completed-wrong', true);
       nextCountry();
@@ -5500,7 +5743,7 @@
     marker.append('circle').attr('class', 'pulse-ring');
     marker.append('circle').attr('class', 'pulse-ring delayed');
     marker.append('circle').attr('class', 'center-dot').attr('r', 5);
-    setTimeout(() => {
+    roundTimeout(() => {
       marker.transition().duration(300).style('opacity', 0).remove();
     }, 2400);
   }
@@ -5513,10 +5756,7 @@
       if (state.pin.phase === 'aim') pinReveal(null);
       return;
     }
-    state.wrong++;
-    state.sequence.push(0);
-    state.missed.push(state.current);
-    state.interactionLocked = true;
+    scoreAnswer(0);
 
     // In state-to-capital mode, also show the correct capital button
     if (state.gameMode === 'us-state-to-capital') {
@@ -5618,7 +5858,13 @@
     // What this round says to work on next: misses first, then second tries
     state.roundNeedsWork = state.missed.concat(state.secondTry);
 
-    // Focus rounds and daily replays are practice: no records, no sync, no share
+    mastery.recordSession({
+      questions: state.sequence.length,
+      firstTry: state.sequence.filter(points => points === 2).length,
+      seconds: elapsed
+    });
+
+    // Focus rounds and daily replays are practice: no records, no share
     const isPractice = state.practice || !!state.dailyReplay;
 
     if (isPractice) {
@@ -5672,9 +5918,9 @@
       });
     }
 
-    // Mirror to cloud after every full game (fire-and-forget; no-op if sync
-    // isn't set up). Practice rounds change nothing worth syncing.
-    if (!isPractice) syncAfterGameEnd();
+    // Mirror to cloud after every round (fire-and-forget; no-op if sync
+    // isn't set up). Practice rounds count too: they add to the mastery history.
+    syncAfterGameEnd();
 
     const modeConfig = GAME_MODES[state.gameMode];
     let regionLabel = modeConfig.label(state.currentContinent);
@@ -6237,6 +6483,810 @@
     }
   }
 
+/* =========================================================
+ * MASTERY (per-item learning history, spaced review, daily activity)
+ *
+ * Pure logic, no DOM: storage and clock can be injected, so the same code
+ * runs in the game and under node.
+ *   const mastery = Mastery.create();   // the page's localStorage, the real clock
+ *   const mastery = Mastery.create({ storage: fakeStorage, now: () => fakeMs });
+ *
+ * Storage shape under key "atlas-mastery" (synced; kept compact because it
+ * shares the sync payload with every other store):
+ * {
+ *   v: 2,
+ *   items: { "<skill>": { "<name>": [lastDay, box, first, streak, second, missed, dueFix] } },
+ *   days:  { "<dayNumber>": [games, questions, firstTry, seconds] },
+ *   life:  [games, questions, firstTry, seconds, daysActive, longestStreak, runEnd, runLength]
+ * }
+ * - skill is an opaque string chosen by the game ("world-country", "flag",
+ *   "province:china", ...); name is the game's canonical name.
+ * - dayNumber = whole local-calendar days since 2026-01-01.
+ * - Trailing zeros of an item are dropped, and only seen items are stored.
+ *   seen = first + second + missed. An item is due INTERVALS[box] days after
+ *   lastDay unless dueFix says otherwise: dueFix n > 0 means n - 1 days after.
+ * - days keeps the last 400 days. life holds the lifetime tallies, so totals
+ *   and streaks don't shrink when old rows are pruned; runLength is the run
+ *   of active days ending on runEnd.
+ * - An item written in the wide v: 1 layout, [seen, first, second, missed,
+ *   streak, box, dueDay, lastDay], is read too (its eight fields give it
+ *   away) and rewritten in this layout on the next save.
+ *
+ * Scheduling (Leitner): a first-try answer moves an item up a box, at most
+ * once per calendar day, and schedules it INTERVALS[box] days out. A
+ * second-try answer caps it at box 2, due tomorrow. A miss or skip sends it
+ * to box 1, due again straight away.
+ * ========================================================= */
+
+const Mastery = (function () {
+  'use strict';
+
+  const KEY = 'atlas-mastery';
+  const VERSION = 2;
+  const INTERVALS = [0, 1, 3, 7, 16, 35];        // days until the next review, by box
+  const WEIGHTS = [0, 0.2, 0.45, 0.7, 0.9, 1];   // how much of "mastered" each box is worth
+  const LEVELS = ['new', 'learning', 'familiar', 'mastered'];
+  const OUTCOMES = ['miss', 'second', 'first'];  // indexed by points earned (0, 1, 2)
+  const MAX_BOX = INTERVALS.length - 1;
+  const KEEP_DAYS = 400;                         // day rows older than this are pruned
+  const DAY_MS = 86400000;
+  const EPOCH_UTC = Date.UTC(2026, 0, 1);
+  const COUNT_LIMIT = 1e9;                       // ceilings for numbers read from storage or sync
+  const DAY_LIMIT = 1e6;
+
+  // Item fields
+  const LAST = 0, BOX = 1, FIRST = 2, STREAK = 3, SECOND = 4, MISSED = 5, DUE_FIX = 6;
+  // Lifetime fields; 0-3 are the day-row fields in day-row order
+  const DAYS_ACTIVE = 4, LONGEST = 5, RUN_END = 6, RUN_LEN = 7;
+
+  /* ===== Days ===== */
+
+  // Whole local-calendar days from 2026-01-01 to the day containing `ms`.
+  // Counts calendar fields, not elapsed hours, so 23- and 25-hour DST days
+  // and days whose midnight doesn't exist still come out as one day each.
+  function dayNumber(ms) {
+    const d = new Date(ms);
+    return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - EPOCH_UTC) / DAY_MS);
+  }
+
+  // 'YYYY-MM-DD' (local calendar) for a day number
+  function dayToDate(day) {
+    const ms = EPOCH_UTC + day * DAY_MS;
+    return isFinite(ms) && Math.abs(ms) < 8.64e15 ? new Date(ms).toISOString().slice(0, 10) : '';
+  }
+
+  /* ===== Store shape ===== */
+
+  // Lookup table without Object.prototype, so a skill or name such as
+  // "constructor" or "__proto__" is just another key
+  function dict() {
+    return Object.create(null);
+  }
+
+  function emptyStore() {
+    return { v: VERSION, items: dict(), days: dict() };
+  }
+
+  // Non-negative whole number; 0 for anything else
+  function count(v) {
+    const n = Math.floor(Number(v));
+    return n > 0 ? Math.min(n, COUNT_LIMIT) : 0;
+  }
+
+  // Whole day number (may be negative), or null if it isn't a number
+  function dayValue(v) {
+    if (typeof v !== 'number' || !isFinite(v)) return null;
+    return Math.max(-DAY_LIMIT, Math.min(DAY_LIMIT, Math.floor(v)));
+  }
+
+  function isMap(v) {
+    return !!v && typeof v === 'object' && !Array.isArray(v);
+  }
+
+  // Drops trailing zeros (in place)
+  function trim(a) {
+    let n = a.length;
+    while (n > 1 && !a[n - 1]) n--;
+    a.length = n;
+    return a;
+  }
+
+  function seenOf(it) {
+    return (it[FIRST] || 0) + (it[SECOND] || 0) + (it[MISSED] || 0);
+  }
+
+  function dueOf(it) {
+    const fix = it[DUE_FIX] || 0;
+    return it[LAST] + (fix ? fix - 1 : INTERVALS[it[BOX]]);
+  }
+
+  // The stored form of an item last answered on `last` and due `dueIn` days
+  // later (capped, so an absurd due day reads back the way it was written)
+  function pack(last, box, dueIn, first, streak, second, missed) {
+    const wait = Math.min(dueIn, DAY_LIMIT - 1);
+    return trim([last, box, first, streak, second, missed, wait === INTERVALS[box] ? 0 : wait + 1]);
+  }
+
+  function levelOf(box) {
+    return box >= 4 ? LEVELS[3] : box >= 2 ? LEVELS[2] : LEVELS[1];
+  }
+
+  // A stored item from untrusted JSON, or null if it isn't one. Eight fields
+  // mean the wide v1 layout [seen, first, second, missed, streak, box, dueDay,
+  // lastDay]; the compact layout never has more than seven.
+  function cleanItem(a) {
+    if (!Array.isArray(a)) return null;
+    const wide = a.length === 8;
+    const last = dayValue(wide ? a[7] : a[LAST]);
+    if (last === null) return null;
+    const first = count(wide ? a[1] : a[FIRST]);
+    const second = count(wide ? a[2] : a[SECOND]);
+    let missed = count(wide ? a[3] : a[MISSED]);
+    // Answers the three tallies don't account for can't have been first-try
+    if (wide) missed += Math.max(0, count(a[0]) - first - second - missed);
+    if (first + second + missed === 0) return null;
+    const box = Math.max(1, Math.min(MAX_BOX, count(wide ? a[5] : a[BOX])));
+    const streak = count(wide ? a[4] : a[STREAK]);
+    let dueIn;
+    if (wide) {
+      const due = dayValue(a[6]);
+      dueIn = due === null ? INTERVALS[box] : Math.max(0, due - last);
+    } else {
+      const fix = Math.min(count(a[DUE_FIX]), DAY_LIMIT);
+      dueIn = fix ? fix - 1 : INTERVALS[box];
+    }
+    return pack(last, box, dueIn, first, streak, second, missed);
+  }
+
+  // A clean store from parsed JSON, or null if it isn't one (or is from a
+  // version this code doesn't know). Copies everything, so the result shares
+  // nothing with its input.
+  function normalize(raw) {
+    if (!isMap(raw)) return null;
+    if (raw.v !== undefined && raw.v !== 1 && raw.v !== VERSION) return null;
+    const st = emptyStore();
+
+    if (isMap(raw.items)) {
+      Object.keys(raw.items).forEach(skill => {
+        const from = raw.items[skill];
+        if (!isMap(from)) return;
+        Object.keys(from).forEach(name => {
+          const it = cleanItem(from[name]);
+          if (it) (st.items[skill] || (st.items[skill] = dict()))[name] = it;
+        });
+      });
+    }
+
+    if (isMap(raw.days)) {
+      Object.keys(raw.days).forEach(k => {
+        const row = raw.days[k];
+        // Only the way a day number is written out counts as one: "007" or
+        // "-0" would land on another row's key
+        if (!/^(0|-?[1-9]\d{0,5})$/.test(k) || !Array.isArray(row)) return;
+        const clean = [count(row[0]), count(row[1]), count(row[2]), count(row[3])];
+        if (clean[0] + clean[1] + clean[2] + clean[3] > 0) st.days[k] = clean;
+      });
+    }
+
+    if (Array.isArray(raw.life)) {
+      st.life = [];
+      for (let i = 0; i <= LONGEST; i++) st.life[i] = count(raw.life[i]);
+      const end = dayValue(raw.life[RUN_END]);
+      st.life[RUN_END] = end === null ? -DAY_LIMIT : end;
+      st.life[RUN_LEN] = count(raw.life[RUN_LEN]);
+    }
+    return st;
+  }
+
+  /* ===== Activity log: runs, lifetime tallies, pruning ===== */
+
+  // Day numbers with at least one game, ascending
+  function activeDays(st) {
+    const out = [];
+    for (const k in st.days) if (st.days[k][0] > 0) out.push(Number(k));
+    return out.sort((a, b) => a - b);
+  }
+
+  // Every run of active days the store knows of, oldest first, as [first day,
+  // last day] pairs: the runs in the day rows, the stored run (which can reach
+  // back past the pruned rows) and, in a merge, the other device's stored run
+  // (`other` is its lifetime row) - joined wherever they overlap or abut
+  function runsOf(st, other) {
+    const runs = [];
+    activeDays(st).forEach(d => {
+      const top = runs[runs.length - 1];
+      if (top && d === top[1] + 1) top[1] = d;
+      else runs.push([d, d]);
+    });
+    [st.life, other].forEach(life => {
+      if (life && life[RUN_LEN] > 0) runs.push([life[RUN_END] - life[RUN_LEN] + 1, life[RUN_END]]);
+    });
+    runs.sort((a, b) => a[0] - b[0]);
+    const joined = [];
+    runs.forEach(r => {
+      const top = joined[joined.length - 1];
+      if (top && r[0] <= top[1] + 1) top[1] = Math.max(top[1], r[1]);
+      else joined.push(r);
+    });
+    return joined;
+  }
+
+  // Sums of the day rows' four numbers, then the number of days with a game
+  // (the first five lifetime fields, as far as the rows show them), over the
+  // rows dated `from` or later, or over all of them
+  function rowTotals(st, from) {
+    const out = [0, 0, 0, 0, 0];
+    for (const k in st.days) {
+      if (from !== undefined && Number(k) < from) continue;
+      for (let i = 0; i < 4; i++) out[i] += st.days[k][i];
+      if (st.days[k][0] > 0) out[DAYS_ACTIVE]++;
+    }
+    return out;
+  }
+
+  // The first of the "recent" days: those whose rows every device still has.
+  // The two oldest days a save keeps don't count, as a device one time zone
+  // ahead has pruned them already.
+  function recentFrom(today) {
+    return today - KEEP_DAYS + 2;
+  }
+
+  // Brings the lifetime row into line with everything else the store holds:
+  // tallies at least what the day rows show (so rows are counted before they
+  // are pruned), and the stored run brought up to date, with `other`'s run
+  // joined in when merging
+  function settle(st, today, other) {
+    if (!st.life && !Object.keys(st.days).length) return;
+    const life = st.life || (st.life = [0, 0, 0, 0, 0, 0, -DAY_LIMIT, 0]);
+    rowTotals(st).forEach((sum, i) => { life[i] = Math.max(life[i], sum); });
+    // The recent rows spell out every run that began among them. The run to
+    // remember is the one that began earlier: its first days are in no row,
+    // and a day played on another device may yet join it to today. Failing
+    // that, the latest run. No real run ends after tomorrow (where a device
+    // one time zone ahead may already be), so one from a clock that ran fast
+    // is cut back to tomorrow, or passed over if it starts later still.
+    let early = null, latest = null, longest = life[LONGEST];
+    runsOf(st, other).forEach(r => {
+      longest = Math.max(longest, r[1] - r[0] + 1);
+      if (r[0] < recentFrom(today)) early = r;
+      if (r[0] <= today + 1) latest = r;
+    });
+    const run = early || latest;
+    life[RUN_END] = run ? Math.min(run[1], today + 1) : -DAY_LIMIT;
+    life[RUN_LEN] = run ? life[RUN_END] - run[0] + 1 : 0;
+    life[LONGEST] = longest;
+    life[DAYS_ACTIVE] = Math.max(life[DAYS_ACTIVE], longest);
+    // Nothing is left above the ceiling it would be read back with
+    for (let i = 0; i <= RUN_LEN; i++) {
+      if (i !== RUN_END) life[i] = Math.min(life[i], COUNT_LIMIT);
+    }
+  }
+
+  // Drops day rows more than KEEP_DAYS old. Returns true if any went.
+  function pruneStore(st, today) {
+    const cutoff = today - KEEP_DAYS;
+    let changed = false;
+    for (const k in st.days) {
+      if (Number(k) < cutoff) {
+        delete st.days[k];
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  /* ===== Merging two stores ===== */
+
+  // True if history `a` of an item should replace history `b`: more answers
+  // wins, then the more recent, then the higher box. The remaining fields only
+  // make the choice the same whichever side does the merging.
+  function better(a, b) {
+    const order = [seenOf(a) - seenOf(b), a[LAST] - b[LAST], a[BOX] - b[BOX]];
+    [FIRST, STREAK, SECOND, DUE_FIX].forEach(i => order.push((a[i] || 0) - (b[i] || 0)));
+    for (let i = 0; i < order.length; i++) {
+      if (order[i] !== 0) return order[i] > 0;
+    }
+    return false;
+  }
+
+  // Merges `src` into `dst`. `src` must be a normalize() result nobody else
+  // holds: `dst` takes over its arrays, and both come out pruned as of `today`.
+  function mergeStores(dst, src, today) {
+    // What each side's lifetime tallies hold beyond its recent day rows. Both
+    // sides are first brought to where a save today would leave them, so that
+    // each has all of its recent rows and nothing older than a save keeps.
+    const recent = recentFrom(today);
+    const older = [dst, src].map(st => {
+      settle(st, today);
+      pruneStore(st, today);
+      return rowTotals(st, recent).map((sum, i) => (st.life ? st.life[i] - sum : 0));
+    });
+
+    for (const skill in src.items) {
+      const from = src.items[skill];
+      const to = dst.items[skill] || (dst.items[skill] = dict());
+      for (const name in from) {
+        if (!to[name] || better(from[name], to[name])) to[name] = from[name];
+      }
+    }
+    for (const k in src.days) {
+      const mine = dst.days[k], theirs = src.days[k];
+      if (!mine) dst.days[k] = theirs;
+      else for (let i = 0; i < 4; i++) mine[i] = Math.max(mine[i], theirs[i]);
+    }
+    if (src.life) {
+      const life = dst.life || (dst.life = [0, 0, 0, 0, 0, 0, -DAY_LIMIT, 0]);
+      // The older history is taken to be one both devices share (the larger
+      // count of the two) and the recent rows, now merged, are counted on top:
+      // games played on one device before it saw the other's are added, not
+      // swallowed by the larger total
+      rowTotals(dst, recent).forEach((sum, i) => { life[i] = Math.max(older[0][i], older[1][i]) + sum; });
+      life[LONGEST] = Math.max(life[LONGEST], src.life[LONGEST]);
+    }
+    // The two devices' runs are one run if the days they cover meet, which
+    // settle() works out from both stored runs and the merged day rows
+    settle(dst, today, src.life);
+  }
+
+  /* ===== Instance ===== */
+
+  function defaultStorage() {
+    try {
+      return typeof localStorage !== 'undefined' ? localStorage : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // options: storage (getItem/setItem/removeItem; default localStorage, null =
+  // memory only), now (ms clock; default Date.now), key, promote ('daily', the
+  // default = a box gained at most once per calendar day; 'always' = every
+  // first-try answer gains one)
+  function create(options) {
+    const opts = options || {};
+    const storage = opts.storage === undefined ? defaultStorage() : opts.storage;
+    const now = typeof opts.now === 'function' ? opts.now : () => Date.now();
+    const key = opts.key || KEY;
+    const promoteAlways = opts.promote === 'always';
+
+    let store = emptyStore();
+    let lastRaw = null;    // what storage held when we last read or wrote it
+    let dirty = false;     // true while the latest save hasn't reached storage
+    let trusted = false;   // true once storage has handed back what was saved
+    let tidied = null;     // the day the tallies and pruning were last brought up to date
+
+    // A clock that throws, or hands back something Date can't hold, is
+    // replaced by the real one
+    function today() {
+      let day;
+      try { day = dayNumber(Number(now())); } catch (e) { day = NaN; }
+      return isFinite(day) ? day : dayNumber(Date.now());
+    }
+
+    // The stored string, null if there is none, undefined if storage can't be read
+    function read() {
+      if (!storage) return null;
+      try {
+        const raw = storage.getItem(key);
+        return typeof raw === 'string' ? raw : null;
+      } catch (e) {
+        return undefined;
+      }
+    }
+
+    function parse(raw) {
+      try {
+        return normalize(JSON.parse(raw));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function persist(raw) {
+      if (!storage) return;
+      try {
+        storage.setItem(key, raw);
+        lastRaw = raw;
+        dirty = false;
+      } catch (e) {
+        dirty = true;   // storage full or blocked: carry on in memory
+        return;
+      }
+      // A storage that doesn't hand back what it was given (a stub, some
+      // private modes) reads as empty forever; reload() must not take that
+      // for another tab wiping the store
+      if (!trusted) trusted = read() === raw;
+    }
+
+    // Settles the lifetime tallies and prunes old day rows, once per calendar
+    // day: after that, writes and merges keep the tallies in step themselves
+    // and no row can age past the cutoff until the date changes. Returns true
+    // if rows were pruned.
+    function tidy() {
+      const day = today();
+      if (tidied === day) return false;
+      settle(store, day);
+      tidied = day;
+      return pruneStore(store, day);
+    }
+
+    function save() {
+      tidy();
+      if (storage) persist(JSON.stringify(store));
+    }
+
+    // Picks up what another tab wrote since we last looked, so two tabs don't
+    // overwrite each other: its data is merged in, and a wiped store empties
+    // ours. Runs before every write; call it on the window's "storage" event
+    // to refresh what the read methods see. Returns true if storage had changed.
+    function reload() {
+      const raw = read();
+      if (raw === undefined || raw === lastRaw) return false;
+      if (raw === null) {
+        if (!trusted) return false;
+        store = emptyStore();
+      } else {
+        trusted = true;
+        const other = parse(raw);
+        if (other) mergeStores(store, other, today());
+      }
+      lastRaw = raw;
+      return true;
+    }
+
+    function lookup(skill, name) {
+      const bySkill = store.items[skill];
+      return (bySkill && bySkill[name]) || null;
+    }
+
+    // The names a query covers: the caller's list without repeats, or every
+    // stored name of the skill when no list is given
+    function nameList(skill, names) {
+      if (!Array.isArray(names)) return Object.keys(store.items[skill] || {});
+      const had = new Set();
+      return names.filter(n => typeof n === 'string' && !had.has(n) && had.add(n));
+    }
+
+    function view(it, day) {
+      if (!it) {
+        return {
+          seen: 0, first: 0, second: 0, missed: 0, streak: 0, box: 0,
+          due: null, last: null, accuracy: null, level: LEVELS[0], isDue: false
+        };
+      }
+      const first = it[FIRST] || 0, second = it[SECOND] || 0, missed = it[MISSED] || 0;
+      const seen = first + second + missed;
+      const dueDay = dueOf(it);
+      return {
+        seen: seen, first: first, second: second, missed: missed,
+        streak: it[STREAK] || 0, box: it[BOX], due: dueDay, last: it[LAST],
+        accuracy: first / seen, level: levelOf(it[BOX]), isDue: dueDay <= day
+      };
+    }
+
+    function dayView(day) {
+      const row = store.days[day] || [0, 0, 0, 0];
+      return { day: day, date: dayToDate(day), games: row[0], questions: row[1], firstTry: row[2], seconds: row[3] };
+    }
+
+    // ---- Writing ----
+
+    // Records one answer: outcome is 'first' (right first try), 'second'
+    // (right second try) or 'miss' (missed twice, or skipped). Returns the
+    // item as get() would. An unknown outcome changes nothing; a skill or
+    // name that isn't a non-empty string returns null.
+    function record(skill, name, outcome) {
+      if (typeof skill !== 'string' || !skill || typeof name !== 'string' || !name) return null;
+      if (OUTCOMES.indexOf(outcome) < 0) return get(skill, name);
+      reload();
+      const day = today();
+      const it = lookup(skill, name);
+      let box = it ? it[BOX] : 0;
+      let first = it ? it[FIRST] || 0 : 0, second = it ? it[SECOND] || 0 : 0, missed = it ? it[MISSED] || 0 : 0;
+      let inARow = it ? it[STREAK] || 0 : 0;
+      let dueDay;
+
+      if (outcome === 'first') {
+        first++;
+        inARow++;
+        if (promoteAlways || !it || it[LAST] !== day) {
+          box = Math.min(MAX_BOX, box + 1);
+          dueDay = day + INTERVALS[box];
+        } else {
+          // Already answered today: repeating it the same day earns no second
+          // step up, but it does clear an item that was due
+          dueDay = Math.max(dueOf(it), day + 1);
+        }
+      } else if (outcome === 'second') {
+        second++;
+        inARow = 0;
+        box = Math.max(1, Math.min(box, 2));
+        dueDay = day + 1;
+      } else {
+        missed++;
+        inARow = 0;
+        box = 1;
+        dueDay = day;
+      }
+
+      const next = pack(day, box, dueDay - day, first, inARow, second, missed);
+      (store.items[skill] || (store.items[skill] = dict()))[name] = next;
+      save();
+      return view(next, day);
+    }
+
+    // Adds one finished game (or practice round) to today's row and to the
+    // lifetime tallies. Returns today's row as activity() would.
+    function recordSession(session) {
+      const s = session || {};
+      reload();
+      const day = today();
+      const row = store.days[day] || (store.days[day] = [0, 0, 0, 0]);
+      const life = store.life || (store.life = [0, 0, 0, 0, 0, 0, -DAY_LIMIT, 0]);
+      // A number that isn't finite is a bug in the caller, not a long game
+      const amount = v => (isFinite(v) ? count(v) : 0);
+      const add = [1, amount(s.questions), 0, amount(Math.round(Number(s.seconds)))];
+      add[2] = Math.min(amount(s.firstTry), add[1]);
+      if (row[0] === 0) life[DAYS_ACTIVE]++;
+      for (let i = 0; i < 4; i++) {
+        row[i] += add[i];
+        life[i] += add[i];
+      }
+      settle(store, day);   // today joins the run that reached yesterday, or starts one
+
+      save();
+      return dayView(day);
+    }
+
+    // Folds another device's export into this store. Per item, the history
+    // with more answers wins (then the more recent, then the higher box); day
+    // rows keep the larger of each number, and the lifetime tallies and the
+    // streak follow from the merged rows. Returns true if this store changed.
+    function mergeBlob(remote) {
+      let other = null;
+      try { other = normalize(remote); } catch (e) { /* not a store */ }
+      if (!other) return false;
+      reload();
+      tidy();
+      const before = JSON.stringify(store);
+      mergeStores(store, other, tidied);
+      const after = JSON.stringify(store);
+      if (after !== before || dirty) persist(after);
+      return after !== before;
+    }
+
+    // Drops day rows older than 400 days (their numbers stay in the lifetime
+    // tallies). Runs on every save; returns true if any rows went.
+    function prune() {
+      tidied = null;
+      const changed = tidy();
+      if (changed) persist(JSON.stringify(store));
+      return changed;
+    }
+
+    function reset() {
+      store = emptyStore();
+      dirty = false;
+      lastRaw = null;
+      if (!storage) return;
+      try {
+        if (typeof storage.removeItem === 'function') storage.removeItem(key);
+        else storage.setItem(key, JSON.stringify(store));
+      } catch (e) {
+        dirty = true;   // storage blocked: memory is cleared, and the next save that gets through replaces the rest
+      }
+      // Anything storage still holds is what was just wiped: reload() must
+      // not take it for another tab's work and merge it back in
+      const left = read();
+      if (left !== undefined) lastRaw = left;
+    }
+
+    // Saves are immediate, so there is normally nothing to flush; this only
+    // retries a save that storage refused
+    function flush() {
+      if (dirty) save();
+    }
+
+    // ---- Reading ----
+
+    function get(skill, name) {
+      return view(lookup(skill, name), today());
+    }
+
+    // Counts by level over `names`, how many are due, pooled first-try
+    // accuracy (null until something is seen), and pct: the mean box weight,
+    // 0-100 to one decimal
+    function summary(skill, names) {
+      const day = today();
+      const list = nameList(skill, names);
+      const out = { total: list.length, seen: 0, new: 0, learning: 0, familiar: 0, mastered: 0, due: 0, accuracy: null, pct: 0 };
+      let first = 0, answers = 0, weight = 0;
+      list.forEach(name => {
+        const it = lookup(skill, name);
+        if (!it) {
+          out.new++;
+          return;
+        }
+        out.seen++;
+        out[levelOf(it[BOX])]++;
+        if (dueOf(it) <= day) out.due++;
+        first += it[FIRST] || 0;
+        answers += seenOf(it);
+        weight += WEIGHTS[it[BOX]];
+      });
+      if (answers) out.accuracy = first / answers;
+      if (list.length) out.pct = Math.round(weight / list.length * 1000) / 10;
+      return out;
+    }
+
+    // Names due today or earlier: most overdue first, then lowest box, then
+    // most missed. Never-seen names aren't due.
+    function due(skill, names, query) {
+      const day = today();
+      const rows = [];
+      nameList(skill, names).forEach((name, i) => {
+        const it = lookup(skill, name);
+        if (it && dueOf(it) <= day) rows.push({ name: name, due: dueOf(it), box: it[BOX], missed: it[MISSED] || 0, i: i });
+      });
+      rows.sort((a, b) => a.due - b.due || a.box - b.box || b.missed - a.missed || a.i - b.i);
+      const limit = query ? query.limit : null;
+      return (limit == null ? rows : rows.slice(0, count(limit))).map(r => r.name);
+    }
+
+    // Up to n names with the lowest first-try accuracy (ties: more misses, then
+    // more recent), among those seen at least minSeen times. A name never
+    // missed on the first try isn't weak, so it is left out unless
+    // includePerfect is set.
+    function weakest(skill, names, n, query) {
+      const o = query || {};
+      const minSeen = o.minSeen == null ? 2 : o.minSeen;
+      const rows = [];
+      nameList(skill, names).forEach((name, i) => {
+        const it = lookup(skill, name);
+        if (!it) return;
+        const seen = seenOf(it), first = it[FIRST] || 0;
+        if (seen < minSeen || (first === seen && !o.includePerfect)) return;
+        rows.push({ name: name, accuracy: first / seen, missed: it[MISSED] || 0, last: it[LAST], i: i });
+      });
+      rows.sort((a, b) => a.accuracy - b.accuracy || b.missed - a.missed || b.last - a.last || a.i - b.i);
+      return (n == null ? rows : rows.slice(0, count(n))).map(r => r.name);
+    }
+
+    // { name: level } for colouring a map. Built from entries so that a name
+    // such as "__proto__" becomes an ordinary key of the result.
+    function levels(skill, names) {
+      return Object.fromEntries(nameList(skill, names).map(name => {
+        const it = lookup(skill, name);
+        return [name, it ? levelOf(it[BOX]) : LEVELS[0]];
+      }));
+    }
+
+    // The last `daysBack` days ending today, oldest first, quiet days included
+    function activity(daysBack) {
+      const n = Math.min(count(daysBack == null ? 30 : daysBack), 4000);
+      const day = today();
+      const out = [];
+      for (let d = day - n + 1; d <= day; d++) out.push(dayView(d));
+      return out;
+    }
+
+    // Days in a row with at least one game. `current` holds until the end of
+    // the day after the last active day; `longest` is the lifetime best.
+    // Tomorrow counts as "now" too: a device one time zone ahead may be there.
+    function streak() {
+      const day = today();
+      let longest = store.life ? store.life[LONGEST] : 0;
+      let current = 0;
+      runsOf(store).forEach(r => {
+        longest = Math.max(longest, r[1] - r[0] + 1);
+        if (r[1] >= day - 1 && r[0] <= day + 1) current = Math.min(r[1], day + 1) - r[0] + 1;
+      });
+      return { current: current, longest: longest };
+    }
+
+    function totals() {
+      const life = store.life || [0, 0, 0, 0, 0];
+      const sums = [0, 0, 0, 0];
+      let active = 0, itemsSeen = 0, itemsMastered = 0;
+      for (const k in store.days) {
+        for (let i = 0; i < 4; i++) sums[i] += store.days[k][i];
+        if (store.days[k][0] > 0) active++;
+      }
+      for (const skill in store.items) {
+        for (const name in store.items[skill]) {
+          itemsSeen++;
+          if (store.items[skill][name][BOX] >= 4) itemsMastered++;
+        }
+      }
+      return {
+        games: Math.max(life[0], sums[0]), questions: Math.max(life[1], sums[1]),
+        firstTry: Math.max(life[2], sums[2]), seconds: Math.max(life[3], sums[3]),
+        daysActive: Math.max(life[DAYS_ACTIVE], active),
+        itemsSeen: itemsSeen, itemsMastered: itemsMastered
+      };
+    }
+
+    function skills() {
+      return Object.keys(store.items).filter(skill => Object.keys(store.items[skill]).length > 0);
+    }
+
+    // A detached copy of the whole store, for the sync payload
+    function exportBlob() {
+      reload();
+      tidy();
+      return JSON.parse(JSON.stringify(store));
+    }
+
+    function byteSize() {
+      return JSON.stringify(store).length;
+    }
+
+    const stored = read();
+    if (stored) {
+      store = parse(stored) || emptyStore();
+      lastRaw = stored;
+      trusted = true;
+    }
+
+    return {
+      record: record, recordSession: recordSession,
+      get: get, summary: summary, due: due, weakest: weakest, levels: levels,
+      activity: activity, streak: streak, totals: totals, skills: skills,
+      exportBlob: exportBlob, mergeBlob: mergeBlob,
+      prune: prune, byteSize: byteSize, reset: reset, flush: flush,
+      reload: reload, today: today
+    };
+  }
+
+  return {
+    create: create,
+    KEY: KEY, INTERVALS: INTERVALS, WEIGHTS: WEIGHTS, LEVELS: LEVELS, OUTCOMES: OUTCOMES,
+    dayNumber: dayNumber, dayToDate: dayToDate
+  };
+})();
+
+// Lets node load this file for its tests; a browser never takes this branch
+if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+/* ===== END OF MASTERY MODULE ===== */
+
+  /* =========================================================
+   * MASTERY — the game's store and how rounds feed it
+   *
+   * The module above is kept byte for byte as the file its tests run
+   * against, which is why it keeps its own indentation.
+   *
+   * Skills (each level names its own in LEVELS; levels that teach the same
+   * thing share one):
+   *   country              The World, each continent, the Daily Five
+   *   us-state             States
+   *   us-capital           States → Capitals and Capitals → States (item = the state)
+   *   us-city              the four Cities levels
+   *   province:<country>   that country's rounds
+   *   city-pin             Pin the City
+   * An item's name is the name the game queues it under, which is unique
+   * within its skill (see claimName).
+   *
+   * Every resolved question records one outcome (scoreAnswer, pinReveal),
+   * in full rounds, the Daily Five and practice rounds alike. Learn-ladder
+   * quizzes don't record items, since a ladder repeats the same names many
+   * times a sitting. Every finished round, and every cleared Learn level,
+   * is one session in the activity log; a round that is left part-way keeps
+   * its answers but is not a session.
+   * ========================================================= */
+
+  const mastery = Mastery.create();
+
+  // Pin the City scores by distance, so points stand in for tries
+  function pinOutcome(points) {
+    return points >= 80 ? 'first' : points >= 40 ? 'second' : 'miss';
+  }
+
+  // Another tab changed the store: take its work in, so this tab's reads
+  // (and its next save) include it
+  window.addEventListener('storage', (e) => {
+    if (e.key === null || e.key === Mastery.KEY) mastery.reload();
+  });
+
   /* =========================================================
    * PERSONAL RECORDS (best score, time, accuracy per region × mode)
    *
@@ -6470,6 +7520,7 @@
     const pts = guess ? pinPoints(km) : 0;
     state.score += pts;
     state.pin.results.push({ name: city.name, km: km, pts: pts });
+    mastery.record(roundSkill(), city.name, pinOutcome(pts));
     state.pin.phase = 'reveal';
     drawPinLayer();
 
@@ -6539,6 +7590,12 @@
     const max = results.length * 100;
     const kms = results.filter(r => r.km != null).map(r => r.km);
     const avgKm = kms.length ? kms.reduce((a, b) => a + b, 0) / kms.length : null;
+
+    mastery.recordSession({
+      questions: results.length,
+      firstTry: results.filter(r => pinOutcome(r.pts) === 'first').length,
+      seconds: elapsed
+    });
 
     const prior = pinRegionStats(region, state.difficulty);
     recordPinGame({
@@ -6769,11 +7826,15 @@
    * Level n: study the first n provinces of a shuffled order (named on the
    * map, newest highlighted), then find all n in random order. One miss
    * restarts the level with the same n; a clean pass adds the next one.
-   * Practice only: no records, no focus list, no sync.
+   * Practice only: no records, no focus list, no per-item mastery. Each
+   * cleared level does count as a session in the activity log.
    *
-   * Progress persists per round under "atlas-learn":
+   * Progress persists per round under "atlas-learn" (synced; per round,
+   * whichever device saved last wins):
    *   { "china-provinces": { order: [...all names], level: 7, savedAt } }
-   * level = the level to resume at. Cleared once the ladder is finished.
+   * level = the level to resume at. A finished ladder leaves
+   * { done: true, savedAt } in its place, so that an older copy of the
+   * ladder on another device doesn't bring it back.
    * ========================================================= */
 
   const LEARN_KEY = 'atlas-learn';
@@ -6805,18 +7866,10 @@
     saveLearnAll(all);
   }
 
-  function clearLearnProgress(roundKey) {
+  function markLearnFinished(roundKey) {
     const all = loadLearnAll();
-    delete all[roundKey];
+    all[roundKey] = { done: true, savedAt: Date.now() };
     saveLearnAll(all);
-  }
-
-  // Province count for a round, from the loaded map if we have it
-  function provinceRoundSize(roundKey) {
-    const round = PROVINCE_ROUNDS[roundKey];
-    const store = round && state.provinceStores[round.country];
-    if (!store) return 0;
-    return store.features.filter(f => !round.group || (f.properties && f.properties.group === round.group)).length;
   }
 
   // Resume the saved ladder if it still matches the map; else a new shuffle.
@@ -6830,7 +7883,11 @@
       level = Math.min(saved.level, order.length);
     }
     if (!order) order = shuffle(names);
-    const run = { roundKey: roundKey, order: order, level: level, phase: 'study', restarts: 0 };
+    const run = {
+      roundKey: roundKey, order: order, level: level, phase: 'study', restarts: 0,
+      // Quiz answers and time since the last cleared level, for its session
+      asked: 0, found: 0, levelStart: Date.now()
+    };
     saveLearnProgress(run);
     return run;
   }
@@ -7148,6 +8205,17 @@
 
   function learnLevelPassed() {
     const run = state.learn;
+    // A cleared level is one session: every quiz answer it took, failed
+    // passes included
+    mastery.recordSession({
+      questions: run.asked,
+      firstTry: run.found,
+      seconds: Math.round((Date.now() - run.levelStart) / 1000)
+    });
+    run.asked = 0;
+    run.found = 0;
+    run.levelStart = Date.now();
+
     if (run.level >= run.order.length) {
       finishLearn();
       return;
@@ -7167,7 +8235,8 @@
   // Ladder complete: every province of the round found in one clean pass
   function finishLearn() {
     const run = state.learn;
-    clearLearnProgress(run.roundKey);
+    markLearnFinished(run.roundKey);
+    syncAfterGameEnd();
     state.lastWasLearn = true;
     state.roundNeedsWork = [];
     state.brokenRecords = {};
@@ -7238,7 +8307,7 @@
       document.getElementById('focus-modal-subtitle').textContent = 'How would you like to play?';
       focusBtn.style.display = 'none';
     }
-    const total = focus ? focus.total : provinceRoundSize(target.region);
+    const total = focus ? focus.total : provinceRoundNames(target.region).length;
     document.getElementById('focus-choice-fresh-desc').textContent =
       'All ' + (total ? total + ' ' : '') + noun + ' · counts toward your records';
 
@@ -7303,9 +8372,9 @@
    * DIFFICULTY & MAP STYLE PREFERENCES (persisted across sessions)
    *
    * "atlas-difficulty" is 'normal' | 'hard' | 'uncharted'. Older installs
-   * only have "atlas-hard-mode", so fall back to it; we keep writing it
-   * too because the sync payload still reads loadHardMode().
-   * "atlas-map-style" is 'parchment' | 'satellite' (per device, not synced).
+   * only have "atlas-hard-mode" ('true' | 'false'), so fall back to it.
+   * "atlas-map-style" is 'parchment' | 'satellite'.
+   * Both are per-device preferences: they are not synced.
    * ========================================================= */
 
   function loadHardMode() {
@@ -7327,7 +8396,6 @@
   function saveDifficulty(d) {
     try {
       localStorage.setItem('atlas-difficulty', d);
-      localStorage.setItem('atlas-hard-mode', d !== 'normal' ? 'true' : 'false');
     } catch (e) { /* private mode or disabled storage - ignore */ }
   }
 
@@ -7583,8 +8651,11 @@
     // Redraw the menu on the way back so card bests and the daily card
     // reflect the game just played (stays in the same folder view)
     if (name === 'menu') {
+      state.roundId++;   // whatever the round still had queued up no longer applies
       renderMenu();
       setAddressBar(baseUrl());
+    } else {
+      hideNotice();   // it spoke about the menu, and would sit over the game's controls
     }
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const target = document.getElementById(name + '-screen');
@@ -7743,7 +8814,83 @@
   });
 
   /* =========================================================
-   * SYNC — cross-device record sync via Cloudflare Pages Function
+   * PROGRESS (everything a player has earned: snapshot, export, reset)
+   *
+   * The progress stores are atlas-records, atlas-focus, atlas-pin,
+   * atlas-learn, atlas-daily-attempts and atlas-mastery. Preferences
+   * (difficulty, map style) and the sync key are not progress.
+   *
+   * "atlas-reset-at" is when progress was last reset (ms; absent = never).
+   * It travels in the sync payload, so a reset on one device reaches the
+   * others instead of being undone by their copies (see syncApplyRemote).
+   * ========================================================= */
+
+  const RESET_KEY = 'atlas-reset-at';
+  // Mastery keeps its own key and is reset through its own API
+  const PROGRESS_KEYS = [RECORDS_KEY, FOCUS_KEY, PIN_KEY, LEARN_KEY, DAILY_KEY];
+
+  function loadResetAt() {
+    try {
+      const at = Number(localStorage.getItem(RESET_KEY));
+      return isFinite(at) && at > 0 ? at : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function saveResetAt(at) {
+    try {
+      if (at > 0) localStorage.setItem(RESET_KEY, String(at));
+      else localStorage.removeItem(RESET_KEY);
+    } catch (e) { /* storage blocked - ignore silently */ }
+  }
+
+  // Every progress store as plain data: what sync mirrors and an export holds
+  function progressSnapshot() {
+    return {
+      records: loadAllRecords(),
+      dailyAttempts: loadDailyAttempts(),
+      focusLists: loadFocusLists(),
+      pin: loadPinStore(),
+      learn: loadLearnAll(),
+      mastery: mastery.exportBlob(),
+      resetAt: loadResetAt()
+    };
+  }
+
+  // One JSON-serialisable object holding all of this device's progress,
+  // for a download. The sync key is a credential and is left out.
+  function exportProgress() {
+    return Object.assign({
+      app: 'cartographers-atlas',
+      exportVersion: 1,
+      exportedAt: new Date().toISOString(),
+      settings: { difficulty: state.difficulty, mapStyle: state.mapStyle }
+    }, progressSnapshot());
+  }
+
+  // Empties every progress store on this device
+  function eraseProgress() {
+    PROGRESS_KEYS.forEach(key => {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) { /* storage blocked - ignore silently */ }
+    });
+    mastery.reset();
+  }
+
+  // Erase all progress, here and (through sync) on every linked device.
+  // Resolves with the push result, or straight away when sync isn't set up.
+  function resetProgress() {
+    eraseProgress();
+    // Later than any reset this device has seen, even if its clock runs slow
+    saveResetAt(Math.max(Date.now(), loadResetAt() + 1));
+    renderMenu();
+    return syncPush();
+  }
+
+  /* =========================================================
+   * SYNC — cross-device progress sync via Cloudflare Pages Function
    *
    * Architecture:
    *   - localStorage is the source of truth. The API at /api/records
@@ -7753,13 +8900,17 @@
    *
    * Triggers:
    *   - On app load: if a token exists, pull from server and merge.
-   *   - On game end: push to server (fire-and-forget).
+   *   - On round end: push to server (fire-and-forget).
    *   - Manual "Sync Now" button: pull + push.
+   *
+   * Payload: { version, username, lastUpdated } plus progressSnapshot():
+   * records, dailyAttempts, focusLists, pin, learn, mastery, resetAt.
+   * The server caps it at 256 KB; a refused push shows as a sync error.
    * ========================================================= */
 
   const SYNC_API = '/api/records';
   const SYNC_TOKEN_RE = /^[a-f0-9]{32}$/i;
-  const SYNC_VERSION = 1;
+  const SYNC_VERSION = 2;
   const SYNC_KEY_TOKEN = 'atlas-sync-token';
   const SYNC_KEY_USERNAME = 'atlas-sync-username';
   const SYNC_KEY_META = 'atlas-sync-meta';
@@ -7794,6 +8945,7 @@
   function syncSetMeta(patch) {
     const next = Object.assign(syncGetMeta(), patch);
     try { localStorage.setItem(SYNC_KEY_META, JSON.stringify(next)); } catch (e) {}
+    syncRefreshEntry();
     return next;
   }
 
@@ -7815,43 +8967,50 @@
 
   // ---- Sync payload shape (what we send/receive) ----
 
-  function syncLoadDailyAttempts() {
-    try {
-      const raw = localStorage.getItem(DAILY_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
-  }
-
   function syncBuildPayload() {
-    return {
+    return Object.assign({
       version: SYNC_VERSION,
       username: syncGetUsername(),
-      lastUpdated: Date.now(),
-      records: loadAllRecords(),
-      dailyAttempts: syncLoadDailyAttempts(),
-      focusLists: loadFocusLists(),
-      pin: loadPinStore(),
-      hardMode: loadHardMode()
-    };
+      lastUpdated: Date.now()
+    }, progressSnapshot());
   }
 
   // ---- Merge: blend remote data into localStorage ----
 
-  function syncApplyRemote(remote) {
-    if (!remote || typeof remote !== 'object') return;
+  // Returns false when the remote blob was set aside instead of merged:
+  // it predates a reset made on this device, so what it holds is what was
+  // erased (the caller pushes, which replaces it).
+  // opts.linking: this device is joining the key, not syncing within it.
+  function syncApplyRemote(remote, opts) {
+    if (!remote || typeof remote !== 'object') return true;
+
+    const remoteReset = Number(remote.resetAt) > 0 ? Number(remote.resetAt) : 0;
+    const localReset = loadResetAt();
+    if (opts && opts.linking) {
+      // A device joining a key was never part of that key's resets, nor
+      // the key's devices of its own: everything merges, and the key's
+      // reset time is taken as it stands
+      saveResetAt(remoteReset);
+    } else if (remoteReset < localReset) {
+      return false;
+    } else if (remoteReset > localReset) {
+      // Progress was reset on another device after this one last synced:
+      // the local copy is what that reset erased
+      eraseProgress();
+      saveResetAt(remoteReset);
+    }
 
     if (remote.username && !syncGetUsername()) syncSetUsername(remote.username);
 
     saveAllRecords(syncMergeRecords(loadAllRecords(), remote.records || {}));
 
     // Daily attempts: union; entries already present locally win
-    const localDaily = syncLoadDailyAttempts();
+    const mergedDaily = loadDailyAttempts();
     const remoteDaily = remote.dailyAttempts || {};
-    const mergedDaily = Object.assign({}, localDaily);
     for (const dateKey in remoteDaily) {
       if (!mergedDaily[dateKey]) mergedDaily[dateKey] = remoteDaily[dateKey];
     }
-    try { localStorage.setItem(DAILY_KEY, JSON.stringify(mergedDaily)); } catch (e) {}
+    saveDailyAttempts(mergedDaily);
 
     // Focus lists: per level, the most recent full game wins
     const focus = loadFocusLists();
@@ -7866,6 +9025,22 @@
 
     // Pin the City: games and per-city misses are unions keyed by time
     if (remote.pin && typeof remote.pin === 'object') savePinStore(mergePinStores(loadPinStore(), remote.pin));
+
+    // Learn ladders: per round, whichever device saved last (a finished
+    // ladder's marker included)
+    const learn = loadLearnAll();
+    const remoteLearn = remote.learn && typeof remote.learn === 'object' ? remote.learn : {};
+    for (const key in remoteLearn) {
+      const r = remoteLearn[key];
+      if (r && typeof r === 'object' && (!learn[key] || (r.savedAt || 0) > (learn[key].savedAt || 0))) {
+        learn[key] = r;
+      }
+    }
+    saveLearnAll(learn);
+
+    // Per-item history and the activity log (tolerates a blob without them)
+    mastery.mergeBlob(remote.mastery);
+    return true;
   }
 
   function syncMergeRecords(local, remote) {
@@ -7922,7 +9097,9 @@
     }
   }
 
-  async function syncPull() {
+  // opts.linking: see syncApplyRemote. `stale` in the result means the
+  // server's copy predates a reset made here and still needs replacing.
+  async function syncPull(opts) {
     const token = syncGetToken();
     if (!token) return { ok: false, reason: 'no_token' };
     try {
@@ -7932,9 +9109,9 @@
         return { ok: false, reason: 'pull_' + res.status };
       }
       const data = await res.json();
-      if (data && typeof data === 'object') syncApplyRemote(data);
+      const merged = syncApplyRemote(data, opts);
       syncSetMeta({ lastSyncAt: Date.now(), lastError: null });
-      return { ok: true, hadData: !!data };
+      return { ok: true, hadData: !!data, stale: !merged };
     } catch (e) {
       syncSetMeta({ lastError: 'network' });
       return { ok: false, reason: 'network' };
@@ -7953,7 +9130,9 @@
   async function syncOnAppLoad() {
     if (!syncGetToken()) return;
     const result = await syncPull();
-    if (result.ok) renderMenu();
+    if (!result.ok) return;
+    renderMenu();
+    if (result.stale) syncPush().catch(() => {});
   }
   function syncAfterGameEnd() {
     if (!syncGetToken()) return;
@@ -7962,20 +9141,50 @@
 
   // ---- Menu entry button ----
 
+  // 'never' (no key yet), 'ok', or 'error' (the last push or pull failed)
+  function syncEntryState() {
+    if (!syncGetToken()) return 'never';
+    return syncGetMeta().lastError ? 'error' : 'ok';
+  }
+
   function renderSyncEntry() {
-    const token = syncGetToken();
-    const meta = syncGetMeta();
-    const stateClass = !token ? 'never' : (meta.lastError ? 'error' : 'ok');
-    const label = token ? 'Sync' : 'Set up sync';
+    const entryState = syncEntryState();
+    const label = entryState === 'never' ? 'Set up sync' : 'Sync';
     return (
       '<div class="sync-entry-row">' +
-        '<button id="sync-entry-btn" class="sync-entry-btn ' + stateClass + '" type="button">' +
+        '<button id="sync-entry-btn" class="sync-entry-btn ' + entryState + '" type="button"' +
+          (entryState === 'error' ? ' aria-label="Sync: the last attempt failed"' : '') + '>' +
           '<span class="sync-glyph">⛓</span>' +
           '<span class="sync-entry-label">' + label + '</span>' +
           '<span class="sync-status-dot"></span>' +
         '</button>' +
       '</div>'
     );
+  }
+
+  // Bring the menu's sync button in line with the latest status, so a
+  // failed push shows without waiting for the menu to be redrawn
+  function syncRefreshEntry() {
+    const btn = document.getElementById('sync-entry-btn');
+    if (!btn) return;
+    const entryState = syncEntryState();
+    btn.className = 'sync-entry-btn ' + entryState;
+    if (entryState === 'error') btn.setAttribute('aria-label', 'Sync: the last attempt failed');
+    else btn.removeAttribute('aria-label');
+  }
+
+  // What a failed sync means, in words. Reasons are 'network' or
+  // '<push|pull>_<http status>'.
+  function syncErrorText(reason) {
+    if (!reason) return '';
+    const safe = ' Everything is still saved on this device.';
+    if (reason === 'network') return 'Couldn’t reach the sync server.' + safe;
+    if (reason === 'push_413') {
+      return 'Your progress has grown too large to sync, so other devices won’t see what’s new.' + safe;
+    }
+    const parts = String(reason).split('_');
+    return (parts[0] === 'pull' ? 'Couldn’t fetch your synced progress' : 'Couldn’t save your progress to sync') +
+      ' (error ' + parts[1] + ').' + safe;
   }
 
   function wireSyncEntryButton() {
@@ -8046,7 +9255,7 @@
     const lastText = meta.lastSyncAt
       ? 'Last synced ' + new Date(meta.lastSyncAt).toLocaleString()
       : 'Not yet synced';
-    const errorText = meta.lastError ? 'Last error: ' + meta.lastError : '';
+    const errorText = syncErrorText(meta.lastError);
     return (
       '<div class="sync-section">' +
         '<label class="sync-label" for="sync-username-edit">Username</label>' +
@@ -8111,7 +9320,7 @@
       status.textContent = '';
       status.className = 'sync-status-line';
       syncSetToken(candidate);
-      const pull = await syncPull();
+      const pull = await syncPull({ linking: true });
       if (!pull.ok) {
         status.textContent = 'Connection failed (' + pull.reason + '). Check the key and try again.';
         status.className = 'sync-status-line error';
@@ -8177,8 +9386,8 @@
           status.textContent = 'Synced ' + new Date().toLocaleTimeString();
           status.className = 'sync-status-line success';
         } else {
-          const why = (result.pull && result.pull.reason) || (result.push && result.push.reason) || 'unknown';
-          status.textContent = 'Sync failed: ' + why;
+          const why = (result.pull && result.pull.reason) || (result.push && result.push.reason);
+          status.textContent = syncErrorText(why) || 'Sync failed.';
           status.className = 'sync-status-line error';
         }
       }
@@ -8215,6 +9424,12 @@
 
   wireSyncModalChrome();
   wireFocusChooserChrome();
+
+  // Read-mostly hook for automated checks; the game itself never reads it
+  window.__atlas = {
+    state, mastery, LEVELS, COLLECTIONS, startGame, levelByKey, exportProgress, resetProgress,
+    version: 2
+  };
 
   init();
 
