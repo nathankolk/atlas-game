@@ -529,15 +529,12 @@
 
   /* ===== Panels ===== */
   .panel { padding: 28px 32px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--rule); }
-  .panel-title { font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1.12; }
-  .panel-text { margin-top: 8px; max-width: 38em; font-size: 14px; color: var(--text-2); }
 
   .settings-card { border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--rule); }
   .setting { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px 24px; padding: 18px 24px; border-top: 1px solid var(--rule); }
   .setting:first-child { border-top: 0; }
   .setting-text strong { display: block; font-size: 15px; font-weight: 600; }
   .setting-text span { display: block; margin-top: 2px; font-size: 13px; color: var(--text-2); max-width: 36em; }
-  .settings-card + .panel { margin-top: 16px; }
 
   /* Small round status light (sync state) */
   .dot { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
@@ -1580,15 +1577,14 @@
     left: 50%;
     transform: translateX(-50%);
     font-family: var(--font-ui);
-    font-style: italic;
     font-size: 12px;
-    color: var(--text-3);
-    background: var(--bg-glass);
-    padding: 5px 12px;
-    border-radius: 1px;
+    font-weight: 500;
+    color: var(--text-2);
+    background: var(--surface-glass);
+    padding: 6px 14px;
+    border-radius: var(--r-pill);
     pointer-events: none;
     border: 1px solid var(--rule);
-    letter-spacing: 0.03em;
     opacity: 0;
     animation: hintFade 5s ease forwards;
   }
@@ -1707,8 +1703,8 @@
     font-size: 10px;
     color: rgba(241,231,210,0.75);
     background: rgba(31,42,58,0.55);
-    padding: 1px 6px;
-    border-radius: 1px;
+    padding: 2px 8px;
+    border-radius: var(--r-xs);
     pointer-events: none;
     letter-spacing: 0.02em;
   }
@@ -1819,19 +1815,21 @@
     top: 30px;
     left: 50%;
     transform: translateX(-50%) translateY(-20px);
+    max-width: calc(100% - 32px);
     background: var(--inverse);
     color: var(--on-inverse);
-    padding: 12px 22px;
-    font-family: var(--font-display);
-    font-size: 18px;
-    letter-spacing: 0.02em;
-    border-radius: 1px;
+    padding: 11px 20px;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: center;
+    border-radius: 22px;
     opacity: 0;
     pointer-events: none;
     transition: all 0.4s ease;
     z-index: 20;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    border-left: 3px solid var(--accent);
+    box-shadow: var(--shadow-2);
   }
 
   .toast.show {
@@ -1839,11 +1837,9 @@
     transform: translateX(-50%) translateY(0);
   }
 
-  .toast.correct { border-left-color: var(--good); }
-  .toast.wrong { border-left-color: var(--bad); }
-
   .toast em {
-    font-style: italic;
+    font-style: normal;
+    font-weight: 600;
     color: var(--accent);
   }
   .toast.correct em { color: var(--good); }
@@ -1983,8 +1979,8 @@
     padding: 14px 28px;
     max-width: 520px;
     background: var(--inverse);
-    border: 1px solid var(--accent);
-    box-shadow: 0 6px 22px rgba(31,42,58,0.25), inset 0 0 40px rgba(200,149,60,0.15);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-2), inset 0 0 0 1px var(--accent);
     animation: recordFadeIn 0.7s ease;
   }
 
@@ -2342,7 +2338,7 @@
   .loading-overlay {
     position: fixed;
     inset: 0;
-    background: var(--bg-glass);
+    background: var(--scrim);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2358,11 +2354,16 @@
   }
 
   .loading-inner {
+    padding: 20px 28px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    box-shadow: var(--shadow-3);
     font-family: var(--font-display);
     font-style: italic;
-    font-size: 24px;
-    color: var(--accent-text);
-    letter-spacing: 0.04em;
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--text);
   }
 
   .loading-dots::after {
@@ -2381,16 +2382,15 @@
     transform: translateX(-50%) translateY(12px);
     width: max-content;
     max-width: min(520px, calc(100vw - 32px));
+    padding: 11px 20px;
+    border-radius: 22px;
     background: var(--inverse);
     color: var(--on-inverse);
-    padding: 12px 20px;
-    font-family: var(--font-ui);
-    font-size: 16px;
+    font-size: 14px;
+    font-weight: 500;
     line-height: 1.35;
     text-align: center;
-    border-radius: 2px;
-    border-left: 3px solid var(--accent);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-2);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease, transform 0.3s ease;
@@ -2402,226 +2402,110 @@
     transform: translateX(-50%) translateY(0);
   }
 
-  /* ===== Sync modal ===== */
-  .sync-modal-overlay {
-    display: none;
+  /* ===== Settings ===== */
+  .settings-group { display: grid; grid-template-columns: 240px 1fr; gap: 40px; padding: 32px 0; border-top: 1px solid var(--rule); }
+  .settings-group:first-of-type { border-top-color: var(--rule-strong); }
+  .settings-group > header h2 { font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .settings-group > header p { margin-top: 6px; max-width: 22em; font-size: 13px; color: var(--text-3); }
+  .setting--stack { grid-template-columns: 1fr; }
+  .setting-actions { display: flex; align-items: center; gap: 8px; }
+
+  .themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px; }
+  .theme-tile { display: grid; gap: 10px; padding: 10px 10px 12px; border-radius: var(--r-md); border: 1px solid var(--rule); text-align: left; }
+  .theme-tile[aria-checked="true"] { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
+  .theme-tile:focus-visible { border-radius: var(--r-md); }
+  /* Each preview is painted in its own theme's colours, whichever theme
+     is showing, so these are the two themes' page, text and ocean values */
+  .theme-prev { position: relative; height: 84px; border-radius: 8px; overflow: hidden; background: #f7f1e3; box-shadow: inset 0 0 0 1px rgba(31, 42, 58, 0.12); }
+  .theme-prev::before { content: ''; position: absolute; left: 12px; top: 14px; width: 44%; height: 8px; border-radius: 4px; background: #1f2a3a; box-shadow: 0 16px 0 -2px rgba(31, 42, 58, 0.25), 0 28px 0 -2px rgba(31, 42, 58, 0.14); }
+  .theme-prev::after { content: ''; position: absolute; right: -14px; bottom: -22px; width: 76px; height: 76px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #cfe0e4, #7d9fab); box-shadow: inset 0 0 0 1px rgba(31, 42, 58, 0.2); }
+  .theme-prev--dark { background: #101824; box-shadow: inset 0 0 0 1px rgba(236, 228, 208, 0.14); }
+  .theme-prev--dark::before { background: #ece4d0; box-shadow: 0 16px 0 -2px rgba(236, 228, 208, 0.3), 0 28px 0 -2px rgba(236, 228, 208, 0.16); }
+  .theme-prev--dark::after { background: radial-gradient(circle at 35% 30%, #2a5270, #0c1f33); box-shadow: inset 0 0 0 1px rgba(170, 200, 230, 0.35); }
+  .theme-prev--system { background: linear-gradient(105deg, #f7f1e3 0 50%, #101824 50%); }
+  .theme-prev--system::before { width: 32%; }
+  .theme-prev--system::after { background: radial-gradient(circle at 35% 30%, #2a5270, #0c1f33); box-shadow: inset 0 0 0 1px rgba(170, 200, 230, 0.35); }
+  .theme-name { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; font-size: 13.5px; font-weight: 600; }
+  .theme-name .radio { width: 18px; height: 18px; }
+  .theme-tile[aria-checked="true"] .radio { border: 5px solid var(--text); }
+
+  .difflist { display: grid; grid-column: 1 / -1; gap: 6px; margin-top: 4px; font-size: 13px; color: var(--text-2); }
+  .difflist li { display: grid; grid-template-columns: 84px 1fr; gap: 12px; }
+  .difflist b { font-weight: 600; color: var(--text); }
+
+  /* Text field */
+  .input { min-width: 0; height: 44px; padding: 0 14px; border-radius: var(--r-sm); border: 1px solid var(--rule-strong); background: var(--surface); font: inherit; font-size: 15px; color: var(--text); }
+  .input::placeholder { color: var(--text-3); opacity: 1; }
+  .input:focus-visible { border-radius: var(--r-sm); }
+  .input--code { font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.04em; }
+  textarea.input { display: block; width: 100%; height: auto; padding: 12px 14px; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; resize: vertical; }
+  .field-label { display: block; margin: 18px 0 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+  .field-label span { font-weight: 400; color: var(--text-3); }
+
+  .sync-id { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .sync-avatar { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--good-wash); color: var(--good); }
+  .sync-avatar.is-error { background: var(--bad-wash); color: var(--bad); }
+  .sync-id strong { font-size: 15px; font-weight: 600; }
+  .sync-id strong em { font-family: var(--font-display); font-style: italic; font-size: 20px; font-weight: 600; }
+  .sync-status { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; font-size: 13px; color: var(--text-2); }
+  .sync-status .dot { width: 7px; height: 7px; transform: translateY(-1px); }
+  .sync-status.is-error { color: var(--bad); }
+  /* A sync code, in groups of four */
+  .code { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; min-height: 40px; padding: 8px 14px; border-radius: var(--r-sm); background: var(--surface-sunk); font-family: var(--font-mono); font-size: 13px; color: var(--text-2); }
+  .code--full { display: flex; justify-content: center; margin-top: 12px; padding: 14px 16px; font-size: 15px; color: var(--text); user-select: all; -webkit-user-select: all; }
+  .sync-setup { display: grid; justify-items: start; gap: 16px; padding: 28px 24px; }
+  .sync-setup h3 { font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .sync-setup p { max-width: 38em; font-size: 14px; color: var(--text-2); }
+
+  .about { display: grid; gap: 18px; padding: 22px 24px 24px; }
+  .about p { max-width: 44em; font-size: 14px; color: var(--text-2); }
+  .about p b { font-weight: 600; color: var(--text); }
+  .credits { display: grid; gap: 0; font-size: 13.5px; }
+  .credits > div { display: grid; grid-template-columns: 180px 1fr; gap: 16px; padding: 10px 0; border-top: 1px solid var(--rule); }
+  .credits dt { color: var(--text-3); }
+  .credits dd { color: var(--text); }
+  .about .btn { justify-self: start; }
+
+  /* ===== Dialog: the one modal, for questions, short forms and text to copy ===== */
+  .scrim { position: fixed; inset: 0; z-index: 60; background: var(--scrim); animation: scrimIn 0.2s ease both; }
+  .dialog {
     position: fixed;
+    z-index: 61;
     inset: 0;
-    background: rgba(20, 15, 5, 0.5);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    animation: syncFadeIn 0.18s ease;
-  }
-  .sync-modal-overlay.show { display: flex; }
-  @keyframes syncFadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-  .sync-modal {
-    background: var(--bg);
-    border: 1px solid var(--accent-text);
-    border-radius: 2px;
-    width: min(460px, calc(100vw - 40px));
-    max-height: calc(100vh - 60px);
+    margin: auto;
+    width: min(480px, calc(100vw - 32px));
+    height: fit-content;
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
     overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-    position: relative;
-  }
-  .sync-modal-header {
-    padding: 22px 26px 14px;
-    border-bottom: 1px dashed var(--accent-text);
-    position: relative;
-  }
-  .sync-modal-title {
-    font-family: var(--font-display);
-    font-size: 24px;
-    font-weight: 500;
-    color: var(--text);
-    margin: 0;
-    letter-spacing: 0.02em;
-  }
-  .sync-modal-subtitle {
-    font-family: var(--font-ui);
-    font-size: 13px;
-    color: var(--text-3);
-    margin: 4px 36px 0 0;
-    line-height: 1.4;
-  }
-  .sync-modal-close {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    background: none;
-    border: none;
-    font-family: var(--font-display);
-    font-size: 26px;
-    color: var(--text-3);
-    cursor: pointer;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .sync-modal-close:hover { color: var(--text); background: rgba(0,0,0,0.05); }
-
-  .sync-modal-body { padding: 18px 26px 22px; }
-
-  .sync-section { margin-bottom: 16px; }
-  .sync-section:last-child { margin-bottom: 0; }
-
-  .sync-label {
-    display: block;
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 14px;
-    color: var(--text);
-    margin-bottom: 6px;
-    letter-spacing: 0.02em;
-  }
-
-  .sync-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--accent-text);
-    border-radius: 2px;
+    padding: 28px 28px 24px;
+    border-radius: 24px;
+    border: 1px solid var(--rule);
     background: var(--surface);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    color: var(--text);
-    letter-spacing: 0.04em;
-    box-sizing: border-box;
+    box-shadow: var(--shadow-3);
+    animation: dialogIn 0.25s ease both;
   }
-  .sync-input.text {
-    font-family: var(--font-ui);
-    font-size: 15px;
-    letter-spacing: 0.02em;
-  }
-  .sync-input:focus {
-    outline: none;
-    border-color: var(--accent);
-    background: var(--surface);
-  }
-
-  .sync-key-display {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    word-break: break-all;
-    background: var(--surface);
-    padding: 10px 12px;
-    border: 1px dashed var(--accent-text);
-    border-radius: 2px;
-    color: var(--text);
-    line-height: 1.5;
-    transition: color 0.15s ease, text-shadow 0.15s ease;
-  }
-  .sync-key-display.hidden {
-    color: transparent;
-    text-shadow: 0 0 7px var(--text-2);
-    user-select: none;
-  }
-
-  .sync-key-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-  }
-  .sync-mini-btn {
-    background: none;
-    border: 1px solid var(--accent-text);
-    font-family: var(--font-ui);
-    font-size: 12px;
-    color: var(--text-3);
-    padding: 5px 12px;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: all 0.2s ease;
-    letter-spacing: 0.02em;
-  }
-  .sync-mini-btn:hover {
-    color: var(--text);
-    border-color: var(--text);
-    background: var(--surface);
-  }
-
-  .sync-btn {
-    width: 100%;
-    padding: 12px 18px;
-    background: var(--text);
-    color: var(--bg);
-    border: 1px solid var(--text);
-    border-radius: 2px;
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 17px;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .sync-btn:hover { background: var(--text-2); border-color: var(--text-2); }
-  .sync-btn:disabled { opacity: 0.55; cursor: wait; }
-
-  .sync-btn.danger {
-    background: none;
-    color: #a84a3a;
-    border-color: #a84a3a;
-  }
-  .sync-btn.danger:hover { background: rgba(168, 74, 58, 0.08); }
-
-  .sync-status-line {
-    font-family: var(--font-ui);
-    font-size: 12px;
-    color: var(--text-3);
-    margin: 10px 0 0;
-    text-align: center;
-    letter-spacing: 0.02em;
-  }
-  .sync-status-line.error { color: #a84a3a; }
-  .sync-status-line.success { color: var(--good); }
-
-  .sync-divider {
-    border: none;
-    border-top: 1px dashed var(--accent-text);
-    margin: 18px 0;
-  }
-
-  .sync-tab-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
-  }
-  .sync-tab {
-    flex: 1;
-    padding: 8px 10px;
-    background: none;
-    border: 1px solid var(--accent-text);
-    border-radius: 2px;
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 14px;
-    color: var(--text-3);
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .sync-tab:hover:not(.active) { color: var(--text); }
-  .sync-tab.active {
-    background: var(--text);
-    color: var(--bg);
-    border-color: var(--text);
-  }
-
-  .sync-help {
-    font-family: var(--font-ui);
-    font-size: 12.5px;
-    color: var(--text-3);
-    line-height: 1.55;
-    margin: 8px 0 14px;
-    letter-spacing: 0.01em;
-  }
+  @keyframes dialogIn { from { opacity: 0; transform: translateY(12px); } }
+  .dialog-close { position: absolute; top: 12px; right: 12px; }
+  .dialog-title { padding-right: 36px; font-family: var(--font-display); font-size: 30px; font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; }
+  .dialog-text { margin-top: 12px; font-size: 14.5px; color: var(--text-2); }
+  .dialog-text > * + * { margin-top: 12px; }
+  .dialog-text b { font-weight: 600; color: var(--text); }
+  .dialog-text .field-label { margin-top: 18px; }
+  .dialog-text .field-label + .input { display: block; width: 100%; margin-top: 6px; }
+  /* What an action takes away */
+  .dialog-list { display: grid; gap: 6px; }
+  .dialog-list li { position: relative; padding-left: 18px; }
+  .dialog-list li::before { content: ''; position: absolute; left: 2px; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--bad); }
+  .steps-list { display: grid; gap: 10px; counter-reset: step; }
+  .steps-list li { position: relative; padding-left: 32px; counter-increment: step; }
+  .steps-list li::before { content: counter(step); position: absolute; left: 0; top: -1px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-sunk); font-size: 12px; font-weight: 600; color: var(--text); }
+  .dialog-note { font-size: 13px; color: var(--text-2); }
+  .dialog-note:empty { display: none; }
+  .dialog-note.is-error { color: var(--bad); }
+  .dialog-fine { font-size: 12.5px; color: var(--text-3); }
+  .dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+  .btn--danger-solid { background: var(--bad-solid); color: var(--on-bad-solid); }
 
   /* Game and results on narrow windows */
   @media (max-width: 720px) {
@@ -2667,6 +2551,7 @@
     .kpi:first-child { grid-column: 1 / -1; padding-bottom: 20px; border-bottom: 1px solid var(--rule); }
     .kpi:nth-child(2) { padding-left: 0; border-left: 0; }
     .panels > .panel, .panels > .panel--7, .panels > .panel--5 { grid-column: 1 / -1; grid-row: auto; }
+    .settings-group { grid-template-columns: 1fr; gap: 16px; }
   }
 
   @media (min-width: 761px) and (max-width: 880px) {
@@ -2894,6 +2779,38 @@
     .pintable .pin-bar { order: 3; flex: 0 0 100%; width: auto; padding: 0 64px 0 0; }
     .hbar { height: 28px; background: none; box-shadow: none; }
     .pin-unit { display: inline; }
+
+    /* Settings */
+    .settings-group { gap: 14px; padding: 24px 0; }
+    .settings-group > header h2 { font-size: 24px; }
+    .setting--wrap { grid-template-columns: 1fr; }
+    .setting--wrap .seg { display: flex; }
+    .setting--wrap .seg > button { flex: 1; }
+    .setting--wrap > .btn, .setting--wrap > .input { width: 100%; min-height: 48px; }
+    #settings-sync > .setting:first-child { grid-template-columns: 1fr; gap: 14px; }
+    #settings-sync > .setting:first-child .btn { min-height: 48px; }
+    .setting-actions { flex-wrap: wrap; }
+    .themes { gap: 8px; }
+    .theme-tile { padding: 8px 8px 10px; }
+    .theme-prev { height: 64px; }
+    .theme-prev::after { width: 56px; height: 56px; }
+    .theme-name { justify-content: center; padding: 0 2px; font-size: 12.5px; }
+    .theme-name .radio { display: none; }
+    .difflist li { grid-template-columns: 76px 1fr; }
+    .code { flex: 1; }
+    .sync-setup { padding: 24px 20px; }
+    .sync-setup .setting-actions { width: 100%; }
+    .sync-setup .btn { flex: 1 1 100%; min-height: 48px; }
+    .about { padding: 20px 16px; }
+    .credits > div { grid-template-columns: 1fr; gap: 2px; }
+
+    .app-notice { bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 16px); }
+    body[data-screen="game"] .app-notice, body[data-screen="results"] .app-notice { bottom: 28px; }
+    .dialog { width: calc(100vw - 24px); padding: 24px 20px 20px; }
+    .dialog-title { font-size: 27px; }
+    .dialog-actions { flex-direction: column-reverse; }
+    .dialog-actions .btn { min-height: 48px; }
+    .code--full { font-size: 14px; }
   }
 
   /* Touch: every control gets a 44px target, even where the visible shape is smaller */
@@ -3001,19 +2918,7 @@
 
   <!-- SETTINGS -->
   <div id="settings-screen" class="screen view">
-    <div class="page page--narrow">
-      <header class="page-head">
-        <div>
-          <p class="eyebrow">This device</p>
-          <h1 class="display-l">Settings</h1>
-        </div>
-      </header>
-      <div class="settings-card" id="settings-sync"></div>
-      <div class="panel settings-soon">
-        <h2 class="panel-title">Coming together</h2>
-        <p class="panel-text">Theme, default difficulty, motion and your data will be set here. For now the theme button in the top bar switches between Parchment and Night Chart, and difficulty and map style are in the Library on Home.</p>
-      </div>
-    </div>
+    <div class="page page--narrow" id="settings-content"></div>
   </div>
 
   <!-- GAME SCREEN -->
@@ -3140,18 +3045,6 @@
     </div>
   </div>
 
-  <!-- SYNC MODAL -->
-  <div class="sync-modal-overlay" id="sync-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="sync-modal-title">
-    <div class="sync-modal" id="sync-modal">
-      <div class="sync-modal-header">
-        <h2 class="sync-modal-title" id="sync-modal-title">Cross-Device Sync</h2>
-        <p class="sync-modal-subtitle">Mirror your records across browsers, phones, and computers.</p>
-        <button class="sync-modal-close" id="sync-modal-close" aria-label="Close">×</button>
-      </div>
-      <div class="sync-modal-body" id="sync-modal-body"></div>
-    </div>
-  </div>
-
   <!-- LEVEL SHEET (opened by a level card; contents drawn by the script) -->
   <div class="sheet-scrim" id="level-sheet-scrim" data-action="sheet-close" hidden></div>
   <div class="sheet" id="level-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
@@ -3164,6 +3057,13 @@
     <div class="sheet-start">
       <button type="button" class="btn btn--primary btn--xl btn--block" id="sheet-start-btn" data-action="sheet-start"></button>
     </div>
+  </div>
+
+  <!-- DIALOG (questions, short forms, text to copy; contents drawn by the script) -->
+  <div class="scrim" id="dialog-scrim" data-action="dialog-close" hidden></div>
+  <div class="dialog" id="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" hidden>
+    <button type="button" class="icon-btn dialog-close" data-action="dialog-close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+    <div id="dialog-body"></div>
   </div>
 
 </div>
@@ -5507,17 +5407,27 @@
     else startGame(level.arg);
   }
 
-  // Escape closes the sheet; Tab stays inside it
+  // In the dialog or the level sheet, whichever is on top: Escape closes
+  // it, Tab stays inside it, and Enter in a field presses its main button
   document.addEventListener('keydown', (e) => {
-    if (!sheet.level) return;
+    if (!dialog.open && !sheet.level) return;
+    const panel = document.getElementById(dialog.open ? 'dialog' : 'level-sheet');
     if (e.key === 'Escape') {
       e.preventDefault();
-      closeLevelSheet();
+      if (dialog.open) closeDialog();
+      else closeLevelSheet();
+      return;
+    }
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+      const submit = panel.querySelector('[data-submit]');
+      if (submit && !submit.disabled) {
+        e.preventDefault();
+        submit.click();
+      }
       return;
     }
     if (e.key !== 'Tab') return;
-    const panel = document.getElementById('level-sheet');
-    const stops = Array.from(panel.querySelectorAll('button, a[href], [tabindex]'))
+    const stops = Array.from(panel.querySelectorAll('button, a[href], input, textarea, [tabindex]'))
       .filter(el => !el.disabled && el.tabIndex >= 0 && el.offsetParent !== null);
     if (!stops.length) return;
     const first = stops[0];
@@ -6153,8 +6063,8 @@
         await loadUsStatesData();
       } catch (err) {
         hideLoadingOverlay();
-        alert('The United States map could not be loaded. Please check your connection and try again.');
         switchScreen('menu');
+        showNotice('The United States map could not be loaded. Check your connection and try again.');
         return;
       }
       hideLoadingOverlay();
@@ -6171,8 +6081,8 @@
           await loadProvinceData(countryKey);
         } catch (err) {
           hideLoadingOverlay();
-          alert('The map of ' + country.name + ' could not be loaded. Please check your connection and try again.');
           switchScreen('menu');
+          showNotice('The map of ' + country.name + ' could not be loaded. Check your connection and try again.');
           return;
         }
         hideLoadingOverlay();
@@ -9848,7 +9758,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
         }, 2200);
       }
     } catch (err) {
-      try { window.prompt('Copy your results:', text); } catch (_) {}
+      copyDialog('Copy your results', text);
     }
   }
 
@@ -9880,11 +9790,225 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
         btn.classList.remove('copied');
       }, 2200);
     } catch (err) {
-      // Last resort: select-and-show in a prompt
-      try {
-        window.prompt('Copy your results:', text);
-      } catch (_) { /* nothing else we can do */ }
+      copyDialog('Copy your results', text);
     }
+  }
+
+  /* =========================================================
+   * DIALOG (the one modal: questions, short forms, text to copy)
+   *
+   * #dialog sits over everything with its scrim. openDialog() fills it.
+   * Escape, the scrim and the close button dismiss it; focus stays inside
+   * while it is open and returns to whatever opened it.
+   * ========================================================= */
+
+  const dialog = { open: false, opener: null, confirm: null };
+
+  function openDialog(html) {
+    const panel = document.getElementById('dialog');
+    if (!dialog.open) dialog.opener = document.activeElement;
+    dialog.open = true;
+    dialog.confirm = null;
+    document.getElementById('dialog-body').innerHTML = html;
+    document.getElementById('dialog-scrim').hidden = false;
+    panel.hidden = false;
+    panel.scrollTop = 0;
+    (panel.querySelector('[data-autofocus]') || panel.querySelector('#dialog-body input, #dialog-body button') ||
+      panel.querySelector('button')).focus();
+  }
+
+  function closeDialog() {
+    if (!dialog.open) return;
+    const opener = dialog.opener;
+    dialog.open = false;
+    dialog.opener = null;
+    dialog.confirm = null;
+    document.getElementById('dialog-scrim').hidden = true;
+    document.getElementById('dialog').hidden = true;
+    document.getElementById('dialog-body').innerHTML = '';
+    if (opener && document.contains(opener)) opener.focus({ preventScroll: true });
+  }
+
+  // A dialog's contents: its title, body markup and row of buttons
+  function dialogContent(title, body, actions) {
+    return '<h2 class="dialog-title" id="dialog-title">' + title + '</h2>' +
+      '<div class="dialog-text">' + body + '</div>' +
+      '<div class="dialog-actions">' + actions + '</div>';
+  }
+
+  // Ask before doing something that can't be taken back. opts: title,
+  // body (markup), confirm (the button's label), danger, onConfirm.
+  // Focus starts on Cancel, so Enter alone never confirms.
+  function confirmDialog(opts) {
+    openDialog(dialogContent(opts.title, opts.body,
+      '<button type="button" class="btn btn--secondary" data-action="dialog-close" data-autofocus>Cancel</button>' +
+      '<button type="button" class="btn ' + (opts.danger ? 'btn--danger-solid' : 'btn--primary') + '" data-action="dialog-confirm">' + opts.confirm + '</button>'));
+    dialog.confirm = opts.onConfirm;
+  }
+
+  // Text laid out to be copied by hand, for browsers that won't copy it themselves
+  function copyDialog(title, text) {
+    openDialog(dialogContent(title,
+      '<p>This browser wouldn’t copy it for you. Select the text below and copy it.</p>' +
+      '<textarea class="input" readonly rows="' + Math.min(8, text.split('\n').length + 1) + '" aria-label="' + escapeHtml(title) + '">' + escapeHtml(text) + '</textarea>',
+      '<button type="button" class="btn btn--primary" data-action="dialog-close">Done</button>'));
+    const field = document.querySelector('#dialog textarea');
+    field.focus();
+    field.select();
+  }
+
+  // Copy text to the clipboard and say so, or show it to be copied by hand
+  async function copyText(text, done, title) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showNotice(done);
+    } catch (err) {
+      copyDialog(title, text);
+    }
+  }
+
+  /* =========================================================
+   * SETTINGS (appearance, play defaults, sync, data, about)
+   *
+   * Drawn once into #settings-content. After that only its controls are
+   * brought in line with what is stored, so a field being typed in keeps
+   * its place when a sync finishes underneath it.
+   * ========================================================= */
+
+  const THEME_CHOICES = [
+    { value: 'system', label: 'System', preview: ' theme-prev--system' },
+    { value: 'light', label: 'Parchment', preview: '' },
+    { value: 'dark', label: 'Night Chart', preview: ' theme-prev--dark' }
+  ];
+  // What Reset progress takes away, as the confirmation lists it
+  const RESET_ERASES = [
+    'Personal records for every level and difficulty',
+    'Mastery of every place, and what is due for review',
+    'Your activity history and day streak',
+    'Daily Five results and streak',
+    'Pin the City rounds and distances',
+    'Focus practice lists and Learn progress'
+  ];
+
+  function renderSettings() {
+    if (!document.getElementById('settings-sync')) {
+      const group = (key, title, text, body) =>
+        '<section class="settings-group" aria-labelledby="settings-' + key + '-title">' +
+          '<header><h2 id="settings-' + key + '-title">' + title + '</h2><p>' + text + '</p></header>' +
+          '<div class="settings-card">' + body + '</div>' +
+        '</section>';
+      const tiles = THEME_CHOICES.map(choice =>
+        '<button type="button" class="theme-tile" role="radio" data-action="set-theme" data-value="' + choice.value + '">' +
+          '<span class="theme-prev' + choice.preview + '"></span>' +
+          '<span class="theme-name">' + choice.label + '<span class="radio"></span></span>' +
+        '</button>').join('');
+      const difficulties = Object.keys(DIFFICULTY_INFO).map(key =>
+        '<li><b>' + DIFFICULTY_INFO[key].label + '</b><span>' + DIFFICULTY_INFO[key].desc + '.</span></li>').join('');
+
+      document.getElementById('settings-content').innerHTML =
+        '<header class="page-head"><div><p class="eyebrow">This device</p><h1 class="display-l">Settings</h1></div></header>' +
+        group('appearance', 'Appearance', 'Two charts of the same world.',
+          '<div class="setting setting--stack">' +
+            '<div class="setting-text"><strong id="theme-label">Theme</strong></div>' +
+            '<div class="themes" role="radiogroup" aria-labelledby="theme-label">' + tiles + '</div>' +
+          '</div>' +
+          '<div class="setting">' +
+            '<div class="setting-text"><strong id="motion-label">Reduce motion</strong>' +
+              '<span>Skips screen transitions and animated movement. Follows your device’s setting until you change it here.</span></div>' +
+            '<button type="button" class="switch" role="switch" data-action="toggle-motion" aria-labelledby="motion-label"></button>' +
+          '</div>') +
+        group('play', 'Play', 'Defaults for every level. You can still change them when you start one.',
+          '<div class="setting setting--wrap">' +
+            '<div class="setting-text"><strong>Difficulty</strong></div>' + renderDifficultySeg() +
+            '<ul class="difflist">' + difficulties + '</ul>' +
+          '</div>' +
+          '<div class="setting setting--wrap">' +
+            '<div class="setting-text"><strong>Map style</strong><span>Satellite needs a connection. Imagery © Esri.</span>' +
+              '<span data-map-note hidden>Uncharted is always played on satellite imagery.</span></div>' + renderMapSeg() +
+          '</div>') +
+        group('sync', 'Sync', 'Your progress lives on this device. Sync keeps a copy so your other devices match.',
+          '<div id="settings-sync"></div>') +
+        group('data', 'Data', 'Take a copy of your progress, or start over.',
+          '<div class="setting setting--wrap">' +
+            '<div class="setting-text"><strong>Export my progress</strong>' +
+              '<span>Downloads everything this device holds as one JSON file: records, mastery, activity, Daily Five and Pin the City history. Your sync code is left out.</span></div>' +
+            '<button type="button" class="btn btn--secondary" data-action="export-progress">Export</button>' +
+          '</div>' +
+          '<div class="setting setting--wrap">' +
+            '<div class="setting-text"><strong>Reset progress</strong>' +
+              '<span>Erases every record, all mastery, your streaks and your history. Settings stay as they are.</span></div>' +
+            '<button type="button" class="btn btn--danger" data-action="reset-progress">Reset progress…</button>' +
+          '</div>') +
+        group('about', 'About', 'What this is, and what it is made with.',
+          '<div class="about">' +
+            '<p><b>Cartographer’s Atlas</b> is a geography trainer. Find countries, states, provinces and cities on the map; it keeps track of the ones you know and brings back the ones you miss. It works offline once loaded, and your progress stays on your own devices.</p>' +
+            '<dl class="credits">' +
+              '<div><dt>Borders and places</dt><dd>Natural Earth, public domain. US outlines fall back to US Census Bureau data.</dd></div>' +
+              '<div><dt>Satellite imagery</dt><dd>Esri World Imagery (Esri, Maxar, Earthstar Geographics)</dd></div>' +
+              '<div><dt>Typefaces</dt><dd>Cormorant Garamond and Inter, SIL Open Font License</dd></div>' +
+            '</dl>' +
+            '<button type="button" class="btn btn--secondary" data-action="share-app">' + icon('share') + 'Share the atlas</button>' +
+          '</div>');
+    }
+    syncThemeControls();
+    syncMotionControl();
+    syncPlayControls();
+    renderSettingsSync();
+  }
+
+  // Hand the player everything this device holds as a JSON file
+  function downloadProgress() {
+    const data = exportProgress();
+    const name = 'cartographers-atlas-progress-' + data.exportedAt.slice(0, 10) + '.json';
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showNotice('Saved as ' + name);
+  }
+
+  // Reset progress, after saying exactly what goes
+  function confirmReset() {
+    const synced = !!syncGetToken();
+    confirmDialog({
+      title: 'Reset all progress?',
+      body: '<p>This erases, for good:</p>' +
+        '<ul class="dialog-list">' + RESET_ERASES.map(line => '<li>' + line + '</li>').join('') + '</ul>' +
+        '<p>' + (synced
+          ? 'Your settings and your sync code stay. <b>Sync is on, so your other devices are reset too</b> the next time they sync.'
+          : 'Your settings stay as they are.') + '</p>' +
+        '<p class="dialog-fine">To keep a copy first, cancel and use Export my progress.</p>',
+      confirm: 'Reset progress',
+      danger: true,
+      onConfirm: () => {
+        resetProgress().then(result => {
+          showNotice(!synced || result.ok ? 'Progress reset.'
+            : 'Progress reset on this device. Your other devices follow once sync can be reached.');
+        });
+      }
+    });
+  }
+
+  // Pass the app on: the share sheet where there is one, the link otherwise
+  async function shareApp() {
+    const url = baseUrl();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Cartographer’s Atlas',
+          text: 'Learn the world’s countries, states, provinces and cities on the map.',
+          url: url
+        });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+    copyText(url, 'Link copied.', 'Copy the link');
   }
 
   /* =========================================================
@@ -9897,6 +10021,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
    * ========================================================= */
 
   const THEME_KEY = 'atlas-theme';
+  const MOTION_KEY = 'atlas-motion';
   // Each theme's page colour for the browser chrome (the value of --bg)
   const THEME_COLORS = { light: '#f7f1e3', dark: '#101824' };
   const systemDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
@@ -9925,6 +10050,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     toggle.innerHTML = icon(theme === 'dark' ? 'sun' : 'moon');
     toggle.setAttribute('aria-label',
       theme === 'dark' ? 'Switch to the Parchment theme' : 'Switch to the Night Chart theme');
+    syncThemeControls();
+  }
+
+  // Mark the stored choice among Settings' theme tiles
+  function syncThemeControls() {
+    const pref = loadThemePref();
+    document.querySelectorAll('[data-action="set-theme"]').forEach(tile => {
+      const on = tile.dataset.value === pref;
+      tile.setAttribute('aria-checked', String(on));
+      tile.tabIndex = on ? 0 : -1;
+    });
   }
 
   function setThemePref(pref) {
@@ -9945,6 +10081,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     const set = document.documentElement.getAttribute('data-motion');
     if (set) return set === 'reduce';
     return !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  // Store the choice and apply it; from here on the OS setting no longer decides
+  function setMotionPref(pref) {
+    try {
+      localStorage.setItem(MOTION_KEY, pref);
+    } catch (e) { /* private mode or disabled storage - it lasts for this visit */ }
+    document.documentElement.setAttribute('data-motion', pref);
+    syncMotionControl();
+  }
+
+  // Bring Settings' switch in line with whether motion is reduced right now
+  function syncMotionControl() {
+    const control = document.querySelector('[data-action="toggle-motion"]');
+    if (control) control.setAttribute('aria-checked', String(reducedMotion()));
   }
 
   // An icon from the sprite at the top of <body>
@@ -10030,6 +10181,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   function switchScreen(name, opts) {
     const view = VIEWS.find(v => v.screen === name);
     closeLevelSheet({ keepFocus: true });
+    closeDialog();
     if (view) {
       state.roundId++;   // whatever the round still had queued up no longer applies
       state.review = null;
@@ -10060,11 +10212,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   // A hand-typed hash or the browser's back button names another view
   window.addEventListener('hashchange', () => showView(viewFromHash()));
 
-  // Settings so far holds the one control that must stay reachable: sync
-  function renderSettings() {
-    document.getElementById('settings-sync').innerHTML = renderSyncEntry();
-  }
-
   /* =========================================================
    * EVENT BINDINGS
    * ========================================================= */
@@ -10081,7 +10228,26 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       }
     },
     'toggle-theme': () => setThemePref(resolveTheme(loadThemePref()) === 'dark' ? 'light' : 'dark'),
-    'open-sync': () => syncOpenModal(),
+    'set-theme': (el) => setThemePref(el.dataset.value),
+    'toggle-motion': () => setMotionPref(reducedMotion() ? 'full' : 'reduce'),
+    'sync-create': () => syncCreateDialog(),
+    'sync-create-go': (el) => syncCreate(el),
+    'sync-link': () => syncLinkDialog(),
+    'sync-link-go': (el) => syncLink(el),
+    'sync-now': (el) => syncNow(el),
+    'sync-toggle-code': () => syncToggleCode(),
+    'sync-copy-code': () => copyText(syncGetToken(), 'Sync code copied.', 'Copy your sync code'),
+    'sync-add-device': () => syncCodeDialog(),
+    'sync-unlink': () => confirmUnlink(),
+    'export-progress': () => downloadProgress(),
+    'reset-progress': () => confirmReset(),
+    'share-app': () => shareApp(),
+    'dialog-close': () => closeDialog(),
+    'dialog-confirm': () => {
+      const confirmed = dialog.confirm;
+      closeDialog();
+      if (confirmed) confirmed();
+    },
     'play-daily': () => startGame('daily-five'),
     'share-daily': () => shareDailyResultFromMenu(),
     'replay-daily': () => startDailyReplay(todayUtcKey()),
@@ -10586,42 +10752,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     syncPush().catch(() => {});
   }
 
-  // ---- Settings row and navigation light ----
+  // ---- Where sync stands: the Settings card and the navigation light ----
 
   // 'never' (no key yet), 'ok', or 'error' (the last push or pull failed)
   function syncEntryState() {
     if (!syncGetToken()) return 'never';
     return syncGetMeta().lastError ? 'error' : 'ok';
-  }
-
-  // The Sync row in Settings: where things stand, and the way into the sync panel
-  function renderSyncEntry() {
-    const entryState = syncEntryState();
-    const status = entryState === 'never' ? 'Keep your progress in step across your devices.'
-      : entryState === 'error' ? syncErrorText(syncGetMeta().lastError)
-      : 'On. Your progress is mirrored to your other devices.';
-    return (
-      '<div class="setting">' +
-        '<div class="setting-text"><strong>Sync</strong><span>' + syncEscapeHtml(status) + '</span></div>' +
-        '<button id="sync-entry-btn" class="btn btn--secondary sync-entry-btn ' + entryState + '" type="button" data-action="open-sync"' +
-          (entryState === 'error' ? ' aria-label="Sync: the last attempt failed"' : '') + '>' +
-          (entryState === 'never' ? '' : '<span class="dot' + (entryState === 'error' ? ' is-error' : '') + '"></span>') +
-          (entryState === 'never' ? 'Set up sync' : 'Sync') +
-        '</button>' +
-      '</div>'
-    );
-  }
-
-  // Bring the Settings row and the navigation's sync light in line with the
-  // latest status, so a failed push shows at once
-  function syncRefreshEntry() {
-    const entryState = syncEntryState();
-    const row = document.getElementById('settings-sync');
-    if (row) row.innerHTML = renderSyncEntry();
-    document.querySelectorAll('[data-sync-dot]').forEach(dot => {
-      dot.hidden = entryState === 'never';
-      dot.classList.toggle('is-error', entryState === 'error');
-    });
   }
 
   // What a failed sync means, in words. Reasons are 'network' or
@@ -10638,236 +10774,247 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       ' (error ' + parts[1] + ').' + safe;
   }
 
-  // ---- Modal ----
-
-  function syncEscapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // "just now", "5 minutes ago", "3 hours ago", "on 12 Nov"
+  function timeAgo(ms) {
+    const mins = Math.floor((Date.now() - ms) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + (mins === 1 ? ' minute ago' : ' minutes ago');
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return hours + (hours === 1 ? ' hour ago' : ' hours ago');
+    return 'on ' + shortDate(new Date(ms));
   }
 
-  function syncOpenModal() {
-    const overlay = document.getElementById('sync-modal-overlay');
-    if (!overlay) return;
-    overlay.classList.add('show');
-    syncRenderModalContent();
-  }
-  function syncCloseModal() {
-    const overlay = document.getElementById('sync-modal-overlay');
-    if (overlay) overlay.classList.remove('show');
-  }
-
-  function syncRenderModalContent() {
-    const body = document.getElementById('sync-modal-body');
-    if (!body) return;
-    if (syncGetToken()) {
-      body.innerHTML = syncRenderAuthedView();
-      syncWireAuthedHandlers();
-    } else {
-      body.innerHTML = syncRenderSetupView();
-      syncWireSetupHandlers();
-    }
-  }
-
-  function syncRenderSetupView() {
-    return (
-      '<div class="sync-tab-row">' +
-        '<button class="sync-tab active" data-sync-tab="new" type="button">New sync key</button>' +
-        '<button class="sync-tab" data-sync-tab="import" type="button">Import existing</button>' +
-      '</div>' +
-      '<div data-sync-pane="new">' +
-        '<p class="sync-help">Generate a new sync key on this device. Save the key — paste it on your phone or other devices to share records.</p>' +
-        '<div class="sync-section">' +
-          '<label class="sync-label" for="sync-username-new">Username (optional)</label>' +
-          '<input class="sync-input text" id="sync-username-new" placeholder="Cartographer" autocomplete="off" />' +
-        '</div>' +
-        '<button class="sync-btn" id="sync-create-btn" type="button">Create Sync Key</button>' +
-      '</div>' +
-      '<div data-sync-pane="import" style="display:none;">' +
-        '<p class="sync-help">Already set up sync on another device? Paste the sync key from there to mirror your records onto this device.</p>' +
-        '<div class="sync-section">' +
-          '<label class="sync-label" for="sync-key-input">Sync key (32 hex characters)</label>' +
-          '<input class="sync-input" id="sync-key-input" placeholder="e.g. 4a8e9b2c7d3f1e6a5b8c2d4e7f9a1b3c" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />' +
-        '</div>' +
-        '<button class="sync-btn" id="sync-import-btn" type="button">Connect &amp; Pull Records</button>' +
-        '<p class="sync-status-line" id="sync-import-status"></p>' +
-      '</div>'
-    );
-  }
-
-  function syncRenderAuthedView() {
-    const username = syncGetUsername();
+  // Sync's state in a line: the last failure, or when it last went through
+  function syncStatusText() {
     const meta = syncGetMeta();
+    if (meta.lastError) return syncErrorText(meta.lastError);
+    return meta.lastSyncAt ? 'Up to date · last synced ' + timeAgo(meta.lastSyncAt) : 'Not synced yet';
+  }
+
+  // A sync code in groups of four; masked, only the last group shows
+  function syncCodeMarkup(token, masked) {
+    return token.match(/.{1,4}/g).map((part, i, all) =>
+      '<span>' + (masked && i < all.length - 1 ? '••••' : part) + '</span>').join('');
+  }
+
+  function syncTitleMarkup(username) {
+    return username ? 'Syncing as <em>' + escapeHtml(username) + '</em>' : 'Sync is on';
+  }
+
+  // Whether the Settings card shows the sync code in full
+  let syncCodeShown = false;
+
+  // The Sync card in Settings: the way in while sync is off, everything
+  // about it once it is on
+  function renderSettingsSync() {
+    const card = document.getElementById('settings-sync');
+    if (!card) return;
     const token = syncGetToken();
-    const lastText = meta.lastSyncAt
-      ? 'Last synced ' + new Date(meta.lastSyncAt).toLocaleString()
-      : 'Not yet synced';
-    const errorText = syncErrorText(meta.lastError);
-    return (
-      '<div class="sync-section">' +
-        '<label class="sync-label" for="sync-username-edit">Username</label>' +
-        '<input class="sync-input text" id="sync-username-edit" value="' + syncEscapeHtml(username) + '" placeholder="Cartographer" autocomplete="off" />' +
+    if (!token) {
+      syncCodeShown = false;
+      card.innerHTML =
+        '<div class="sync-setup">' +
+          '<h3>Keep your atlas on every device</h3>' +
+          '<p>Create a sync code here and enter it on your phone or laptop. No account, no password: the code is the key. The atlas keeps working offline either way.</p>' +
+          '<div class="setting-actions">' +
+            '<button type="button" class="btn btn--primary" data-action="sync-create">Create a sync code</button>' +
+            '<button type="button" class="btn btn--secondary" data-action="sync-link">I have a code</button>' +
+          '</div>' +
+        '</div>';
+      return;
+    }
+    // A field that is being typed in keeps its place; only the status moves
+    if (card.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') {
+      syncRefreshEntry();
+      return;
+    }
+    card.innerHTML =
+      '<div class="setting">' +
+        '<div class="sync-id">' +
+          '<span class="sync-avatar">' + icon('cloud', 'icon--lg') + '</span>' +
+          '<div><strong id="sync-title">' + syncTitleMarkup(syncGetUsername()) + '</strong>' +
+            '<span class="sync-status" id="sync-status-line" role="status"></span></div>' +
+        '</div>' +
+        '<button type="button" class="btn btn--secondary" id="sync-now-btn" data-action="sync-now">Sync now</button>' +
       '</div>' +
-      '<div class="sync-section">' +
-        '<label class="sync-label">Sync key (paste this on other devices)</label>' +
-        '<div class="sync-key-display hidden" id="sync-key-display">' + syncEscapeHtml(token) + '</div>' +
-        '<div class="sync-key-actions">' +
-          '<button class="sync-mini-btn" id="sync-key-show" type="button">Show</button>' +
-          '<button class="sync-mini-btn" id="sync-key-copy" type="button">Copy</button>' +
+      '<div class="setting setting--wrap">' +
+        '<div class="setting-text"><label for="sync-username-edit"><strong>Username</strong></label>' +
+          '<span>A name for this set of devices. Optional.</span></div>' +
+        '<input class="input" id="sync-username-edit" value="' + escapeHtml(syncGetUsername()) + '" placeholder="Cartographer" autocomplete="off" maxlength="40" />' +
+      '</div>' +
+      '<div class="setting setting--stack">' +
+        '<div class="setting-text"><strong>Sync code</strong>' +
+          '<span>Enter this on another device to link it. Anyone with the code can read and change your progress.</span></div>' +
+        '<div class="setting-actions">' +
+          '<span class="code" id="sync-key-display">' + syncCodeMarkup(token, !syncCodeShown) + '</span>' +
+          '<button type="button" class="btn btn--ghost" id="sync-key-show" data-action="sync-toggle-code" aria-pressed="' + syncCodeShown + '">' +
+            (syncCodeShown ? 'Hide' : 'Show') + '</button>' +
+          '<button type="button" class="icon-btn" id="sync-key-copy" data-action="sync-copy-code" aria-label="Copy sync code">' + icon('copy') + '</button>' +
         '</div>' +
       '</div>' +
-      '<button class="sync-btn" id="sync-now-btn" type="button">Sync Now</button>' +
-      '<p class="sync-status-line ' + (errorText ? 'error' : '') + '" id="sync-status-line">' +
-        syncEscapeHtml(errorText || lastText) +
-      '</p>' +
-      '<hr class="sync-divider" />' +
-      '<button class="sync-btn danger" id="sync-disconnect-btn" type="button">Disconnect this Device</button>' +
-      '<p class="sync-help">Removes the sync key from this device only. Records here remain; the cloud copy and other devices are untouched.</p>'
-    );
+      '<div class="setting setting--wrap">' +
+        '<div class="setting-text"><strong>Another device</strong>' +
+          '<span>Open the atlas there, go to Settings, choose “I have a code” and enter your sync code.</span></div>' +
+        '<button type="button" class="btn btn--secondary" data-action="sync-add-device">' + icon('device') + 'Link a device</button>' +
+      '</div>' +
+      '<div class="setting setting--wrap">' +
+        '<div class="setting-text"><strong>This device</strong><span>Stop syncing here. Your progress stays on this device.</span></div>' +
+        '<button type="button" class="btn btn--ghost" id="sync-disconnect-btn" data-action="sync-unlink">Unlink</button>' +
+      '</div>';
+    syncRefreshEntry();
   }
 
-  function syncWireSetupHandlers() {
-    document.querySelectorAll('[data-sync-tab]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-sync-tab]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const target = btn.dataset.syncTab;
-        document.querySelectorAll('[data-sync-pane]').forEach(p => {
-          p.style.display = (p.dataset.syncPane === target) ? '' : 'none';
-        });
-      });
-    });
-
-    const createBtn = document.getElementById('sync-create-btn');
-    if (createBtn) createBtn.addEventListener('click', async () => {
-      createBtn.disabled = true;
-      createBtn.textContent = 'Creating...';
-      const usernameInput = document.getElementById('sync-username-new');
-      const username = usernameInput ? usernameInput.value.trim() : '';
-      syncSetToken(syncGenerateToken());
-      if (username) syncSetUsername(username);
-      await syncPush();
-      syncRenderModalContent();
-      refreshView();
-    });
-
-    const importBtn = document.getElementById('sync-import-btn');
-    if (importBtn) importBtn.addEventListener('click', async () => {
-      const input = document.getElementById('sync-key-input');
-      const status = document.getElementById('sync-import-status');
-      if (!input || !status) return;
-      const candidate = syncNormalizeToken(input.value);
-      if (!candidate) {
-        status.textContent = 'That doesn’t look like a valid sync key (expected 32 hex characters).';
-        status.className = 'sync-status-line error';
-        return;
-      }
-      importBtn.disabled = true;
-      importBtn.textContent = 'Connecting...';
-      status.textContent = '';
-      status.className = 'sync-status-line';
-      syncSetToken(candidate);
-      const pull = await syncPull({ linking: true });
-      if (!pull.ok) {
-        status.textContent = 'Connection failed (' + pull.reason + '). Check the key and try again.';
-        status.className = 'sync-status-line error';
-        syncClearToken();
-        importBtn.disabled = false;
-        importBtn.textContent = 'Connect & Pull Records';
-        return;
-      }
-      await syncPush();
-      syncRenderModalContent();
-      refreshView();
+  // Bring the status line and the navigation's sync light in line with
+  // the latest status, so a failed push shows at once
+  function syncRefreshEntry() {
+    const entryState = syncEntryState();
+    const failed = entryState === 'error';
+    const line = document.getElementById('sync-status-line');
+    if (line) {
+      line.className = 'sync-status' + (failed ? ' is-error' : '');
+      line.innerHTML = '<i class="dot' + (failed ? ' is-error' : '') + '"></i><span>' + escapeHtml(syncStatusText()) + '</span>';
+      line.parentNode.parentNode.querySelector('.sync-avatar').classList.toggle('is-error', failed);
+    }
+    document.querySelectorAll('[data-sync-dot]').forEach(dot => {
+      dot.hidden = entryState === 'never';
+      dot.classList.toggle('is-error', failed);
     });
   }
 
-  function syncWireAuthedHandlers() {
-    // Username (debounced commit + push)
-    const usernameInput = document.getElementById('sync-username-edit');
-    if (usernameInput) {
-      let t;
-      usernameInput.addEventListener('input', () => {
-        clearTimeout(t);
-        t = setTimeout(() => {
-          syncSetUsername(usernameInput.value.trim());
-          syncPush().catch(() => {});
-        }, 600);
-      });
+  // ---- Sync actions and their dialogs ----
+
+  function syncCreateDialog() {
+    openDialog(dialogContent('Create a sync code',
+      '<p>A sync code links your devices. This device makes one, and you enter it on the others. There is no account and no password, so keep the code to yourself.</p>' +
+      '<label class="field-label" for="sync-username-new">Username <span>(optional)</span></label>' +
+      '<input class="input" id="sync-username-new" placeholder="Cartographer" autocomplete="off" maxlength="40" data-autofocus />',
+      '<button type="button" class="btn btn--secondary" data-action="dialog-close">Cancel</button>' +
+      '<button type="button" class="btn btn--primary" id="sync-create-btn" data-action="sync-create-go" data-submit>Create sync code</button>'));
+  }
+
+  async function syncCreate(button) {
+    const username = document.getElementById('sync-username-new').value.trim();
+    button.disabled = true;
+    button.textContent = 'Creating…';
+    syncSetToken(syncGenerateToken());
+    if (username) syncSetUsername(username);
+    const push = await syncPush();
+    refreshView();
+    syncCodeDialog(push.ok ? 'Your sync code is ready' : 'Your sync code is saved',
+      push.ok ? '' : syncErrorText(push.reason) + ' It will be sent the next time sync gets through.');
+  }
+
+  // The code in full, with how to use it on another device
+  function syncCodeDialog(title, note) {
+    const token = syncGetToken();
+    if (!token) return;
+    openDialog(dialogContent(title || 'Link another device',
+      (note ? '<p class="dialog-note is-error">' + escapeHtml(note) + '</p>' : '') +
+      '<ol class="steps-list">' +
+        '<li>Open Cartographer’s Atlas on the other device.</li>' +
+        '<li>Go to Settings, find Sync and choose “I have a code”.</li>' +
+        '<li>Enter this code. Spaces don’t matter.</li>' +
+      '</ol>' +
+      '<div class="code code--full" id="sync-code-full">' + syncCodeMarkup(token, false) + '</div>' +
+      '<p class="dialog-fine">Anyone with the code can read and change your progress.</p>',
+      '<button type="button" class="btn btn--secondary" data-action="sync-copy-code">' + icon('copy') + 'Copy code</button>' +
+      '<button type="button" class="btn btn--primary" data-action="dialog-close" data-autofocus>Done</button>'));
+  }
+
+  function syncLinkDialog() {
+    openDialog(dialogContent('Link this device',
+      '<p>Enter the sync code from a device that already syncs. What this device has is kept and merged with it.</p>' +
+      '<label class="field-label" for="sync-key-input">Sync code</label>' +
+      '<input class="input input--code" id="sync-key-input" placeholder="32 letters and digits" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-autofocus />' +
+      '<p class="dialog-note" id="sync-import-status" role="status"></p>',
+      '<button type="button" class="btn btn--secondary" data-action="dialog-close">Cancel</button>' +
+      '<button type="button" class="btn btn--primary" id="sync-import-btn" data-action="sync-link-go" data-submit>Link device</button>'));
+  }
+
+  async function syncLink(button) {
+    const input = document.getElementById('sync-key-input');
+    const status = document.getElementById('sync-import-status');
+    const say = (text) => {
+      status.textContent = text;
+      status.classList.toggle('is-error', !!text);
+    };
+    const candidate = syncNormalizeToken(input.value);
+    if (!candidate) {
+      say('That isn’t a sync code. A code is 32 characters: the digits 0 to 9 and the letters a to f.');
+      input.focus();
+      return;
     }
-
-    // Show / Hide token
-    const showBtn = document.getElementById('sync-key-show');
-    const display = document.getElementById('sync-key-display');
-    if (showBtn && display) {
-      showBtn.addEventListener('click', () => {
-        const wasHidden = display.classList.contains('hidden');
-        display.classList.toggle('hidden', !wasHidden);
-        showBtn.textContent = wasHidden ? 'Hide' : 'Show';
-      });
-    }
-
-    // Copy
-    const copyBtn = document.getElementById('sync-key-copy');
-    if (copyBtn) copyBtn.addEventListener('click', async () => {
-      const token = syncGetToken();
-      if (!token) return;
-      try {
-        await navigator.clipboard.writeText(token);
-        copyBtn.textContent = '✓ Copied';
-        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1400);
-      } catch (e) {
-        window.prompt('Copy this sync key:', token);
-      }
-    });
-
-    // Sync now (manual pull + push)
-    const syncBtn = document.getElementById('sync-now-btn');
-    if (syncBtn) syncBtn.addEventListener('click', async () => {
-      syncBtn.disabled = true;
-      syncBtn.textContent = 'Syncing...';
-      const result = await syncFullSync();
-      const status = document.getElementById('sync-status-line');
-      if (status) {
-        if (result.ok) {
-          status.textContent = 'Synced ' + new Date().toLocaleTimeString();
-          status.className = 'sync-status-line success';
-        } else {
-          const why = (result.pull && result.pull.reason) || (result.push && result.push.reason);
-          status.textContent = syncErrorText(why) || 'Sync failed.';
-          status.className = 'sync-status-line error';
-        }
-      }
-      syncBtn.disabled = false;
-      syncBtn.textContent = 'Sync Now';
-      if (result.ok) refreshView();
-    });
-
-    // Disconnect
-    const discBtn = document.getElementById('sync-disconnect-btn');
-    if (discBtn) discBtn.addEventListener('click', () => {
-      const ok = window.confirm('Disconnect this device from sync? Your records here will remain. Use the sync key on another device — or paste it back here — to reconnect.');
-      if (!ok) return;
+    button.disabled = true;
+    button.textContent = 'Linking…';
+    say('');
+    syncSetToken(candidate);
+    const pull = await syncPull({ linking: true });
+    if (!pull.ok) {
       syncClearToken();
-      syncRenderModalContent();
-      refreshView();
-    });
+      syncRefreshEntry();
+      // The dialog may have been closed while the request was out
+      if (document.contains(button)) {
+        say(syncErrorText(pull.reason) + ' Nothing was linked. Check the code and try again.');
+        button.disabled = false;
+        button.textContent = 'Link device';
+      }
+      return;
+    }
+    await syncPush();
+    closeDialog();
+    refreshView();
+    showNotice(pull.hadData ? 'This device is linked. Your progress has been merged.'
+      : 'This device is linked. Nothing was stored under that code yet.');
   }
 
-  // Wire close button + click-outside-to-close once at module load
-  function wireSyncModalChrome() {
-    const overlay = document.getElementById('sync-modal-overlay');
-    const closeBtn = document.getElementById('sync-modal-close');
-    if (closeBtn) closeBtn.addEventListener('click', syncCloseModal);
-    if (overlay) overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) syncCloseModal();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && overlay && overlay.classList.contains('show')) {
-        syncCloseModal();
+  // Manual sync: pull, merge, push
+  async function syncNow(button) {
+    button.disabled = true;
+    button.textContent = 'Syncing…';
+    const result = await syncFullSync();
+    if (result.ok) refreshView();
+    button.disabled = false;
+    button.textContent = 'Sync now';
+    // A redraw replaced the button: put the focus on the one that took its place
+    const current = document.getElementById('sync-now-btn');
+    if (current && current !== button && document.activeElement === document.body) current.focus();
+  }
+
+  function syncToggleCode() {
+    syncCodeShown = !syncCodeShown;
+    document.getElementById('sync-key-display').innerHTML = syncCodeMarkup(syncGetToken(), !syncCodeShown);
+    const button = document.getElementById('sync-key-show');
+    button.textContent = syncCodeShown ? 'Hide' : 'Show';
+    button.setAttribute('aria-pressed', String(syncCodeShown));
+  }
+
+  function confirmUnlink() {
+    confirmDialog({
+      title: 'Unlink this device?',
+      body: '<p>Sync stops on this device. Your progress stays here, and your other devices keep theirs.</p>' +
+        '<p>To link it again, enter the sync code from one of them. <b>If this is your only device, note the code down first</b>: it isn’t kept anywhere else.</p>',
+      confirm: 'Unlink',
+      danger: true,
+      onConfirm: () => {
+        syncClearToken();
+        refreshView();
+        showNotice('This device no longer syncs.');
       }
     });
   }
 
-  wireSyncModalChrome();
+  // The username saves itself a moment after the typing stops
+  let syncUsernameTimer;
+  document.addEventListener('input', (e) => {
+    const input = e.target;
+    if (!input || input.id !== 'sync-username-edit') return;
+    document.getElementById('sync-title').innerHTML = syncTitleMarkup(input.value.trim());
+    clearTimeout(syncUsernameTimer);
+    syncUsernameTimer = setTimeout(() => {
+      syncSetUsername(input.value.trim());
+      syncPush().catch(() => {});
+    }, 600);
+  });
 
   renderNav();
   applyTheme();
