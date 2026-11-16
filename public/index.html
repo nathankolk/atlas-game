@@ -8984,7 +8984,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   function syncApplyRemote(remote, opts) {
     if (!remote || typeof remote !== 'object') return true;
 
-    const remoteReset = Number(remote.resetAt) > 0 ? Number(remote.resetAt) : 0;
+    // A reset time that could not be stored and read back (1e999 parses to
+    // Infinity) would look newer on every pull, and wipe this device each time
+    const sentReset = Number(remote.resetAt);
+    const remoteReset = isFinite(sentReset) && sentReset > 0 ? sentReset : 0;
     const localReset = loadResetAt();
     if (opts && opts.linking) {
       // A device joining a key was never part of that key's resets, nor
