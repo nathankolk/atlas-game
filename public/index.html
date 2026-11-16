@@ -8562,9 +8562,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   }
 
   // Another tab changed the store: take its work in, so this tab's reads
-  // (and its next save) include it
+  // (and its next save) include it, and the view on screen shows it
   window.addEventListener('storage', (e) => {
-    if (e.key === null || e.key === Mastery.KEY) mastery.reload();
+    if (e.key === null || e.key === Mastery.KEY) {
+      mastery.reload();
+      refreshView();
+    }
   });
 
   /* =========================================================
@@ -10900,6 +10903,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     if (username) syncSetUsername(username);
     const push = await syncPush();
     refreshView();
+    // The button that opened this is gone with the set-up card: closing lands on Sync now
+    dialog.opener = document.getElementById('sync-now-btn');
     syncCodeDialog(push.ok ? 'Your sync code is ready' : 'Your sync code is saved',
       push.ok ? '' : syncErrorText(push.reason) + ' It will be sent the next time sync gets through.');
   }
@@ -10963,6 +10968,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     await syncPush();
     closeDialog();
     refreshView();
+    focusIfThere('sync-now-btn');
     showNotice(pull.hadData ? 'This device is linked. Your progress has been merged.'
       : 'This device is linked. Nothing was stored under that code yet.');
   }
@@ -10976,8 +10982,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     button.disabled = false;
     button.textContent = 'Sync now';
     // A redraw replaced the button: put the focus on the one that took its place
-    const current = document.getElementById('sync-now-btn');
-    if (current && current !== button && document.activeElement === document.body) current.focus();
+    if (!document.contains(button) && document.activeElement === document.body) focusIfThere('sync-now-btn');
+  }
+
+  function focusIfThere(id) {
+    const el = document.getElementById(id);
+    if (el) el.focus({ preventScroll: true });
   }
 
   function syncToggleCode() {
@@ -10998,6 +11008,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       onConfirm: () => {
         syncClearToken();
         refreshView();
+        const start = document.querySelector('[data-action="sync-create"]');
+        if (start) start.focus({ preventScroll: true });
         showNotice('This device no longer syncs.');
       }
     });
