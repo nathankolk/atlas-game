@@ -133,6 +133,8 @@
     --second: #c8953c;
     --bad: #a0311e;
     --bad-wash: rgba(160, 49, 30, 0.09);
+    --good-solid: #4a6b3c;
+    --on-good-solid: #ffffff;
     --bad-solid: #a0311e;
     --on-bad-solid: #ffffff;
 
@@ -217,6 +219,8 @@
     --second: #e0a84a;
     --bad: #e58a73;
     --bad-wash: rgba(229, 138, 115, 0.12);
+    --good-solid: #5f9a55;
+    --on-good-solid: #0d1f0a;
     --bad-solid: #e58a73;
     --on-bad-solid: #2b1008;
 
@@ -262,7 +266,7 @@
 
   /* Surfaces that stay dark in both themes read the night theme's text,
      accent and outcome colours */
-  .daily, .toast, .app-notice, .new-record-banner, .zoom-controls {
+  .daily, .app-notice {
     --text: #f4ecd9;
     --text-2: #b6bfcc;
     --accent: #e0a84a;
@@ -1141,145 +1145,272 @@
   .pintable tfoot td { height: 24px; vertical-align: bottom; }
   .pin-unit { display: none; }
 
-  /* ---------- GAME SCREEN ---------- */
-  #game-screen {
-    padding: 0;
+  /* ===== Game: the stage and the map drawn in it ===== */
+  /* The map fills the screen; every other part of the game floats over it,
+     so nothing the game says or asks changes the map's size */
+  .stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: radial-gradient(ellipse 80% 80% at 50% 46%, var(--stage-1) 0%, var(--stage-2) 62%, var(--stage-3) 100%);
   }
 
-  .game-header {
-    flex: 0 0 auto;
-    padding: calc(14px + env(safe-area-inset-top)) 28px 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    border-bottom: 1px solid var(--rule);
-    background: var(--bg);
-    position: relative;
-    z-index: 5;
-  }
+  #world-map { position: relative; display: block; width: 100%; height: 100%; cursor: grab; }
+  #world-map:active { cursor: grabbing; }
 
-  .hdr-left, .hdr-right {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 18px;
-  }
+  .sphere-bg { fill: var(--g-ocean-2); stroke: var(--g-limb); stroke-width: 0.5; vector-effect: non-scaling-stroke; }
+  .graticule { fill: none; stroke: var(--g-grat); stroke-width: 0.5; vector-effect: non-scaling-stroke; pointer-events: none; }
+  /* US and province maps: sea to every edge */
+  .us-ocean { fill: var(--g-ocean-2); }
 
-  .hdr-right {
-    justify-content: flex-end;
-  }
-
-  .back-btn {
-    background: none;
-    border: 1px solid var(--text);
-    color: var(--text);
-    padding: 7px 14px;
-    font-family: var(--font-display);
-    font-size: 14px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+  .country {
+    fill: var(--g-land);
+    stroke: var(--g-border);
+    stroke-width: var(--g-line, 0.5);
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    transition: fill 0.2s ease;
     cursor: pointer;
-    transition: all 0.25s ease;
-    border-radius: 1px;
+  }
+  @media (hover: hover) { .country.eligible:hover { fill: var(--g-near); } }
+  .country.ineligible { opacity: 0.5; cursor: default; }
+
+  /* Unseen target under a tiny island: a wide stroke that takes the tap.
+     It is drawn below the land, so a neighbour's own shape still wins. */
+  .country-hitzone { fill: none; stroke: transparent; stroke-width: 22; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: pointer; }
+
+  /* Marks, weakest first. A later rule wins, so an answer's flash and the
+     reveal show over the tint of the state being asked about. */
+  .stage .country.prompt-highlight { fill: color-mix(in srgb, var(--g-select) 38%, var(--g-land)); stroke: var(--g-select); stroke-width: 2; }
+  .stage .country.learn-known { fill: color-mix(in srgb, var(--g-select) 30%, var(--g-land)); stroke: var(--g-select); stroke-width: 1; }
+  .stage .country.learn-new { fill: var(--g-select); stroke: var(--g-label); stroke-width: 2; }
+  .stage .country.completed-correct { fill: var(--g-found); cursor: default; }
+  .stage .country.completed-second { fill: var(--g-second); cursor: default; }
+  .stage .country.completed-wrong { fill: var(--g-missed); cursor: default; }
+  .stage .country.target-correct { fill: var(--m2); stroke-width: 1; }
+  .stage .country.target-wrong { fill: var(--g-wrong); stroke-width: 1; }
+  .stage .country.reveal { fill: var(--g-select); stroke: var(--g-label); stroke-width: 2.5; animation: flashReveal 1.2s ease infinite; }
+  @keyframes flashReveal {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
 
-  .back-btn:hover {
-    background: var(--text);
-    color: var(--bg);
+  /* Rings that pulse where a missed answer is */
+  .reveal-marker .pulse-ring { fill: none; stroke: var(--g-label); stroke-width: 3; vector-effect: non-scaling-stroke; animation: revealPulse 1.4s ease-out infinite; }
+  .reveal-marker .pulse-ring.delayed { animation-delay: 0.45s; stroke: var(--g-select); }
+  .reveal-marker .center-dot { fill: var(--g-label); stroke: var(--g-select); stroke-width: 2; vector-effect: non-scaling-stroke; }
+  @keyframes revealPulse {
+    0% { r: 6; opacity: 0.95; }
+    100% { r: 42; opacity: 0; }
   }
 
-  .region-tag {
+  /* City targets (US cities): drawn in map units and counter-scaled on
+     every zoom, so they hold their size on screen */
+  .city-dot { fill: var(--g-label); stroke: var(--g-halo); stroke-width: 2; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill 0.18s ease; }
+  @media (hover: hover) { .city-dot:hover { fill: var(--g-select); } }
+  .stage .city-dot.completed-correct { fill: var(--good); cursor: default; }
+  .stage .city-dot.completed-second { fill: var(--second); cursor: default; }
+  .stage .city-dot.completed-wrong { fill: var(--bad); cursor: default; }
+  .stage .city-dot.target-correct { fill: var(--m2); }
+  .stage .city-dot.target-wrong { fill: var(--g-wrong); }
+  .stage .city-dot.reveal { fill: var(--g-select); stroke: var(--g-label); }
+
+  /* Learn: the names of the provinces being studied */
+  .learn-label text {
     font-family: var(--font-display);
-    font-style: italic;
-    font-size: 18px;
-    color: var(--accent-text);
-    letter-spacing: 0.02em;
-  }
-
-  .stat {
-    text-align: center;
-    line-height: 1;
-  }
-
-  .stat-label {
-    font-family: var(--font-ui);
-    font-size: 10px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    margin-bottom: 4px;
-  }
-
-  .stat-value {
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 500;
-    color: var(--text);
-    letter-spacing: -0.02em;
-  }
-
-  .stat-value.correct-color { color: var(--good); }
-  .stat-value.wrong-color { color: var(--bad); }
-  .stat-value.score-color { color: var(--accent-text); }
-
-  .stat.stat-primary .stat-value {
-    font-size: 26px;
+    font-size: 13px;
     font-weight: 600;
+    fill: var(--g-label);
+    stroke: var(--g-halo);
+    stroke-width: 3px;
+    paint-order: stroke;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
   }
+  .learn-label.new text { font-size: 16px; font-weight: 700; }
+  .learn-dot { fill: var(--g-label); stroke: var(--g-halo); stroke-width: 1.5px; pointer-events: none; }
 
-  .stat-value.score-flash {
-    animation: scoreFlash 0.6s ease;
+  /* ===== Game: satellite imagery under the map =====
+     .sat-on      imagery (drawn to #sat-canvas) shows through see-through land.
+     .no-borders  Uncharted: no borders and no hover tint, so only an answer shows a shape.
+     If the imagery cannot load, .sat-on comes off and .no-borders stays. */
+  .sat-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; pointer-events: none; transform-origin: 0 0; }
+
+  /* The imagery is dark in both themes, so over it the map's tokens turn
+     to light lines and see-through tints */
+  .stage.sat-on {
+    --g-land: transparent;
+    --g-border: rgba(255, 248, 230, 0.7);
+    --g-line: 0.8;
+    --g-near: rgba(241, 231, 210, 0.22);
+    --g-found: rgba(95, 138, 75, 0.55);
+    --g-second: rgba(224, 168, 74, 0.5);
+    --g-missed: rgba(160, 49, 30, 0.55);
+    --g-wrong: #d9634a;
+    --g-select: #e0a84a;
+    --g-label: #f4ecd9;
+    --g-halo: rgba(12, 19, 29, 0.9);
+    --g-limb: rgba(241, 231, 210, 0.4);
+    --g-shade: rgba(16, 22, 30, 0.5);
+    --good: #93c47d;
+    --second: #e0a84a;
+    --bad: #e58a73;
+    background: var(--ink);
   }
+  .stage.sat-on .sat-canvas { display: block; }
+  .stage.sat-on .sphere-bg, .stage.sat-on .us-ocean { fill: none; }
+  .stage.sat-on .graticule { display: none; }
+  .stage.sat-on .country.ineligible { fill: var(--g-shade); stroke-opacity: 0.35; opacity: 1; }
+  .stage.sat-on .country.target-correct, .stage.sat-on .country.target-wrong,
+  .stage.sat-on .country.reveal, .stage.sat-on .country.learn-new { fill-opacity: 0.55; }
 
+  /* Albers USA draws Alaska and Hawaii in insets; over imagery the picture
+     jumps at their edges, so they get a frame */
+  .inset-frame { display: none; }
+  .stage.sat-on .inset-frame { display: block; fill: none; stroke: var(--g-limb); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; pointer-events: none; }
+
+  .stage.no-borders { --g-near: var(--g-land); }
+  .stage.no-borders #world-map, .stage.no-borders .country { cursor: crosshair; }
+  .stage.no-borders .country { stroke: none; }
+  .stage.no-borders .country.prompt-highlight, .stage.no-borders .country.learn-known,
+  .stage.no-borders .country.learn-new, .stage.no-borders .country.target-correct,
+  .stage.no-borders .country.target-wrong { stroke: var(--g-border); stroke-width: 1.6; }
+  .stage.no-borders .country.reveal { stroke: var(--g-label); stroke-width: 2.5; }
+
+  /* Imagery credit (the tile provider requires it) and the loading note */
+  .sat-credit {
+    position: absolute;
+    left: 24px;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    z-index: 2;
+    display: none;
+    padding: 3px 9px;
+    border-radius: var(--r-xs);
+    background: var(--g-halo);
+    color: var(--g-label);
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .stage.sat-on .sat-credit { display: block; }
+
+  /* ===== Game: Pin the City ===== */
+  /* Plain land: no hover tint to hint at a country's shape */
+  #game-screen.pin-mode .stage { --g-near: var(--g-land); }
+  #game-screen.pin-mode #world-map, #game-screen.pin-mode .country { cursor: crosshair; }
+  /* Hard: borders off, so only coastlines show */
+  #game-screen.pin-hard .country { stroke: none; }
+  .pin-layer { pointer-events: none; }
+  .pin-guess path { fill: var(--g-wrong); stroke: var(--g-halo); stroke-width: 1.5px; }
+  .pin-guess circle { fill: var(--g-halo); }
+  .pin-truth-ring { fill: none; stroke: var(--g-label); stroke-width: 2px; }
+  .pin-truth-dot { fill: var(--g-select); stroke: var(--g-label); stroke-width: 1.5px; }
+  .pin-truth-label {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    fill: var(--g-label);
+    stroke: var(--g-halo);
+    stroke-width: 3px;
+    paint-order: stroke;
+    text-anchor: middle;
+  }
+  .pin-line { fill: none; stroke: var(--g-label); stroke-width: 1.5px; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+
+  /* ===== Game: bar ===== */
+  .gamebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+    height: calc(60px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 24px 0 12px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--rule);
+  }
+  .gamebar-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .gamebar-left .icon-btn { flex: none; color: var(--text); }
+  .gamebar-return { display: none; flex: none; }
+  .gamebar-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .gamebar-title strong { font-family: var(--font-display); font-size: 24px; font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gamebar-title .tag { flex: none; }
+  .gamebar-sub { display: none; }
+  .gamebar-progress { display: flex; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .gamebar-progress .num { font-size: 28px; line-height: 1; }
+  .gamebar-progress span:last-child { font-size: 13px; color: var(--text-3); }
+  .gamebar-stats { display: flex; justify-content: flex-end; gap: 28px; }
+  .gamebar-stats > div { display: flex; align-items: baseline; gap: 8px; }
+  .gamebar-stats dt { font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
+  .gamebar-stats dd { font-size: 26px; line-height: 1; font-variant-numeric: lining-nums tabular-nums; min-width: 1.2em; text-align: right; white-space: nowrap; }
+  .gamebar-stats dd.score-flash { animation: scoreFlash 0.6s ease; }
   @keyframes scoreFlash {
-    0% { color: var(--accent); transform: scale(1.25); }
-    100% { color: var(--accent-text); transform: scale(1); }
+    0% { color: var(--accent-text); transform: scale(1.2); }
+    100% { color: var(--text); transform: scale(1); }
   }
+  .gamebar-track { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; }
+  .gamebar-track i { display: block; width: 0; height: 100%; background: var(--accent); border-radius: 0 2px 2px 0; transition: width 0.3s ease; }
 
-  /* Prompt panel */
-  .prompt-panel {
-    flex: 0 0 auto;
-    padding: 14px 28px 16px;
+  /* ===== Game: prompt card, capital choices, toast ===== */
+  /* Things that float over the map are near-opaque and never blur what is
+     behind them: a blur over the map would be redone on every frame */
+  .float { background: var(--surface-glass); border: 1px solid var(--rule); box-shadow: var(--shadow-2); }
+
+  /* One column under the bar: the card, then the toast, so a taller card
+     moves the toast down with it */
+  .hud-top {
+    position: absolute;
+    top: calc(80px + env(safe-area-inset-top, 0px));
+    left: 0;
+    right: 0;
+    z-index: 5;
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    pointer-events: none;
+  }
+  /* Every line of the card has a set height, so the card is the same size
+     for every question of a round */
+  .prompt {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    min-width: 340px;
+    max-width: min(100%, 780px);
+    padding: 16px 36px 18px;
+    border-radius: var(--r-lg);
     text-align: center;
-    position: relative;
-    z-index: 4;
-    background: linear-gradient(to bottom, var(--bg), transparent);
+    pointer-events: auto;
   }
-
-  .prompt-label {
+  .prompt .eyebrow { white-space: nowrap; }
+  .prompt .eyebrow i { font-style: normal; margin: 0 6px; opacity: 0.6; }
+  .prompt-try { color: var(--bad); }
+  .prompt-name {
+    display: grid;
+    align-items: center;
+    min-height: 52px;
     font-family: var(--font-display);
-    font-size: 12px;
-    letter-spacing: 0.35em;
-    text-transform: uppercase;
-    color: var(--accent-text);
-    font-style: italic;
+    font-size: 48px;
+    font-weight: 600;
+    font-variant-numeric: lining-nums;
+    line-height: 1.04;
+    letter-spacing: -0.015em;
   }
-
-  .prompt-country {
-    font-family: var(--font-display);
-    font-size: clamp(32px, 5vw, 48px);
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    color: var(--text);
-    line-height: 1.1;
-    margin-top: 4px;
-    transition: transform 0.3s ease;
-  }
-
-  .prompt-country.shake {
-    animation: shake 0.4s ease;
-  }
-
-  .prompt-country.pulse {
-    animation: pulsePrompt 0.6s ease;
-  }
-
+  .prompt-name.is-long { font-size: 36px; }
+  .prompt-name.is-xlong { font-size: 27px; }
+  .prompt-name.shake { animation: shake 0.4s ease; }
+  .prompt-name.pulse { animation: pulsePrompt 0.6s ease; }
   @keyframes pulsePrompt {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.04); }
   }
-
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     20% { transform: translateX(-10px); }
@@ -1287,1052 +1418,280 @@
     60% { transform: translateX(-6px); }
     80% { transform: translateX(6px); }
   }
+  /* A second line under the name: Pin the City's country, then how far the pin landed */
+  .prompt-note { min-height: 20px; font-size: 14px; line-height: 20px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .prompt-note b { font-weight: 600; color: var(--text); }
 
-  /* Map */
-  .map-wrap {
-    flex: 1;
-    position: relative;
+  /* States → Capitals: four capitals to pick from */
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 420px; max-width: 100%; min-height: 104px; margin-top: 8px; }
+  .choice-btn {
+    min-height: 48px;
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--rule-strong);
+    background: var(--surface);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
     overflow: hidden;
-    background:
-      radial-gradient(ellipse at 30% 40%, rgba(167,192,201,0.2) 0%, transparent 60%),
-      radial-gradient(ellipse at 70% 70%, rgba(167,192,201,0.15) 0%, transparent 55%);
+    text-overflow: ellipsis;
+    transition: background-color 0.15s, border-color 0.15s;
   }
-
-  #world-map {
-    width: 100%;
-    height: 100%;
-    display: block;
-    cursor: grab;
+  @media (hover: hover) {
+    .choice-btn:hover:not(:disabled):not(.choice-correct):not(.choice-reveal) { border-color: var(--text); background: var(--surface-hover); }
   }
+  .choice-btn.choice-correct { background: var(--good); border-color: var(--good); color: var(--on-primary); }
+  .choice-btn.choice-correct::before { content: '✓ '; }
+  .choice-btn.choice-wrong { background: var(--bad-wash); border-color: transparent; color: var(--bad); text-decoration: line-through; cursor: default; }
+  .choice-btn.choice-reveal { border-color: var(--accent); background: var(--accent-wash); box-shadow: inset 0 0 0 1px var(--accent); }
 
-  #world-map:active {
-    cursor: grabbing;
-  }
-
-  .country {
-    fill: var(--g-land);
-    stroke: var(--g-border);
-    stroke-width: 0.5;
-    stroke-linejoin: round;
-    vector-effect: non-scaling-stroke;
-    transition: fill 0.2s ease;
-    cursor: pointer;
-  }
-
-  .country.eligible:hover {
-    fill: var(--g-near);
-  }
-
-  .country.ineligible {
-    fill: var(--g-land);
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  /* Invisible click target for tiny island nations.
-     Rendered BELOW visible polygons so larger countries take precedence at
-     borders, but small features (Antigua, Grenada, etc.) get a 22px-wide
-     stroke around them that catches clicks even when the polygon itself is
-     only a few pixels across. */
-  .country-hitzone {
-    fill: none;
-    stroke: rgba(0, 0, 0, 0);
-    stroke-width: 22;
-    vector-effect: non-scaling-stroke;
-    pointer-events: stroke;
-    cursor: pointer;
-  }
-
-  .country.target-correct {
-    fill: var(--moss-bright) !important;
-    stroke: var(--moss);
-    stroke-width: 1;
-    animation: flashCorrect 0.7s ease;
-  }
-
-  .country.target-wrong {
-    fill: var(--sienna) !important;
-    stroke: var(--sienna-deep);
-    stroke-width: 1;
-    animation: flashWrong 0.7s ease;
-  }
-
-  .country.reveal {
-    fill: var(--gold-bright) !important;
-    stroke: var(--text);
-    stroke-width: 2.5;
-    filter: drop-shadow(0 0 10px rgba(224, 168, 74, 0.9))
-            drop-shadow(0 0 4px rgba(31, 42, 58, 0.5));
-    animation: flashReveal 1.2s ease infinite;
-  }
-
-  /* Pulsing marker drawn at the centroid of a revealed country */
-  .reveal-marker .pulse-ring {
-    fill: none;
-    stroke: var(--text);
-    stroke-width: 3;
-    vector-effect: non-scaling-stroke;
-    animation: revealPulse 1.4s ease-out infinite;
-  }
-
-  .reveal-marker .pulse-ring.delayed {
-    animation-delay: 0.45s;
-    stroke: var(--gold-bright);
-  }
-
-  .reveal-marker .center-dot {
-    fill: var(--text);
-    stroke: var(--gold-bright);
-    stroke-width: 2;
-    vector-effect: non-scaling-stroke;
-  }
-
-  @keyframes revealPulse {
-    0%   { r: 6;  opacity: 0.95; }
-    100% { r: 42; opacity: 0; }
-  }
-
-  /* Persistent completed states */
-  .country.completed-correct {
-    fill: var(--moss-bright) !important;
-    stroke: var(--moss);
-    cursor: default;
-  }
-
-  .country.completed-correct:hover {
-    fill: #6f9c59 !important;
-  }
-
-  .country.completed-wrong {
-    fill: var(--sienna) !important;
-    stroke: var(--sienna-deep);
-    cursor: default;
-  }
-
-  .country.completed-wrong:hover {
-    fill: #b23d28 !important;
-  }
-
-  /* ===== City dot markers (us-city mode) =====
-   * Dots are placed at each city's projected coords. Their radius is set
-   * in renderMap and counter-scaled on every zoom event so they stay at
-   * constant screen size. stroke uses vector-effect: non-scaling-stroke
-   * (set inline below) to match.
-   */
-  .city-dot {
-    fill: var(--text);
-    stroke: var(--bg);
-    stroke-width: 2;
-    vector-effect: non-scaling-stroke;
-    cursor: pointer;
-    transition: fill 0.18s ease;
-  }
-
-  .city-dot:hover {
-    fill: var(--gold-bright);
-    stroke: var(--text);
-  }
-
-  .city-dot.target-correct {
-    fill: var(--moss-bright);
-    stroke: var(--moss);
-    animation: dotFlashCorrect 0.5s ease;
-  }
-
-  .city-dot.target-wrong {
-    fill: var(--sienna);
-    stroke: var(--sienna-deep);
-    animation: dotFlashWrong 0.4s ease;
-  }
-
-  .city-dot.completed-correct {
-    fill: var(--moss-bright);
-    stroke: var(--moss);
-    cursor: default;
-  }
-
-  .city-dot.completed-correct:hover {
-    fill: #6f9c59;
-  }
-
-  .city-dot.completed-wrong {
-    fill: var(--sienna);
-    stroke: var(--sienna-deep);
-    cursor: default;
-  }
-
-  .city-dot.completed-wrong:hover {
-    fill: #b23d28;
-  }
-
-  .city-dot.reveal {
-    fill: var(--gold-bright);
-    stroke: var(--accent-text);
-    animation: dotPulseReveal 0.7s ease-in-out infinite alternate;
-  }
-
-  @keyframes dotFlashCorrect {
-    0%   { fill: #9ec97f; }
-    100% { fill: var(--good); }
-  }
-
-  @keyframes dotFlashWrong {
-    0%   { fill: #c94f3c; }
-    100% { fill: var(--bad); }
-  }
-
-  @keyframes dotPulseReveal {
-    0%   { fill: var(--accent); }
-    100% { fill: var(--accent); }
-  }
-
-  @keyframes flashCorrect {
-    0% { fill: #9ec97f; transform: scale(1); }
-    50% { fill: var(--good); }
-    100% { fill: var(--good); }
-  }
-
-  @keyframes flashWrong {
-    0% { fill: #c94f3c; }
-    100% { fill: var(--bad); }
-  }
-
-  @keyframes flashReveal {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-  }
-
-  .graticule {
-    fill: none;
-    stroke: rgba(122,155,166,0.25);
-    stroke-width: 0.4;
-    stroke-dasharray: 2 2;
-    vector-effect: non-scaling-stroke;
-    pointer-events: none;
-  }
-
-  .sphere-bg {
-    fill: var(--g-ocean-2);
-    stroke: var(--g-ocean-3);
-    stroke-width: 0.5;
-    vector-effect: non-scaling-stroke;
-  }
-
-  /* Zoom controls */
-  .zoom-controls {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    z-index: 11;
-    background: var(--inverse);
-    border-radius: 1px;
-    overflow: hidden;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-  }
-
-  .zoom-btn {
-    width: 38px;
-    height: 38px;
-    background: transparent;
-    border: none;
-    color: var(--on-inverse);
-    font-family: var(--font-display);
-    font-size: 22px;
+  .toast {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    max-width: 100%;
+    padding: 6px 18px 6px 8px;
+    border-radius: 22px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-size: 14px;
     font-weight: 500;
-    cursor: pointer;
+    line-height: 1.3;
+    box-shadow: var(--shadow-2);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s 0.25s;
+  }
+  .toast.show { opacity: 1; visibility: visible; transform: none; transition: opacity 0.25s ease, transform 0.25s ease; }
+  .toast em { font-style: normal; font-weight: 600; }
+  .toast-icon { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--bad-solid); color: var(--on-bad-solid); }
+  .toast.correct .toast-icon { background: var(--good-solid); color: var(--on-good-solid); }
+  .toast-icon .icon { width: 14px; height: 14px; stroke-width: 2.4; }
+
+  /* ===== Game: actions, map controls, tally, hints ===== */
+  .game-actions {
+    position: absolute;
+    left: 50%;
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+    z-index: 5;
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: background 0.2s ease;
-    border-bottom: 1px solid rgba(200,149,60,0.2);
-  }
-
-  .zoom-btn:last-child { border-bottom: none; }
-
-  .zoom-btn:hover {
-    background: rgba(200,149,60,0.25);
-    color: var(--accent);
-  }
-
-  .zoom-btn:active {
-    background: rgba(200,149,60,0.4);
-  }
-
-  .zoom-btn svg {
-    width: 15px;
-    height: 15px;
-    stroke: currentColor;
-    stroke-width: 1.8;
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  .zoom-hint {
-    position: absolute;
-    bottom: 14px;
-    left: 50%;
+    gap: 10px;
     transform: translateX(-50%);
+  }
+  .skip, .game-go {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    height: 48px;
+    padding: 0 14px 0 24px;
+    border-radius: var(--r-pill);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .skip:disabled { color: var(--text-3); cursor: not-allowed; }
+  .game-go { border: 1px solid transparent; background: var(--primary); color: var(--on-primary); box-shadow: var(--shadow-2); }
+  .game-go:disabled { border-color: var(--rule); background: var(--surface-glass); color: var(--text-3); cursor: not-allowed; }
+  @media (hover: hover) {
+    .skip:hover:not(:disabled) { background: var(--surface); }
+    .game-go:hover:not(:disabled) { background: var(--primary-hover); }
+  }
+  /* The key that does the same */
+  .game-actions kbd {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--r-xs);
+    border: 1px solid var(--rule-strong);
     font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+  }
+  .game-go kbd { border-color: currentColor; color: inherit; opacity: 0.6; }
+  .game-actions kbd .icon { width: 14px; height: 14px; }
+
+  .mapctl { position: absolute; right: 24px; top: 50%; z-index: 5; display: grid; gap: 10px; transform: translateY(-50%); }
+  .mapctl-group { display: grid; border-radius: var(--r-md); overflow: hidden; }
+  .mapctl button { display: grid; place-items: center; width: 46px; height: 46px; color: var(--text); }
+  .mapctl-group button + button { border-top: 1px solid var(--rule); }
+  .mapctl-solo { border-radius: var(--r-md); }
+  .mapctl-solo.is-active { border-color: transparent; background: var(--primary); color: var(--on-primary); }
+  @media (hover: hover) {
+    .mapctl button:hover { background: var(--surface); }
+    .mapctl-solo.is-active:hover { background: var(--primary-hover); }
+  }
+  /* Uncharted is always imagery: nothing to switch */
+  .stage.no-borders ~ .mapctl .mapctl-solo { display: none; }
+
+  /* What the marks on the map mean, each with the round's count so far */
+  .game-legend {
+    position: absolute;
+    right: 24px;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    z-index: 4;
+    display: flex;
+    gap: 4px 16px;
+    padding: 8px 14px;
+    border-radius: var(--r-pill);
+    font-size: 12px;
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .game-legend > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .game-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--g-found); }
+  .game-legend .is-second i { background: var(--g-second); }
+  .game-legend .is-missed i { background: var(--g-missed); }
+  .game-legend b { font-weight: 600; color: var(--text); }
+  #game-screen.pin-mode .game-legend, #game-screen.learn-mode .game-legend { display: none; }
+
+  /* A word about the map, above the actions */
+  .map-hint {
+    position: absolute;
+    left: 50%;
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    z-index: 4;
+    padding: 6px 14px;
+    border-radius: var(--r-pill);
     font-size: 12px;
     font-weight: 500;
     color: var(--text-2);
-    background: var(--surface-glass);
-    padding: 6px 14px;
-    border-radius: var(--r-pill);
+    white-space: nowrap;
+    transform: translateX(-50%);
     pointer-events: none;
-    border: 1px solid var(--rule);
-    opacity: 0;
-    animation: hintFade 5s ease forwards;
   }
-
+  /* Said once, then it fades */
+  .map-hint--once { opacity: 0; animation: hintFade 5s ease forwards; }
   @keyframes hintFade {
     0%, 10% { opacity: 0; }
     20%, 75% { opacity: 1; }
     100% { opacity: 0; }
   }
-
-  /* ===== Satellite map =====
-   * .sat-on      real imagery (drawn to #sat-canvas) shows through
-   *              see-through country polygons with light borders.
-   * .no-borders  Uncharted: no strokes and no hover, so the only way to
-   *              see a shape is to answer. Flashes and reveals still fill.
-   * If imagery fails to load, .sat-on drops off but .no-borders stays,
-   * leaving a parchment silhouette with no internal borders.
-   */
-  .sat-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
-    pointer-events: none;
-    transform-origin: 0 0;
-    z-index: 0;
+  .map-hint .for-touch { display: none; }
+  @media (pointer: coarse) {
+    .map-hint .for-touch { display: inline; }
+    .map-hint .for-mouse { display: none; }
   }
 
-  .map-wrap.sat-on { background: var(--ink); }
-  .map-wrap.sat-on .sat-canvas { display: block; }
-  .map-wrap.sat-on #world-map { position: relative; z-index: 1; }
+  /* Looking back at a finished map: the marks, the tally and the way back */
+  #game-screen.review-mode .gamebar-return { display: inline-flex; }
+  #game-screen.review-mode #back-btn,
+  #game-screen.review-mode .gamebar-progress,
+  #game-screen.review-mode .hud-top,
+  #game-screen.review-mode .game-actions,
+  #game-screen.review-mode .map-hint { display: none; }
 
-  .map-wrap.sat-on .sphere-bg { fill: none; stroke: rgba(241,231,210,0.35); }
-  .map-wrap.sat-on .graticule { display: none; }
-  .map-wrap.sat-on .us-ocean { fill: none; }
-
-  .map-wrap.sat-on .country {
-    fill: transparent;
-    stroke: rgba(255,248,230,0.7);
-    stroke-width: 0.8;
-  }
-  .map-wrap.sat-on .country.eligible:hover { fill: rgba(241,231,210,0.22); }
-  .map-wrap.sat-on .country.ineligible {
-    fill: rgba(16,22,30,0.5);
-    stroke: rgba(255,248,230,0.25);
-    opacity: 1;
-  }
-
-  /* Answer colors go see-through so the land underneath stays readable */
-  .map-wrap.sat-on .country.target-correct,
-  .map-wrap.sat-on .country.completed-correct {
-    fill: rgba(95,138,75,0.55) !important;
-    stroke: #b6dd98;
-    stroke-width: 1.4;
-  }
-  .map-wrap.sat-on .country.completed-correct:hover { fill: rgba(111,156,89,0.68) !important; }
-  .map-wrap.sat-on .country.target-wrong,
-  .map-wrap.sat-on .country.completed-wrong {
-    fill: rgba(160,49,30,0.55) !important;
-    stroke: #f0a08c;
-    stroke-width: 1.4;
-  }
-  .map-wrap.sat-on .country.completed-wrong:hover { fill: rgba(178,61,40,0.68) !important; }
-  .map-wrap.sat-on .country.reveal {
-    fill: rgba(224,168,74,0.5) !important;
-    stroke: var(--gold-bright);
-    stroke-width: 2.5;
-  }
-  .map-wrap.sat-on .country.prompt-highlight {
-    fill: rgba(208,220,196,0.35) !important;
-    stroke: #d6f0c0;
-    stroke-width: 2;
-  }
-  .map-wrap.sat-on .reveal-marker .pulse-ring { stroke: var(--parchment); }
-
-  /* Albers USA inset frames: the imagery changes abruptly at their edges */
-  .inset-frame { display: none; }
-  .map-wrap.sat-on .inset-frame {
-    display: block;
-    fill: none;
-    stroke: rgba(241,231,210,0.45);
-    stroke-width: 1;
-    stroke-dasharray: 3 3;
-    vector-effect: non-scaling-stroke;
-    pointer-events: none;
-  }
-
-  .map-wrap.no-borders #world-map { cursor: crosshair; }
-  .map-wrap.no-borders .country { stroke: none; cursor: crosshair; }
-  .map-wrap.no-borders .country.eligible:hover { fill: var(--g-land); }
-  .map-wrap.no-borders.sat-on .country.eligible:hover { fill: transparent; }
-  .map-wrap.no-borders .country.ineligible { stroke: none; }
-  .map-wrap.no-borders .country.target-correct,
-  .map-wrap.no-borders .country.target-wrong,
-  .map-wrap.no-borders .country.reveal,
-  .map-wrap.no-borders .country.prompt-highlight {
-    stroke-width: 1.6;
-  }
-  .map-wrap.no-borders .country.target-correct { stroke: #b6dd98; }
-  .map-wrap.no-borders .country.target-wrong { stroke: #f0a08c; }
-  .map-wrap.no-borders .country.reveal { stroke: var(--ink); stroke-width: 2.5; }
-  .map-wrap.no-borders.sat-on .country.reveal { stroke: var(--gold-bright); }
-  .map-wrap.no-borders .country.prompt-highlight { stroke: var(--moss); }
-  .map-wrap.no-borders.sat-on .country.prompt-highlight { stroke: #d6f0c0; }
-
-  /* Imagery credit (required by the tile provider) + loading note */
-  .sat-credit {
-    position: absolute;
-    right: 8px;
-    bottom: 6px;
-    z-index: 2;
-    display: none;
-    font-family: var(--font-ui);
-    font-size: 10px;
-    color: rgba(241,231,210,0.75);
-    background: rgba(31,42,58,0.55);
-    padding: 2px 8px;
-    border-radius: var(--r-xs);
-    pointer-events: none;
-    letter-spacing: 0.02em;
-  }
-  .map-wrap.sat-on .sat-credit { display: block; }
-
-  /* In-game Parchment ⇄ Satellite button (hidden in Uncharted) */
-  .zoom-btn.is-active { color: var(--accent); }
-  .map-wrap.no-borders #map-style-btn { display: none; }
-
-  /* ===== Review mode (post-game map view for screenshots) =====
-   * Entered from the results screen via "View Map". The map keeps its green
-   * /red markers and zoom; everything else (prompt, score, skip button,
-   * page hint, the normal Atlas back button) is hidden so the player can
-   * grab a clean shot. The .review-back-btn takes the back-button slot and
-   * routes back to the results screen.
-   */
-  .review-back-btn { display: none; }
-
-  #game-screen.review-mode .hdr-right,
-  #game-screen.review-mode .prompt-panel,
-  #game-screen.review-mode .controls,
-  #game-screen.review-mode .zoom-hint,
-  #game-screen.review-mode #back-btn {
-    display: none !important;
-  }
-
-  #game-screen.review-mode .review-back-btn {
-    display: inline-block;
-  }
-
-  /* Controls */
-  .controls {
-    flex: 0 0 auto;
-    padding: 12px 28px calc(18px + env(safe-area-inset-bottom));
+  /* ===== Results ===== */
+  #results-screen { display: block; overflow-y: auto; overscroll-behavior: contain; }
+  .results-bar {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 14px;
-    background: linear-gradient(to top, var(--bg), transparent);
+    justify-content: space-between;
+    gap: 12px;
+    max-width: var(--page-max);
+    min-height: var(--nav-h);
+    margin: 0 auto;
+    padding: env(safe-area-inset-top, 0px) 28px 0;
   }
+  .results-bar .btn { flex: none; }
+  .results-bar .btn--ghost:first-child { padding-left: 8px; }
+  .results-bar .eyebrow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+  .results-bar .btn.copied { color: var(--good); }
+  .results { display: grid; grid-template-columns: 400px 1fr; gap: 72px; align-items: start; max-width: 1120px; margin: 0 auto; padding: 16px 40px 72px; }
+  .results-hero, .results-summary { display: grid; justify-items: center; text-align: center; }
+  .results-hero { padding-top: 8px; }
+  .results-summary { width: 100%; }
 
-  .ctrl-btn {
-    background: none;
-    border: 1px solid var(--text);
-    color: var(--text);
-    padding: 9px 22px;
-    font-family: var(--font-display);
-    font-size: 14px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    border-radius: 1px;
-  }
-
-  .ctrl-btn:hover:not(:disabled) {
-    background: var(--text);
-    color: var(--bg);
-  }
-
-  .ctrl-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .ctrl-btn.primary {
-    background: var(--text);
-    color: var(--bg);
-    border-color: var(--text);
-  }
-
-  .ctrl-btn.primary:hover:not(:disabled) {
-    background: var(--accent-text);
-    border-color: var(--accent-text);
-  }
-
-  .ctrl-btn.share {
-    background: var(--accent);
-    color: var(--ink);
-    border-color: var(--accent-text);
-    font-weight: 600;
-    letter-spacing: 0.16em;
-  }
-
-  .ctrl-btn.share:hover:not(:disabled) {
-    background: var(--accent);
-    border-color: var(--accent-text);
-    color: var(--ink);
-  }
-
-  .ctrl-btn.share.copied {
-    background: var(--good);
-    border-color: var(--good);
-    color: var(--on-primary);
-  }
-
-  .ctrl-kbd {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-3);
-    margin-left: 8px;
-    opacity: 0.7;
-  }
-
-  /* Toast feedback */
-  .toast {
-    position: absolute;
-    top: 30px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-20px);
-    max-width: calc(100% - 32px);
-    background: var(--inverse);
-    color: var(--on-inverse);
-    padding: 11px 20px;
-    font-family: var(--font-ui);
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.35;
-    text-align: center;
-    border-radius: 22px;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.4s ease;
-    z-index: 20;
-    box-shadow: var(--shadow-2);
-  }
-
-  .toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  .toast em {
-    font-style: normal;
-    font-weight: 600;
-    color: var(--accent);
-  }
-  .toast.correct em { color: var(--good); }
-  .toast.wrong em { color: var(--bad); }
-
-  /* ---------- RESULTS SCREEN ---------- */
-  #results-screen {
-    padding: 40px 20px;
-    overflow-y: auto;
-  }
-
-  .results-inner {
-    max-width: 760px;
-    width: 100%;
-    margin: auto;
-    text-align: center;
-  }
-
-  .results-kicker {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    margin-bottom: 14px;
-  }
-  .results-kicker-line {
-    flex: 0 0 80px;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--text) 50%, transparent);
-  }
-  .results-kicker-mark {
-    font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.35em;
-    text-transform: uppercase;
-    color: var(--accent-text);
-    font-style: italic;
-  }
-
-  .results-title {
-    font-family: var(--font-display);
-    font-size: clamp(36px, 6vw, 64px);
-    font-weight: 500;
-    letter-spacing: -0.02em;
-    color: var(--text);
-    line-height: 1;
-  }
-
-  .results-title em {
-    font-style: italic;
-    color: var(--accent-text);
-  }
-
-  .results-region {
-    font-family: var(--font-ui);
-    font-style: italic;
-    font-size: 16px;
-    color: var(--text-3);
-    margin-top: 8px;
-    letter-spacing: 0.04em;
-  }
-
-  .results-grade {
-    margin: 30px 0 26px;
+  .badge-record {
     display: inline-flex;
-    align-items: baseline;
-    gap: 14px;
-  }
-
-  .grade-big {
-    font-family: var(--font-display);
-    font-size: clamp(76px, 14vw, 128px);
-    font-weight: 500;
-    line-height: 1;
-    color: var(--accent-text);
-    letter-spacing: -0.03em;
-  }
-
-  .grade-unit {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 24px;
-    color: var(--text-3);
-  }
-
-  .results-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    max-width: 620px;
-    margin: 0 auto 30px;
-    gap: 16px;
-  }
-
-  .r-stat {
-    padding: 16px 6px;
-    border-top: 1px solid var(--rule-strong);
-    border-bottom: 1px solid var(--rule-strong);
-  }
-
-  .r-stat-value {
-    font-family: var(--font-display);
-    font-size: 28px;
-    font-weight: 500;
-    line-height: 1;
-    color: var(--text);
-  }
-
-  .r-stat-value.good { color: var(--good); }
-  .r-stat-value.bad { color: var(--bad); }
-  .r-stat-value.score { color: var(--accent-text); }
-
-  .r-stat-label {
-    font-family: var(--font-ui);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.25em;
-    color: var(--text-3);
-    margin-top: 6px;
-  }
-
-  .missed-section {
-    margin-top: 26px;
-    padding: 20px;
-    background: var(--surface);
-    border: 1px dashed var(--rule-strong);
-    text-align: left;
-  }
-
-  /* New Record banner */
-  .new-record-banner {
-    display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 18px;
-    margin: 22px auto 6px;
-    padding: 14px 28px;
-    max-width: 520px;
-    background: var(--inverse);
-    border-radius: var(--r-md);
-    box-shadow: var(--shadow-2), inset 0 0 0 1px var(--accent);
-    animation: recordFadeIn 0.7s ease;
-  }
-
-  .record-text {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 22px;
-    font-weight: 500;
-    color: var(--accent);
-    letter-spacing: 0.02em;
-  }
-
-  .record-laurel {
-    font-size: 26px;
-    color: var(--accent);
-    line-height: 1;
-  }
-
-  .record-laurel.flipped {
-    transform: scaleX(-1);
-  }
-
-  @keyframes recordFadeIn {
-    0% { opacity: 0; transform: scale(0.9) translateY(-8px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); }
-  }
-
-  /* Personal Bests panel */
-  .bests-section {
-    margin-top: 26px;
-    padding: 22px 20px 20px;
-    background: var(--surface);
-    border: 1px solid var(--rule-strong);
-    border-radius: 2px;
-  }
-
-  .bests-heading {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 18px;
+    gap: 6px;
+    height: 28px;
+    padding: 0 12px 0 8px;
+    border-radius: var(--r-pill);
+    background: var(--accent-wash);
     color: var(--accent-text);
-    text-align: center;
-    letter-spacing: 0.04em;
-    margin-bottom: 16px;
-  }
-
-  .bests-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 14px;
-  }
-
-  .best-item {
-    text-align: center;
-    padding: 10px 6px;
-    position: relative;
-    transition: background 0.3s ease;
-  }
-
-  .best-item.broken {
-    background: rgba(200, 149, 60, 0.12);
-    border: 1px dashed var(--accent);
-    border-radius: 2px;
-    animation: brokenGlow 1.8s ease-in-out infinite;
-  }
-
-  @keyframes brokenGlow {
-    0%, 100% { box-shadow: 0 0 0 rgba(200,149,60,0); }
-    50% { box-shadow: 0 0 18px rgba(200,149,60,0.35); }
-  }
-
-  .best-value {
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1.1;
-  }
-
-  .best-item.broken .best-value {
-    color: var(--accent-text);
-  }
-
-  .best-star {
-    color: var(--accent);
-    font-size: 16px;
-  }
-
-  .best-label {
-    font-family: var(--font-ui);
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    margin-top: 4px;
-  }
-
-  .missed-heading {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 18px;
-    color: var(--accent-text);
-    margin-bottom: 10px;
-    text-align: center;
-    letter-spacing: 0.02em;
-  }
-
-  .missed-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 14px;
-    justify-content: center;
-  }
-
-  .missed-item {
-    font-family: var(--font-ui);
-    font-size: 14px;
-    color: var(--text-2);
-  }
-
-  /* Dot before each name: sienna = missed, gold = found on the second try */
-  .missed-item::before,
-  .missed-key::before {
-    content: '';
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    margin: 0 6px 2px 0;
-    vertical-align: middle;
-    background: var(--bad);
-  }
-  .missed-item.second-try::before,
-  .missed-key.second-try::before { background: var(--accent); }
-
-  .missed-legend {
-    display: flex;
-    gap: 18px;
-    justify-content: center;
-    margin-top: 12px;
-  }
-  .missed-key {
-    font-family: var(--font-ui);
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-3);
-  }
-
-  .results-actions {
-    display: flex;
-    gap: 14px;
-    justify-content: center;
-    margin-top: 32px;
-    flex-wrap: wrap;
-  }
-
-  /* Cormorant sets old-style figures by default; scores read better lined up */
-  .stat-value, .grade-big, .r-stat-value, .best-value { font-variant-numeric: lining-nums; }
-
-  /* US mode - choices panel for state → capital */
-  .choices-panel {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    max-width: 520px;
-    margin: 12px auto 0;
-  }
-
-  .choice-btn {
-    background: var(--surface);
-    border: 1px solid var(--rule-strong);
-    color: var(--text);
-    padding: 11px 14px;
-    font-family: var(--font-display);
-    font-size: 18px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border-radius: 1px;
-    text-align: center;
-    line-height: 1.2;
-  }
-
-  .choice-btn:hover:not(:disabled):not(.choice-correct):not(.choice-wrong) {
-    background: rgba(200,149,60,0.18);
-    border-color: var(--accent-text);
-    transform: translateY(-1px);
-  }
-
-  .choice-btn.choice-correct {
-    background: var(--good);
-    border-color: var(--good);
-    color: var(--on-primary);
-    animation: choicePop 0.4s ease;
-  }
-
-  .choice-btn.choice-wrong {
-    background: var(--bad);
-    border-color: var(--bad);
-    color: var(--on-primary);
-    opacity: 0.75;
-    cursor: default;
-  }
-
-  .choice-btn.choice-reveal {
-    background: var(--accent);
-    border-color: var(--accent-text);
-    color: var(--text);
-    animation: choiceReveal 0.8s ease infinite;
-  }
-
-  @keyframes choicePop {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-  }
-
-  @keyframes choiceReveal {
-    0%, 100% { box-shadow: 0 0 0 rgba(200,149,60,0); }
-    50% { box-shadow: 0 0 14px rgba(200,149,60,0.6); }
-  }
-
-  /* Prompted-state highlight on the map (state-to-capital mode) */
-  .country.prompt-highlight {
-    fill: #d0dcc4 !important;
-    stroke: var(--moss);
-    stroke-width: 2;
-  }
-
-  /* ===== Learn mode (province ladder) =====
-   * Study phase: provinces learned so far are tinted gold and labeled;
-   * the one added this level is brighter with an ink outline. */
-  .country.learn-known {
-    fill: var(--g-near) !important;
-    stroke: var(--accent-text);
-    stroke-width: 1;
-  }
-  .country.learn-new {
-    fill: var(--gold-bright) !important;
-    stroke: var(--text);
-    stroke-width: 2;
-  }
-  .learn-label text {
-    font-family: var(--font-display);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    fill: var(--text);
-    stroke: var(--bg);
-    stroke-width: 3px;
-    paint-order: stroke;
-    text-anchor: middle;
-    dominant-baseline: middle;
-    pointer-events: none;
-  }
-  .learn-label.new text {
-    font-size: 16px;
-    font-weight: 700;
-  }
-  /* On satellite the study tints go see-through so you learn what the land
-     looks like; their outlines survive Uncharted's no-borders rule. */
-  .map-wrap.sat-on .country.learn-known {
-    fill: rgba(234,211,154,0.3) !important;
-    stroke: #ead39a;
-    stroke-width: 1;
-  }
-  .map-wrap.sat-on .country.learn-new {
-    fill: rgba(224,168,74,0.45) !important;
-    stroke: var(--gold-bright);
-    stroke-width: 2;
-  }
-  .map-wrap.no-borders .country.learn-known { stroke: var(--sepia); stroke-width: 1; }
-  .map-wrap.no-borders .country.learn-new { stroke: var(--ink); stroke-width: 2; }
-  .map-wrap.no-borders.sat-on .country.learn-known { stroke: #ead39a; }
-  .map-wrap.no-borders.sat-on .country.learn-new { stroke: var(--gold-bright); }
-  .learn-dot {
-    fill: var(--text);
-    stroke: var(--bg);
-    stroke-width: 1.5px;
-    pointer-events: none;
-  }
-  /* ===== Pin the City ===== */
-  #game-screen.pin-mode #world-map { cursor: crosshair; }
-  #game-screen.pin-mode .country { cursor: crosshair; }
-  /* Parchment: plain land, and no hover tint to hint at a country's shape.
-     On satellite the land stays see-through so the imagery shows. */
-  #game-screen.pin-mode .map-wrap:not(.sat-on) .country,
-  #game-screen.pin-mode .map-wrap:not(.sat-on) .country.eligible:hover { fill: var(--g-land); }
-  #game-screen.pin-mode .map-wrap:not(.sat-on) .country.ineligible { fill: var(--g-land); }
-  #game-screen.pin-mode .map-wrap.sat-on .country.eligible:hover { fill: transparent; }
-  /* Hard Mode: no borders, so only coastlines show */
-  #game-screen.pin-hard .country { stroke: none; }
-  .pin-prompt-country {
-    display: block;
-    font-size: 0.42em;
-    font-style: italic;
     letter-spacing: 0.04em;
-    color: var(--text-3);
-    margin-top: 2px;
   }
-  .pin-guess path {
-    fill: var(--sienna);
-    stroke: var(--bg);
-    stroke-width: 1.5px;
-  }
-  .pin-guess circle { fill: var(--bg); }
-  .pin-truth-ring {
-    fill: none;
-    stroke: var(--text);
-    stroke-width: 2px;
-  }
-  .pin-truth-dot {
-    fill: var(--gold-bright);
-    stroke: var(--text);
-    stroke-width: 1.5px;
-  }
-  .pin-truth-label {
-    font-family: var(--font-display);
-    font-size: 16px;
-    font-weight: 700;
-    fill: var(--text);
-    stroke: var(--bg);
-    stroke-width: 3px;
-    paint-order: stroke;
-    text-anchor: middle;
-  }
-  .pin-line {
-    fill: none;
-    stroke: var(--text);
-    stroke-width: 1.5px;
-    stroke-dasharray: 5 4;
-    vector-effect: non-scaling-stroke;
-  }
-  .pin-layer { pointer-events: none; }
-  /* On satellite, light lines and rings read against dark imagery */
-  .map-wrap.sat-on .pin-line { stroke: var(--parchment); }
-  .map-wrap.sat-on .pin-truth-ring { stroke: var(--parchment); }
-  .pin-weak {
-    display: block;
-    margin-top: 8px;
-    font-family: var(--font-ui);
-    font-style: italic;
-    font-size: 13px;
-    color: var(--text-3);
-  }
-  .pin-trend.up { color: var(--good); }
-  .pin-trend.down { color: var(--bad); }
+  .badge-record .icon { width: 14px; height: 14px; fill: currentColor; stroke: none; }
 
-  /* US mode backdrop */
-  .us-ocean {
-    fill: var(--g-ocean-2);
-  }
+  /* The round as one ring: first try, second try and missed, in that order */
+  .score-ring { position: relative; width: 248px; height: 248px; margin-top: 24px; }
+  .score-ring svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); }
+  .score-ring circle { fill: none; stroke-width: 10; }
+  .score-ring .sr-track { stroke: var(--m0); }
+  .score-ring .sr-good { stroke: var(--good); }
+  .score-ring .sr-second { stroke: var(--second); }
+  .score-ring .sr-bad { stroke: var(--bad); }
+  .score-ring-label { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; }
+  .score-ring-label .num { font-size: 112px; line-height: 0.82; letter-spacing: -0.03em; }
+  .score-ring-label .num.is-long { font-size: 62px; line-height: 1; letter-spacing: -0.02em; }
+  .score-ring-label span:last-child { margin-top: 12px; font-size: 13px; color: var(--text-2); }
+  .results-title { margin-top: 28px; font-size: 44px; }
+  .results-line { max-width: 24em; margin-top: 10px; color: var(--text-2); }
+  .results-actions { display: grid; gap: 10px; width: 100%; max-width: 340px; margin-top: 28px; }
+  .results-more { display: flex; justify-content: center; gap: 4px; margin-top: 10px; }
+
+  .outcomes { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--rule-strong); border-bottom: 1px solid var(--rule); }
+  .outcomes > div { display: grid; align-content: start; gap: 6px; padding: 20px 0 18px 20px; border-left: 1px solid var(--rule); }
+  .outcomes > div:first-child { padding-left: 0; border-left: 0; }
+  .outcomes dd { font-size: 48px; line-height: 0.9; white-space: nowrap; }
+  .outcomes dd small { margin-left: 4px; font-family: var(--font-ui); font-size: 13px; font-weight: 500; letter-spacing: 0; color: var(--text-3); }
+  .outcomes dt { order: 2; display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-2); }
+  .outcomes dt + small { order: 3; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .outcomes dt + small b { font-weight: 600; color: var(--good); }
+  /* Outcome colour, always beside its label */
+  .odot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--good); }
+  .odot--second { background: var(--second); }
+  .odot--bad { background: var(--bad); }
+
+  /* What the round did to the level's mastery */
+  .gain { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px 24px; padding: 22px 0; border-bottom: 1px solid var(--rule); }
+  .gain-num { grid-row: span 2; font-size: 56px; line-height: 0.9; color: var(--m3); }
+  .gain-num.is-flat { color: var(--text-3); }
+  .gain-text { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 14px; }
+  .gain-text strong { font-weight: 600; }
+  .gain-text span { font-size: 12.5px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .gain .mbar > .is-new { background: repeating-linear-gradient(135deg, var(--m3) 0 3px, var(--m2) 3px 6px); }
+
+  /* The Daily Five's answers in order, and when the next puzzle comes */
+  .daily-recap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; padding: 20px 0; border-bottom: 1px solid var(--rule); }
+  .daily-recap .mark { color: var(--on-primary); }
+  .daily-recap .mark--second { color: var(--ink); }
+  .daily-recap-next { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .daily-recap-next b { font-weight: 600; color: var(--text); }
+  .daily-recap .btn.copied { background: var(--good); }
+
+  .results-bests { padding: 22px 0; border-bottom: 1px solid var(--rule); }
+  .results-bests > .eyebrow { margin-bottom: 14px; }
+  .results-bests .figs dd { font-size: 30px; }
+  .results-bests .figs dd.is-record { color: var(--accent-text); }
+  .results-bests .figs dd .icon { display: inline-block; width: 14px; height: 14px; margin-left: 4px; fill: currentColor; stroke: none; vertical-align: 2px; }
+  .trend { font-family: var(--font-ui); font-size: 0.6em; font-weight: 600; }
+  .trend.up { color: var(--good); }
+  .trend.down { color: var(--bad); }
+
+  .revisit-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 24px 0 10px; }
+  .revisit-head h2 { font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .revisit-head .link { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; text-decoration: none; font-weight: 600; color: var(--text); }
+  .revisit-head .link .icon { width: 16px; height: 16px; }
+  .revisit li { display: grid; grid-template-columns: auto 1fr auto 88px; align-items: center; gap: 14px; min-height: 52px; padding: 6px 0; border-top: 1px solid var(--rule); }
+  .revisit strong { display: block; font-size: 14.5px; font-weight: 600; line-height: 1.25; }
+  .revisit small { display: block; font-size: 12.5px; color: var(--text-3); }
+  .revisit-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--bad-wash); color: var(--bad); font-size: 12px; font-weight: 600; }
+  .revisit-mark.is-second { background: var(--accent-wash); color: var(--accent-text); }
+  .revisit-mark .icon { width: 12px; height: 12px; stroke-width: 2.4; }
+  .revisit-tally { font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .level-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500; color: var(--text-3); white-space: nowrap; }
+  .revisit-note { margin-top: 14px; font-size: 13px; color: var(--text-3); }
 
   /* Loading overlay for lazy-loaded datasets */
   .loading-overlay {
@@ -2507,36 +1866,6 @@
   .dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 24px; }
   .btn--danger-solid { background: var(--bad-solid); color: var(--on-bad-solid); }
 
-  /* Game and results on narrow windows */
-  @media (max-width: 720px) {
-    .game-header {
-      padding: calc(10px + env(safe-area-inset-top)) 14px 8px;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .hdr-left, .hdr-right {
-      gap: 10px;
-    }
-    .region-tag { display: none; }
-    .prompt-panel { padding: 10px 14px 12px; }
-    .controls { padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); gap: 8px; }
-    .ctrl-btn { padding: 8px 14px; font-size: 12px; letter-spacing: 0.12em; }
-    .ctrl-kbd { display: none; }
-    .stat-value { font-size: 16px; }
-    .stat.stat-primary .stat-value { font-size: 20px; }
-    .stat-label { font-size: 9px; letter-spacing: 0.2em; }
-    .hdr-right { gap: 12px; }
-    .results-stats { grid-template-columns: repeat(2, 1fr); max-width: 420px; }
-    .r-stat-value { font-size: 24px; }
-    .new-record-banner { padding: 12px 18px; gap: 12px; }
-    .record-text { font-size: 18px; }
-    .record-laurel { font-size: 22px; }
-    .bests-grid { grid-template-columns: 1fr 1fr; }
-    .best-value { font-size: 18px; }
-    .choices-panel { grid-template-columns: repeat(2, 1fr); gap: 6px; max-width: none; margin-top: 10px; }
-    .choice-btn { font-size: 15px; padding: 9px 10px; }
-  }
-
   /* ===== Tablet and small laptop ===== */
   @media (max-width: 1080px) {
     :root { --gutter: 28px; }
@@ -2552,6 +1881,7 @@
     .kpi:nth-child(2) { padding-left: 0; border-left: 0; }
     .panels > .panel, .panels > .panel--7, .panels > .panel--5 { grid-column: 1 / -1; grid-row: auto; }
     .settings-group { grid-template-columns: 1fr; gap: 16px; }
+    .results { grid-template-columns: minmax(0, 1fr); gap: 40px; max-width: 680px; }
   }
 
   @media (min-width: 761px) and (max-width: 880px) {
@@ -2804,6 +2134,82 @@
     .about { padding: 20px 16px; }
     .credits > div { grid-template-columns: 1fr; gap: 2px; }
 
+    /* Game: the prompt at the top (a tapping hand covers the bottom), the
+       actions bottom centre, map controls and tally in a row above them */
+    .gamebar { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; height: calc(54px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 14px 0 4px; }
+    .gamebar-title { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .gamebar-title strong { max-width: 100%; font-size: 21px; line-height: 1.1; }
+    .gamebar-title .tag, .gamebar-progress { display: none; }
+    .gamebar-sub { display: block; max-width: 100%; font-size: 11.5px; font-weight: 500; line-height: 1.1; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gamebar-stats { gap: 18px; }
+    .gamebar-stats > div { flex-direction: column; align-items: flex-end; gap: 3px; }
+    .gamebar-stats > .is-extra { display: none; }
+    .gamebar-stats dt { font-size: 9px; }
+    .gamebar-stats dd { font-size: 22px; }
+    .hud-top { top: calc(66px + env(safe-area-inset-top, 0px)); gap: 10px; padding: 0 12px; }
+    .prompt { width: 100%; min-width: 0; padding: 12px 16px 14px; gap: 5px; border-radius: 18px; }
+    .prompt-name { min-height: 42px; font-size: 38px; }
+    .prompt-name.is-long { font-size: 27px; }
+    .prompt-name.is-xlong { font-size: 19px; }
+    .choices { width: 100%; gap: 6px; min-height: 94px; margin-top: 6px; }
+    .choice-btn { min-height: 44px; padding: 0 8px; font-size: 14px; }
+    .game-actions { left: 12px; right: 12px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); justify-content: center; transform: none; }
+    .skip, .game-go { height: 52px; min-width: 168px; padding: 0 28px; font-size: 15px; }
+    #game-screen.pin-mode .skip { flex: 1; min-width: 0; }
+    #game-screen.pin-mode .game-go { flex: 1.5; min-width: 0; }
+    .game-actions kbd { display: none; }
+    .mapctl { right: 12px; top: auto; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); grid-auto-flow: column; transform: none; }
+    .mapctl-group { grid-auto-flow: column; }
+    .mapctl button { width: 44px; height: 44px; }
+    .mapctl-group button + button { border-top: 0; border-left: 1px solid var(--rule); }
+    .game-legend { left: 12px; right: auto; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); flex-wrap: wrap; max-width: calc(100% - 222px); padding: 6px 10px; border-radius: var(--r-sm); font-size: 11px; }
+    .game-legend > span { gap: 5px; }
+    .game-legend i { width: 8px; height: 8px; border-radius: 2px; }
+    .map-hint { bottom: calc(142px + env(safe-area-inset-bottom, 0px)); }
+    .sat-credit { left: 50%; bottom: calc(3px + env(safe-area-inset-bottom, 0px)); padding: 1px 8px; font-size: 9.5px; transform: translateX(-50%); }
+
+    /* Results: the next step stays in reach at the bottom */
+    .results-bar { min-height: 52px; padding: env(safe-area-inset-top, 0px) 8px 0; }
+    .results-date { display: none; }
+    .results { grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 4px 20px calc(150px + env(safe-area-inset-bottom, 0px)); }
+    .score-ring { width: 196px; height: 196px; margin-top: 18px; }
+    .score-ring-label .num { font-size: 88px; }
+    .score-ring-label .num.is-long { font-size: 50px; }
+    .score-ring-label span:last-child { margin-top: 8px; font-size: 12.5px; }
+    .results-title { margin-top: 20px; font-size: 36px; }
+    .results-line { font-size: 14.5px; }
+    .results-actions {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      max-width: none;
+      margin: 0;
+      padding: 12px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+      background: var(--bg);
+      border-top: 1px solid var(--rule);
+    }
+    .results-actions .btn { flex: 1 1 calc(50% - 5px); min-height: 50px; padding: 0 12px; }
+    .results-actions .btn--primary { flex-grow: 1.35; }
+    .outcomes > div { padding: 16px 0 14px 10px; }
+    .outcomes dd { font-size: 38px; }
+    .outcomes dd small { font-size: 11px; margin-left: 2px; }
+    .outcomes dt { gap: 5px; font-size: 11px; white-space: nowrap; }
+    .outcomes dt .odot { width: 7px; height: 7px; }
+    .outcomes dt .icon { width: 13px; height: 13px; }
+    .outcomes dt + small { font-size: 11px; }
+    .gain { gap: 8px 16px; padding: 18px 0; }
+    .gain-num { font-size: 46px; }
+    .gain-text { font-size: 13.5px; }
+    .results-bests .figs { grid-template-columns: 1fr 1fr; gap: 16px 0; }
+    .results-bests .figs > div:nth-child(odd) { padding-left: 0; border-left: 0; }
+    .results-bests .figs dd { font-size: 26px; }
+    .revisit li { grid-template-columns: auto minmax(0, 1fr) auto; min-height: 56px; }
+    .revisit .level-pill { display: none; }
+
     .app-notice { bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 16px); }
     body[data-screen="game"] .app-notice, body[data-screen="results"] .app-notice { bottom: 28px; }
     .dialog { width: calc(100vw - 24px); padding: 24px 20px 20px; }
@@ -2811,6 +2217,20 @@
     .dialog-actions { flex-direction: column-reverse; }
     .dialog-actions .btn { min-height: 48px; }
     .code--full { font-size: 14px; }
+  }
+
+  /* Short windows (a phone on its side): the card shrinks to leave the map some room */
+  @media (max-height: 520px) {
+    .hud-top { top: calc(62px + env(safe-area-inset-top, 0px)); }
+    .prompt { min-width: 0; padding: 8px 20px 10px; gap: 2px; border-radius: var(--r-md); }
+    .prompt-name { min-height: 34px; font-size: 30px; }
+    .prompt-name.is-long { font-size: 24px; }
+    .prompt-name.is-xlong { font-size: 19px; }
+    .choices { min-height: 0; margin-top: 4px; grid-template-columns: repeat(4, 1fr); width: 640px; }
+    .choice-btn { min-height: 44px; font-size: 13px; }
+    .game-actions { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+    .game-legend { display: none; }
+    .map-hint { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
   }
 
   /* Touch: every control gets a 44px target, even where the visible shape is smaller */
@@ -2921,127 +2341,90 @@
     <div class="page page--narrow" id="settings-content"></div>
   </div>
 
-  <!-- GAME SCREEN -->
+  <!-- GAME SCREEN: the map is the stage; everything else floats over it -->
   <div id="game-screen" class="screen">
-    <header class="game-header">
-      <div class="hdr-left">
-        <button class="back-btn" id="back-btn">← Atlas</button>
-        <button class="back-btn review-back-btn" id="review-back-btn">← Results</button>
-        <div class="region-tag" id="region-tag">—</div>
-      </div>
-      <div class="hdr-right">
-        <div class="stat stat-primary">
-          <div class="stat-label" id="stat-score-label">Score</div>
-          <div class="stat-value score-color" id="stat-score">0</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label" id="stat-correct-label">Found</div>
-          <div class="stat-value correct-color" id="stat-correct">0</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label" id="stat-wrong-label">Missed</div>
-          <div class="stat-value wrong-color" id="stat-wrong">0</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Left</div>
-          <div class="stat-value" id="stat-remaining">—</div>
+    <div class="stage" id="map-wrap">
+      <canvas id="sat-canvas" class="sat-canvas" aria-hidden="true"></canvas>
+      <svg id="world-map" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map"></svg>
+      <div class="sat-credit" id="sat-credit">Imagery © Esri, Maxar, Earthstar Geographics</div>
+    </div>
+
+    <header class="gamebar">
+      <div class="gamebar-left">
+        <button type="button" class="icon-btn" id="back-btn" aria-label="Leave this round"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-back"/></svg></button>
+        <button type="button" class="btn btn--ghost gamebar-return" id="review-back-btn"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Results</button>
+        <div class="gamebar-title">
+          <strong id="region-tag">—</strong>
+          <span class="tag" id="game-kind" hidden></span>
+          <span class="tag" id="game-diff"></span>
+          <span class="gamebar-sub" id="game-sub"></span>
         </div>
       </div>
+      <div class="gamebar-progress"><span class="num" id="game-count">—</span><span id="game-of"></span></div>
+      <dl class="gamebar-stats">
+        <div class="is-extra" id="stat-extra" hidden><dt id="stat-extra-label"></dt><dd class="num" id="stat-extra-value">—</dd></div>
+        <div><dt id="stat-score-label">Score</dt><dd class="num" id="stat-score">0</dd></div>
+        <div><dt>Time</dt><dd class="num" id="stat-time">0:00</dd></div>
+      </dl>
+      <div class="gamebar-track" id="game-track" role="progressbar" aria-label="Round progress" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0"><i></i></div>
     </header>
 
-    <div class="prompt-panel">
-      <div class="prompt-label">Find on the map</div>
-      <div class="prompt-country" id="prompt-country">—</div>
-      <div class="choices-panel" id="choices-panel" style="display:none;"></div>
-    </div>
-
-    <div class="map-wrap" id="map-wrap">
-      <canvas id="sat-canvas" class="sat-canvas" aria-hidden="true"></canvas>
-      <svg id="world-map" preserveAspectRatio="xMidYMid meet"></svg>
-      <div class="zoom-controls">
-        <button class="zoom-btn" id="zoom-in-btn" aria-label="Zoom in">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="16" y1="16" x2="21" y2="21"/></svg>
-        </button>
-        <button class="zoom-btn" id="zoom-out-btn" aria-label="Zoom out">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="16" y1="16" x2="21" y2="21"/></svg>
-        </button>
-        <button class="zoom-btn" id="zoom-reset-btn" aria-label="Reset view">
-          <svg viewBox="0 0 24 24"><path d="M12 4 L12 20 M4 12 L20 12"/><circle cx="12" cy="12" r="8"/></svg>
-        </button>
-        <button class="zoom-btn" id="map-style-btn" aria-label="Satellite view" aria-pressed="false">
-          <svg viewBox="0 0 24 24"><path d="M12 3 L21 8 L12 13 L3 8 Z"/><path d="M3 12 L12 17 L21 12"/><path d="M3 16 L12 21 L21 16"/></svg>
-        </button>
+    <div class="hud-top">
+      <div class="prompt float" id="prompt" aria-live="polite" aria-atomic="true">
+        <span class="eyebrow"><span id="prompt-label">Find on the map</span><span class="prompt-try" id="prompt-try" hidden><i>·</i>Second try</span></span>
+        <strong class="prompt-name" id="prompt-country">—</strong>
+        <span class="prompt-note" id="prompt-note" hidden></span>
+        <div class="choices" id="choices-panel" hidden></div>
       </div>
-      <div class="zoom-hint" id="zoom-hint">Scroll to zoom · drag to pan</div>
-      <div class="sat-credit" id="sat-credit">Imagery © Esri, Maxar, Earthstar Geographics</div>
-      <div class="zoom-hint" id="learn-hint" style="display:none;">Zoom in to see every name</div>
-      <div class="toast" id="toast"></div>
+      <div class="toast" id="toast" role="status"></div>
     </div>
 
-    <div class="controls">
-      <button class="ctrl-btn" id="skip-btn">Skip <span class="ctrl-kbd">S</span></button>
-      <button class="ctrl-btn primary" id="learn-ready-btn" style="display:none;">Quiz Me</button>
-      <button class="ctrl-btn primary" id="pin-btn" style="display:none;" disabled>Drop Pin</button>
+    <div class="mapctl" role="group" aria-label="Map">
+      <div class="mapctl-group float">
+        <button type="button" id="zoom-in-btn" aria-label="Zoom in"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+        <button type="button" id="zoom-out-btn" aria-label="Zoom out"><svg class="icon" aria-hidden="true"><use href="#i-minus"/></svg></button>
+        <button type="button" id="zoom-reset-btn" aria-label="Reset view"><svg class="icon" aria-hidden="true"><use href="#i-target"/></svg></button>
+      </div>
+      <button type="button" class="mapctl-solo float" id="map-style-btn" aria-label="Satellite map" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg></button>
+    </div>
+
+    <div class="game-legend float" id="game-legend">
+      <span><i></i>Found <b id="legend-found">0</b></span>
+      <span class="is-second"><i></i>Second try <b id="legend-second">0</b></span>
+      <span class="is-missed"><i></i>Missed <b id="legend-missed">0</b></span>
+    </div>
+
+    <div class="map-hint map-hint--once float" id="zoom-hint" hidden><span class="for-mouse">Scroll to zoom · drag to pan</span><span class="for-touch">Pinch to zoom · drag to pan</span></div>
+    <div class="map-hint float" id="learn-hint" hidden>Zoom in to see every name</div>
+
+    <div class="game-actions">
+      <button type="button" class="skip float" id="skip-btn">Skip <kbd aria-hidden="true">S</kbd></button>
+      <button type="button" class="game-go" id="learn-ready-btn" hidden>Quiz me <kbd aria-hidden="true"><svg class="icon"><use href="#i-enter"/></svg></kbd></button>
+      <button type="button" class="game-go" id="pin-btn" hidden disabled><span id="pin-btn-label">Drop pin</span> <kbd aria-hidden="true"><svg class="icon"><use href="#i-enter"/></svg></kbd></button>
     </div>
   </div>
 
-  <!-- RESULTS SCREEN -->
+  <!-- RESULTS SCREEN (the summary and the detail are drawn by the script) -->
   <div id="results-screen" class="screen">
-    <div class="results-inner">
-      <div class="results-kicker">
-        <div class="results-kicker-line"></div>
-        <div class="results-kicker-mark">Expedition Complete</div>
-        <div class="results-kicker-line"></div>
-      </div>
-      <h1 class="results-title">Your <em>Findings</em></h1>
-      <div class="results-region" id="results-region">—</div>
-
-      <div class="new-record-banner" id="new-record-banner" style="display:none;"></div>
-
-      <div class="results-grade">
-        <div class="grade-big" id="grade-big">—</div>
-        <div class="grade-unit" id="grade-unit">% accuracy</div>
-      </div>
-
-      <div class="results-stats">
-        <div class="r-stat">
-          <div class="r-stat-value score" id="r-score">0/0</div>
-          <div class="r-stat-label" id="r-score-label">Score</div>
+    <div class="results-bar">
+      <button type="button" class="btn btn--ghost" id="home-btn"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Home</button>
+      <p class="eyebrow"><span id="results-region">—</span><span class="results-date" id="results-date"></span></p>
+      <button type="button" class="btn btn--ghost" id="share-btn"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg><span>Share</span></button>
+    </div>
+    <div class="results">
+      <div class="results-hero">
+        <div class="results-summary" id="results-summary"></div>
+        <div class="results-actions">
+          <button type="button" class="btn btn--primary" id="review-next-btn" hidden></button>
+          <button type="button" class="btn btn--secondary" id="practice-btn" hidden></button>
+          <button type="button" class="btn btn--secondary" id="replay-btn"></button>
+          <button type="button" class="btn btn--secondary" id="daily-practice-btn" hidden>Practice replay</button>
         </div>
-        <div class="r-stat">
-          <div class="r-stat-value good" id="r-correct">0</div>
-          <div class="r-stat-label" id="r-correct-label">Found</div>
-        </div>
-        <div class="r-stat">
-          <div class="r-stat-value bad" id="r-wrong">0</div>
-          <div class="r-stat-label" id="r-wrong-label">Missed</div>
-        </div>
-        <div class="r-stat">
-          <div class="r-stat-value" id="r-time">0:00</div>
-          <div class="r-stat-label">Time</div>
+        <div class="results-more">
+          <button type="button" class="btn btn--ghost" id="view-map-btn" hidden><svg class="icon" aria-hidden="true"><use href="#i-map"/></svg>View on the map</button>
         </div>
       </div>
-
-      <div class="bests-section" id="bests-section" style="display:none;">
-        <div class="bests-heading" id="bests-heading">— Your Personal Bests —</div>
-        <div class="bests-grid"></div>
-      </div>
-
-      <div class="missed-section" id="missed-section" style="display:none;">
-        <div class="missed-heading" id="missed-heading">— Countries to revisit —</div>
-        <div class="missed-list" id="missed-list"></div>
-        <div class="missed-legend" id="missed-legend"></div>
-      </div>
-
-      <div class="results-actions">
-        <button class="ctrl-btn share" id="share-btn">Share Results</button>
-        <button class="ctrl-btn primary" id="review-next-btn" style="display:none;">Next</button>
-        <button class="ctrl-btn primary" id="practice-btn" style="display:none;">Practice These</button>
-        <button class="ctrl-btn primary" id="replay-btn">Study Again</button>
-        <button class="ctrl-btn primary" id="daily-practice-btn" style="display:none;">Practice Replay</button>
-        <button class="ctrl-btn" id="view-map-btn" style="display:none;">View Map</button>
-        <button class="ctrl-btn" id="home-btn">Choose Region</button>
-      </div>
+      <div class="results-detail" id="results-detail"></div>
     </div>
   </div>
 
