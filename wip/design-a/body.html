@@ -1,0 +1,660 @@
+<!-- ===== App chrome: top navigation (desktop) ===== -->
+<header class="topnav">
+  <div class="topnav-inner">
+    <a class="brand" href="#home" aria-label="Cartographer's Atlas, home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <circle class="bm-ring" cx="16" cy="16" r="10.5"/>
+        <path class="bm-tick" d="M2.500 16h3.500M26 16h3.500"/>
+        <path class="bm-n" d="M16 1.500 19 16h-6z"/>
+        <path class="bm-s" d="M16 30.500 19 16h-6z"/>
+      </svg>
+      <span class="brand-name">Cartographer’s Atlas</span>
+    </a>
+    <nav class="topnav-links" aria-label="Primary">
+      <a href="#home" data-nav="home">Home</a>
+      <a href="#explore" data-nav="explore">Explore</a>
+      <a href="#stats" data-nav="stats">Stats</a>
+      <a href="#settings" data-nav="settings">Settings</a>
+    </nav>
+    <div class="topnav-meta">
+      <span class="streak-chip"><svg class="icon"><use href="#i-flame"/></svg><span><b>12</b>-day streak</span></span>
+      <button class="icon-btn" data-theme-toggle aria-label="Switch between Parchment and Night Chart"><svg class="icon"><use href="#i-moon"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<!-- ===== 1. Home ===== -->
+<section data-screen="home">
+  <div class="page home">
+    <header class="masthead">
+      <div class="masthead-copy">
+        <p class="eyebrow">Monday, 16 November 2026</p>
+        <h1 class="display-xl">Good evening.</h1>
+        <p class="lede"><b>Fourteen places</b> are due for review, and today’s Daily Five is waiting.</p>
+      </div>
+      <dl class="summary" aria-label="Your progress">
+        <div><dd class="num">477</dd><dt class="eyebrow">Places mastered</dt><span class="summary-sub">of 1,263</span></div>
+        <div><dd class="num">87<small>%</small></dd><dt class="eyebrow">First-try accuracy</dt><span class="summary-sub">last 30 days</span></div>
+        <div><dd class="num">12</dd><dt class="eyebrow">Day streak</dt><span class="summary-sub">longest 23</span></div>
+      </dl>
+    </header>
+
+    <section class="today" aria-labelledby="today-label">
+      <h2 class="eyebrow section-label" id="today-label">Today</h2>
+      <div class="today-grid">
+        <a class="daily" href="#game">
+          <span class="daily-art">{{line:daily}}</span>
+          <div class="daily-top">
+            <span class="eyebrow">Puzzle <b>No. 205</b></span>
+            <span class="daily-count"><svg class="icon icon--sm"><use href="#i-clock"/></svg>Resets in 5 h 12 m</span>
+          </div>
+          <div class="daily-body">
+            <h3 class="daily-title">The Daily Five</h3>
+            <p class="daily-desc">Five countries, easy to hard. The same puzzle for everyone, once a day.</p>
+          </div>
+          <div class="daily-foot">
+            <div class="daily-week">
+              <ol class="week" aria-label="Last seven days">
+                <li class="is-perfect"><span>T</span><i>5</i></li>
+                <li><span>W</span><i>4</i></li>
+                <li class="is-perfect"><span>T</span><i>5</i></li>
+                <li class="is-perfect"><span>F</span><i>5</i></li>
+                <li><span>S</span><i>3</i></li>
+                <li class="is-perfect"><span>S</span><i>5</i></li>
+                <li class="is-today"><span>M</span><i></i></li>
+              </ol>
+              <span class="week-label"><b>12 days</b> running</span>
+            </div>
+            <span class="btn btn--inverse">Play today’s five <svg class="icon"><use href="#i-arrow"/></svg></span>
+          </div>
+        </a>
+
+        <a class="review" href="#game">
+          <span class="eyebrow">Smart Review</span>
+          <div class="review-body">
+            <span class="num review-num">14</span>
+            <div>
+              <strong>places due for review</strong>
+              <p>The ones you’re closest to forgetting. About four minutes.</p>
+            </div>
+          </div>
+          <div class="review-foot">
+            <div class="chips">
+              <span class="chip">Burkina Faso</span>
+              <span class="chip">Kyrgyzstan</span>
+              <span class="chip chip--more">+12</span>
+            </div>
+            <span class="btn btn--primary">Start review</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="library" aria-labelledby="library-title">
+      <div class="library-head">
+        <div>
+          <h2 class="display-l" id="library-title">The Library</h2>
+          <p>{{levelCount}} levels in six collections.</p>
+        </div>
+        <div>
+          <div class="playbar">
+            <div class="field">
+              <span class="eyebrow">Difficulty</span>
+              <div class="seg" role="radiogroup" aria-label="Difficulty">
+                <button role="radio" aria-checked="true">Normal</button>
+                <button role="radio" aria-checked="false">Hard</button>
+                <button role="radio" aria-checked="false">Uncharted</button>
+              </div>
+            </div>
+            <div class="field">
+              <span class="eyebrow">Map</span>
+              <div class="seg" role="radiogroup" aria-label="Map style">
+                <button role="radio" aria-checked="true"><svg class="icon icon--sm"><use href="#i-map"/></svg>Chart</button>
+                <button role="radio" aria-checked="false"><svg class="icon icon--sm"><use href="#i-sat"/></svg>Satellite</button>
+              </div>
+            </div>
+          </div>
+          <p class="playbar-note"><b>Normal</b> — places you find stay marked on the globe.</p>
+        </div>
+      </div>
+
+      <nav class="chips jump" aria-label="Collections">
+        <a class="chip" aria-current="true" href="#home">All</a>
+        <a class="chip" href="#home">World &amp; Continents</a>
+        <a class="chip" href="#home">United States</a>
+        <a class="chip" href="#home">Provinces &amp; States</a>
+        <a class="chip" href="#home">Capitals &amp; Flags</a>
+        <a class="chip" href="#home">Pin the City</a>
+        <a class="chip" href="#home">Name It</a>
+      </nav>
+
+{{collections}}
+    </section>
+  </div>
+</section>
+
+<!-- ===== 2. Level sheet (over Home) ===== -->
+<section data-screen="sheet">
+  <a class="sheet-scrim" href="#home" aria-label="Close"></a>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <span class="sheet-grabber" aria-hidden="true"></span>
+    <a class="icon-btn sheet-close" href="#home" aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></a>
+
+    <div class="sheet-info">
+      <header class="sheet-head">
+        <div>
+          <p class="eyebrow">World &amp; Continents</p>
+          <h2 class="display-l" id="sheet-title">Africa</h2>
+          <p class="sheet-sub">54 countries<span class="x"> · find each on the globe</span></p>
+          <p class="sheet-coords">37° N – 35° S &nbsp;·&nbsp; 17° W – 51° E</p>
+        </div>
+        <span class="miniglobe">{{mini:africa}}</span>
+      </header>
+
+      <div class="sheet-block">
+        <p class="eyebrow">Your mastery <span class="muted">31 of 54 mastered</span></p>
+        <div class="mbar mbar--lg" role="img" aria-label="31 mastered, 9 familiar, 8 learning, 6 new">
+          <i class="m3" style="--n:31"></i><i class="m2" style="--n:9"></i><i class="m1" style="--n:8"></i><i style="--n:6"></i>
+        </div>
+        <dl class="breakdown">
+          <div><dd class="num">31</dd><dt><i class="swatch m3"></i>Mastered</dt></div>
+          <div><dd class="num">9</dd><dt><i class="swatch m2"></i>Familiar</dt></div>
+          <div><dd class="num">8</dd><dt><i class="swatch m1"></i>Learning</dt></div>
+          <div><dd class="num">6</dd><dt><i class="swatch"></i>New</dt></div>
+        </dl>
+      </div>
+
+      <div class="sheet-block sheet-block--bests">
+        <p class="eyebrow">Personal bests</p>
+        <table class="bests">
+          <thead><tr><th scope="col">Difficulty</th><th scope="col">Best</th><th scope="col">Time</th><th scope="col">Accuracy</th><th scope="col">Games</th></tr></thead>
+          <tbody>
+            <tr class="is-current"><th scope="row">Normal</th><td class="is-strong">49 / 54</td><td>4:38</td><td>91%</td><td>14</td></tr>
+            <tr><th scope="row">Hard</th><td class="is-strong">47 / 54</td><td>5:03</td><td>87%</td><td>6</td></tr>
+            <tr class="is-empty"><th scope="row">Uncharted</th><td>—</td><td>—</td><td>—</td><td>0</td></tr>
+          </tbody>
+        </table>
+        <p class="sheet-note">Last played Saturday, 14 November · 20 games in all</p>
+      </div>
+    </div>
+
+    <div class="sheet-play">
+      <div>
+        <p class="eyebrow" style="margin-bottom:12px">Ways to play</p>
+        <div class="modes" role="radiogroup" aria-label="Ways to play">
+          <button class="mode" role="radio" aria-checked="true">
+            <span class="mode-icon"><svg class="icon"><use href="#i-play"/></svg></span>
+            <span><strong>Play</strong><span>All 54 countries, in random order.</span></span>
+            <span class="radio"></span>
+          </button>
+          <button class="mode" role="radio" aria-checked="false">
+            <span class="mode-icon"><svg class="icon"><use href="#i-focus"/></svg></span>
+            <span><strong>Focus Practice <i class="count" style="font-style:normal">7</i></strong><span>Only the seven you missed last time.</span></span>
+            <span class="radio"></span>
+          </button>
+          <button class="mode" role="radio" aria-checked="false">
+            <span class="mode-icon"><svg class="icon"><use href="#i-learn"/></svg></span>
+            <span><strong>Learn</strong><span>Guided. A few names at a time, then a quiz.</span></span>
+            <span class="radio"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="sheet-options">
+        <div class="option">
+          <p class="eyebrow">Difficulty</p>
+          <div class="seg seg--block" role="radiogroup" aria-label="Difficulty">
+            <button role="radio" aria-checked="true">Normal</button>
+            <button role="radio" aria-checked="false">Hard</button>
+            <button role="radio" aria-checked="false">Uncharted</button>
+          </div>
+        </div>
+        <div class="option">
+          <p class="eyebrow">Map</p>
+          <div class="seg seg--block" role="radiogroup" aria-label="Map style">
+            <button role="radio" aria-checked="true"><svg class="icon icon--sm"><use href="#i-map"/></svg>Chart</button>
+            <button role="radio" aria-checked="false"><svg class="icon icon--sm"><use href="#i-sat"/></svg>Satellite</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-start">
+        <a class="btn btn--primary btn--xl btn--block" href="#game">Start <span class="btn-count">· 54 countries</span><svg class="icon"><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 3. Game ===== -->
+<section data-screen="game" class="game">
+  <div class="stage">
+    <div class="globe globe--game">
+      {{globe:game}}
+      {{labels:game}}
+    </div>
+    <p class="stage-meta"><span>View 8° N, 14° E</span><span>Zoom 1.9×</span></p>
+  </div>
+
+  <header class="gamebar">
+    <div class="gamebar-left">
+      <a class="icon-btn" href="#home" aria-label="Leave this game"><svg class="icon icon--lg"><use href="#i-back"/></svg></a>
+      <div class="gamebar-title">
+        <strong>Africa</strong>
+        <span class="tag">Normal</span>
+        <span class="gamebar-sub">23 of 54</span>
+      </div>
+    </div>
+    <div class="gamebar-progress" aria-label="Progress"><span class="num">23</span><span>of 54</span></div>
+    <dl class="gamebar-stats">
+      <div><dt>Score</dt><dd class="num">21</dd></div>
+      <div><dt>Time</dt><dd class="num">3:07</dd></div>
+    </dl>
+    <div class="gamebar-track" role="progressbar" aria-valuemin="0" aria-valuemax="54" aria-valuenow="22"><i style="width:40.700%"></i></div>
+  </header>
+
+  <div class="prompt glass">
+    <span class="eyebrow">Find on the globe<i>·</i><span class="prompt-try">Second try</span></span>
+    <strong class="prompt-name">Burkina Faso</strong>
+  </div>
+
+  <div class="toast" role="status">
+    <span class="toast-icon"><svg class="icon"><use href="#i-close"/></svg></span>
+    <span>Not quite — that’s <b>Mali</b></span>
+  </div>
+
+  <div class="mapctl">
+    <div class="mapctl-group glass">
+      <button aria-label="Zoom in"><svg class="icon"><use href="#i-plus"/></svg></button>
+      <button aria-label="Zoom out"><svg class="icon"><use href="#i-minus"/></svg></button>
+      <button aria-label="Reset view"><svg class="icon"><use href="#i-target"/></svg></button>
+    </div>
+    <button class="mapctl-solo glass" aria-label="Switch to satellite map"><svg class="icon"><use href="#i-layers"/></svg></button>
+  </div>
+
+  <div class="game-legend">
+    <span><i style="background:var(--g-found)"></i>Found</span>
+    <span><i style="background:var(--g-second)"></i>Second try</span>
+    <span><i style="background:var(--g-missed)"></i>Missed</span>
+  </div>
+
+  <button class="skip glass">Skip <kbd>S</kbd></button>
+</section>
+
+<!-- ===== 4. Results ===== -->
+<section data-screen="results">
+  <div class="results-bar">
+    <a class="btn btn--ghost" href="#home"><svg class="icon"><use href="#i-back"/></svg>Home</a>
+    <span class="eyebrow">Africa · Normal<span class="x"> · 16 Nov 2026</span></span>
+    <button class="btn btn--ghost"><svg class="icon"><use href="#i-share"/></svg>Share</button>
+  </div>
+
+  <div class="results">
+    <div class="results-hero">
+      <span class="badge-record"><svg class="icon"><use href="#i-star"/></svg>New personal best</span>
+      <div class="score-ring" role="img" aria-label="51 of 54 found: 47 first try, 4 second try, 3 missed">
+        <svg viewBox="0 0 120 120">
+          <circle class="sr-track" cx="60" cy="60" r="54" pathLength="540"/>
+          <circle class="sr-good" cx="60" cy="60" r="54" pathLength="540" stroke-dasharray="466 540" stroke-dashoffset="-2"/>
+          <circle class="sr-second" cx="60" cy="60" r="54" pathLength="540" stroke-dasharray="36 540" stroke-dashoffset="-472"/>
+          <circle class="sr-bad" cx="60" cy="60" r="54" pathLength="540" stroke-dasharray="26 540" stroke-dashoffset="-512"/>
+        </svg>
+        <div class="score-ring-label"><span class="num">51</span><span>of 54 found</span></div>
+      </div>
+      <h1 class="display-l">Seasoned Navigator</h1>
+      <p>All but three of Africa, and 26 seconds faster than your last best.</p>
+      <div class="results-actions">
+        <a class="btn btn--primary" href="#game">Practice these <span class="btn-count">7</span></a>
+        <a class="btn btn--secondary" href="#game"><svg class="icon"><use href="#i-replay"/></svg>Play again</a>
+        <div class="results-actions-row">
+          <a class="btn btn--ghost" href="#explore"><svg class="icon"><use href="#i-globe"/></svg>View on the globe</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-detail">
+      <dl class="outcomes">
+        <div><dd class="num">47</dd><dt><i class="dot dot--good"></i>First try</dt><small>87%<span class="x"> accuracy</span></small></div>
+        <div><dd class="num">4</dd><dt><i class="dot dot--second"></i>Second try</dt><small>half points</small></div>
+        <div><dd class="num">3</dd><dt><i class="dot dot--bad"></i>Missed</dt><small>1 skipped</small></div>
+        <div><dd class="num">4:12</dd><dt><svg class="icon icon--sm"><use href="#i-clock"/></svg>Time</dt><small><b>−0:26</b><span class="x"> vs best</span></small></div>
+      </dl>
+
+      <div class="gain">
+        <span class="num gain-num">+6</span>
+        <div class="gain-text"><strong>mastered in Africa</strong><span>31 → 37 of 54</span></div>
+        <div class="mbar" role="img" aria-label="37 mastered, 6 of them new today">
+          <i class="m3" style="--n:31"></i><i class="m3 is-new" style="--n:6"></i><i class="m2" style="--n:7"></i><i class="m1" style="--n:7"></i><i style="--n:3"></i>
+        </div>
+      </div>
+
+      <div class="revisit-head">
+        <h3>Places to revisit</h3>
+        <a class="link" href="#explore">View on the globe<svg class="icon"><use href="#i-chevron"/></svg></a>
+      </div>
+      <ul class="revisit">
+        <li><span class="mark mark--bad"><svg class="icon"><use href="#i-close"/></svg></span><div><strong>Burkina Faso</strong><small>You chose Mali, then Ghana</small></div><span class="tries" role="img" aria-label="1 of the last 5 tries correct"><span class="tries-label">last 5</span><i class="n"></i><i class="y"></i><i class="n"></i><i class="n"></i><i class="n"></i></span><span class="level-pill"><i class="swatch m1"></i>Learning</span></li>
+        <li><span class="mark mark--bad"><svg class="icon"><use href="#i-close"/></svg></span><div><strong>Eswatini</strong><small>You chose Lesotho twice</small></div><span class="tries" role="img" aria-label="2 of the last 5 tries correct"><span class="tries-label">last 5</span><i class="n"></i><i class="n"></i><i class="y"></i><i class="n"></i><i class="y"></i></span><span class="level-pill"><i class="swatch m1"></i>Learning</span></li>
+        <li><span class="mark mark--bad"><svg class="icon"><use href="#i-close"/></svg></span><div><strong>Guinea-Bissau</strong><small>Skipped</small></div><span class="tries" role="img" aria-label="0 of the last 2 tries correct"><span class="tries-label">last 2</span><i class="n"></i><i class="n"></i></span><span class="level-pill"><i class="swatch"></i>New</span></li>
+        <li><span class="mark mark--second">2</span><div><strong>Togo</strong><small>Second try, after Benin</small></div><span class="tries" role="img" aria-label="3 of the last 5 tries correct"><span class="tries-label">last 5</span><i class="y"></i><i class="y"></i><i class="n"></i><i class="y"></i><i class="n"></i></span><span class="level-pill"><i class="swatch m2"></i>Familiar</span></li>
+        <li><span class="mark mark--second">2</span><div><strong>Benin</strong><small>Second try, after Togo</small></div><span class="tries" role="img" aria-label="3 of the last 5 tries correct"><span class="tries-label">last 5</span><i class="y"></i><i class="n"></i><i class="y"></i><i class="y"></i><i class="n"></i></span><span class="level-pill"><i class="swatch m2"></i>Familiar</span></li>
+        <li><span class="mark mark--second">2</span><div><strong>Djibouti</strong><small>Second try, after Eritrea</small></div><span class="tries" role="img" aria-label="2 of the last 4 tries correct"><span class="tries-label">last 4</span><i class="n"></i><i class="y"></i><i class="y"></i><i class="n"></i></span><span class="level-pill"><i class="swatch m1"></i>Learning</span></li>
+        <li><span class="mark mark--second">2</span><div><strong>Lesotho</strong><small>Second try, after Eswatini</small></div><span class="tries" role="img" aria-label="3 of the last 5 tries correct"><span class="tries-label">last 5</span><i class="y"></i><i class="y"></i><i class="y"></i><i class="n"></i><i class="n"></i></span><span class="level-pill"><i class="swatch m2"></i>Familiar</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 5. Stats ===== -->
+<section data-screen="stats">
+  <div class="page">
+    <header class="page-head">
+      <div>
+        <p class="eyebrow">Your atlas</p>
+        <h1 class="display-xl" style="font-size:64px">Statistics</h1>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Period">
+        <button role="radio" aria-checked="true">12 weeks</button>
+        <button role="radio" aria-checked="false">This year</button>
+        <button role="radio" aria-checked="false">All time</button>
+      </div>
+    </header>
+
+    <dl class="kpis">
+      <div class="kpi">
+        <dt class="eyebrow">Places mastered</dt>
+        <dd class="num">477<span class="of">of 1,263</span></dd>
+        <div class="mbar" role="img" aria-label="477 mastered, 241 familiar, 229 learning, 316 new"><i class="m3" style="--n:477"></i><i class="m2" style="--n:241"></i><i class="m1" style="--n:229"></i><i style="--n:316"></i></div>
+        <span class="kpi-sub"><b>+18</b> this week</span>
+      </div>
+      <div class="kpi"><dt class="eyebrow">First-try accuracy</dt><dd class="num">87<small>%</small></dd><span class="kpi-sub"><b>+3 pts</b> on the 12 weeks before</span></div>
+      <div class="kpi"><dt class="eyebrow">Games</dt><dd class="num">148</dd><span class="kpi-sub">9 this week</span></div>
+      <div class="kpi"><dt class="eyebrow">Time studied</dt><dd class="num">9<small>h</small> 42<small>m</small></dd><span class="kpi-sub">about 7 minutes a day</span></div>
+      <div class="kpi"><dt class="eyebrow">Day streak</dt><dd class="num">12</dd><span class="kpi-sub">longest 23 days</span></div>
+    </dl>
+
+    <div class="panels">
+      <article class="panel panel--7">
+        <header class="panel-head">
+          <div><h2>Mastery by region</h2><p>How well each place has stuck.</p></div>
+          <div class="legend"><span><i class="swatch m3"></i>Mastered</span><span><i class="swatch m2"></i>Familiar</span><span><i class="swatch m1"></i>Learning</span><span><i class="swatch"></i>New</span></div>
+        </header>
+        <ul class="regions">
+{{regions}}
+        </ul>
+      </article>
+
+      <article class="panel panel--5">
+        <header class="panel-head">
+          <div><h2>Mastery globe</h2><p>The world, shaded by what you know.</p></div>
+        </header>
+        <div class="mglobe">
+          <span class="miniglobe">{{globe:mastery}}</span>
+          <div class="mglobe-foot">
+            <span class="kpi-sub"><b style="color:var(--text)">119</b> of 183 countries mastered</span>
+            <a class="link" href="#explore">Open in Explore<svg class="icon"><use href="#i-chevron"/></svg></a>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel panel--5">
+        <header class="panel-head">
+          <div><h2>Activity</h2><p>Minutes studied each day, last 12 weeks.</p></div>
+        </header>
+        <div class="cal">
+          <div class="cal-months">{{calMonths}}</div>
+          <div class="cal-days"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span>Sun</span></div>
+          <div class="cal-grid" role="img" aria-label="{{calSummary}}">{{calCells}}</div>
+        </div>
+        <div class="cal-foot">
+          <span><b>{{calActive}}</b> active days · <b>12</b>-day streak</span>
+          <span class="heat-legend"><span>None</span><i></i><i class="h1"></i><i class="h2"></i><i class="h3"></i><i class="h4"></i><span>20+ min</span></span>
+        </div>
+      </article>
+
+      <article class="panel panel--7">
+        <header class="panel-head">
+          <div><h2>Pin the City</h2><p>Average distance from the true location, in kilometers. Shorter is better.</p></div>
+        </header>
+        <ul class="bars">
+          <li class="is-all"><b>All cities</b><div class="bars-track"><i style="--v:49.500"></i><span>198 <small>km</small></span></div></li>
+          <li><b>Europe</b><div class="bars-track"><i style="--v:21"></i><span>84</span></div></li>
+          <li><b>North America</b><div class="bars-track"><i style="--v:31.500"></i><span>126</span></div></li>
+          <li><b>Asia</b><div class="bars-track"><i style="--v:53"></i><span>212</span></div></li>
+          <li><b>South America</b><div class="bars-track"><i style="--v:60"></i><span>240</span></div></li>
+          <li><b>Africa</b><div class="bars-track"><i style="--v:77.500"></i><span>310</span></div></li>
+          <li><b>Oceania</b><div class="bars-track"><i style="--v:86"></i><span>344</span></div></li>
+        </ul>
+        <div class="bars-axis" aria-hidden="true"><span style="left:0">0</span><span style="left:25%">100</span><span style="left:50%">200</span><span style="left:75%">300</span><span style="left:100%">400</span></div>
+      </article>
+
+      <article class="panel panel--5">
+        <header class="panel-head">
+          <div><h2>Needs work</h2><p>Your eight weakest places, by first-try accuracy.</p></div>
+        </header>
+        <ol class="weak">
+          <li><span class="weak-rank">1</span><div><strong>Kyrgyzstan</strong><small>Asia · 1 of 5</small></div><div class="meter"><i style="--v:20"></i></div><span class="weak-pct">20%</span></li>
+          <li><span class="weak-rank">2</span><div><strong>Burkina Faso</strong><small>Africa · 1 of 4</small></div><div class="meter"><i style="--v:25"></i></div><span class="weak-pct">25%</span></li>
+          <li><span class="weak-rank">3</span><div><strong>Guinea-Bissau</strong><small>Africa · 1 of 4</small></div><div class="meter"><i style="--v:25"></i></div><span class="weak-pct">25%</span></li>
+          <li><span class="weak-rank">4</span><div><strong>Chhattisgarh</strong><small>States of India · 1 of 3</small></div><div class="meter"><i style="--v:33"></i></div><span class="weak-pct">33%</span></li>
+          <li><span class="weak-rank">5</span><div><strong>Eswatini</strong><small>Africa · 2 of 5</small></div><div class="meter"><i style="--v:40"></i></div><span class="weak-pct">40%</span></li>
+          <li><span class="weak-rank">6</span><div><strong>Suriname</strong><small>South America · 2 of 5</small></div><div class="meter"><i style="--v:40"></i></div><span class="weak-pct">40%</span></li>
+          <li><span class="weak-rank">7</span><div><strong>Montpelier</strong><small>US capitals · 3 of 7</small></div><div class="meter"><i style="--v:43"></i></div><span class="weak-pct">43%</span></li>
+          <li><span class="weak-rank">8</span><div><strong>Brunei</strong><small>Asia · 3 of 6</small></div><div class="meter"><i style="--v:50"></i></div><span class="weak-pct">50%</span></li>
+        </ol>
+        <div class="panel-foot"><span>First tries, all modes</span><a class="btn btn--primary" href="#game">Practice these 8</a></div>
+      </article>
+
+      <article class="panel panel--7">
+        <header class="panel-head panel-head--row">
+          <div><h2>Personal records</h2><p>Your best run on each level and difficulty.</p></div>
+          <a class="link" href="#stats">All 23<svg class="icon"><use href="#i-chevron"/></svg></a>
+        </header>
+        <table class="records">
+          <thead><tr><th scope="col">Level</th><th scope="col">Difficulty</th><th scope="col">Best</th><th scope="col">Time</th><th scope="col">Accuracy</th><th scope="col">Games</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">The Whole World</th><td>Normal</td><td class="is-strong">171 / 183</td><td data-acc="91%" data-games="9">14:52</td><td>91%</td><td>9</td></tr>
+            <tr><th scope="row">Africa</th><td>Normal</td><td class="is-strong">49 / 54</td><td data-acc="91%" data-games="14">4:38</td><td>91%</td><td>14</td></tr>
+            <tr><th scope="row">Africa</th><td>Hard</td><td class="is-strong">47 / 54</td><td data-acc="87%" data-games="6">5:03</td><td>87%</td><td>6</td></tr>
+            <tr><th scope="row">Europe</th><td>Hard</td><td class="is-strong">39 / 39<svg class="star" viewBox="0 0 24 24" aria-label="Clean sweep"><use href="#i-star"/></svg></td><td data-acc="100%" data-games="11">2:31</td><td>100%</td><td>11</td></tr>
+            <tr><th scope="row">Europe</th><td>Uncharted</td><td class="is-strong">33 / 39</td><td data-acc="82%" data-games="3">4:47</td><td>82%</td><td>3</td></tr>
+            <tr><th scope="row">The Fifty States</th><td>Normal</td><td class="is-strong">50 / 50<svg class="star" viewBox="0 0 24 24" aria-label="Clean sweep"><use href="#i-star"/></svg></td><td data-acc="100%" data-games="18">1:48</td><td>100%</td><td>18</td></tr>
+            <tr><th scope="row">Provinces of Canada</th><td>Hard</td><td class="is-strong">13 / 13<svg class="star" viewBox="0 0 24 24" aria-label="Clean sweep"><use href="#i-star"/></svg></td><td data-acc="100%" data-games="7">0:38</td><td>100%</td><td>7</td></tr>
+            <tr><th scope="row">States of India</th><td>Normal</td><td class="is-strong">21 / 36</td><td data-acc="58%" data-games="5">6:10</td><td>58%</td><td>5</td></tr>
+            <tr><th scope="row">World Capitals</th><td>Normal</td><td class="is-strong">141 / 183</td><td data-acc="77%" data-games="4">16:04</td><td>77%</td><td>4</td></tr>
+          </tbody>
+        </table>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 6. Explore ===== -->
+<section data-screen="explore" class="explore">
+  <div class="stage">
+    <div class="globe globe--explore">
+      {{globe:explore}}
+      {{labels:explore}}
+    </div>
+  </div>
+
+  <div class="explore-panel">
+    <label class="search glass">
+      <svg class="icon"><use href="#i-search"/></svg>
+      <input type="search" placeholder="Search countries, capitals, states" aria-label="Search places" />
+      <kbd>/</kbd>
+    </label>
+
+    <article class="place glass" aria-labelledby="place-name">
+      <span class="place-grabber" aria-hidden="true"></span>
+      <header class="place-head">
+        <div>
+          <p class="eyebrow">Country · 9.19° S 75.02° W</p>
+          <h2 class="display-l" id="place-name">Peru</h2>
+          <p class="place-native">República del Perú</p>
+        </div>
+        <span class="flag" role="img" aria-label="Flag of Peru">
+          <svg viewBox="0 0 3 2" preserveAspectRatio="none"><rect width="3" height="2" fill="#fff"/><rect width="1" height="2" fill="#d91023"/><rect x="2" width="1" height="2" fill="#d91023"/></svg>
+        </span>
+      </header>
+
+      <dl class="facts">
+        <div><dt>Capital</dt><dd>Lima</dd></div>
+        <div><dt>Continent</dt><dd>South America</dd></div>
+        <div><dt>Area</dt><dd>1,285,216 km²<small>19th largest</small></dd></div>
+      </dl>
+
+      <div class="place-block">
+        <p class="eyebrow">Neighbors</p>
+        <div class="chips">
+          <a class="chip" href="#explore">Ecuador</a>
+          <a class="chip" href="#explore">Colombia</a>
+          <a class="chip" href="#explore">Brazil</a>
+          <a class="chip" href="#explore">Bolivia</a>
+          <a class="chip" href="#explore">Chile</a>
+        </div>
+      </div>
+
+      <div class="place-block place-block--mastery">
+        <p class="eyebrow">Your mastery</p>
+        <div class="mastery-row">
+          <strong>Familiar</strong>
+          <span class="steps" role="img" aria-label="Step 2 of 3"><i class="on1"></i><i class="on2"></i><i></i></span>
+          <p>Found first try 5 of 7 times. Next review in 4 days.</p>
+        </div>
+        <div class="skills">
+          <span class="skill"><span class="mark mark--good"><svg class="icon"><use href="#i-check"/></svg></span>Globe</span>
+          <span class="skill"><span class="mark mark--good"><svg class="icon"><use href="#i-check"/></svg></span>Capital</span>
+          <span class="skill skill--todo"><span class="mark"></span>Flag</span>
+        </div>
+      </div>
+
+      <a class="btn btn--secondary btn--block place-cta" href="#sheet">Practice South America<svg class="icon"><use href="#i-arrow"/></svg></a>
+    </article>
+  </div>
+
+  <div class="explore-tools">
+    <label class="toggle-chip glass">Show names<span class="switch" role="switch" aria-checked="true" tabindex="0"></span></label>
+  </div>
+
+  <div class="mapctl">
+    <div class="mapctl-group glass">
+      <button aria-label="Zoom in"><svg class="icon"><use href="#i-plus"/></svg></button>
+      <button aria-label="Zoom out"><svg class="icon"><use href="#i-minus"/></svg></button>
+      <button aria-label="Reset view"><svg class="icon"><use href="#i-target"/></svg></button>
+    </div>
+    <button class="mapctl-solo glass" aria-label="Switch to satellite map"><svg class="icon"><use href="#i-layers"/></svg></button>
+  </div>
+</section>
+
+<!-- ===== 7. Settings ===== -->
+<section data-screen="settings">
+  <div class="page page--narrow">
+    <header class="page-head">
+      <div>
+        <p class="eyebrow">Preferences</p>
+        <h1 class="display-xl" style="font-size:64px">Settings</h1>
+      </div>
+    </header>
+
+    <section class="settings-group">
+      <header><h2>Appearance</h2><p>Two charts of the same world.</p></header>
+      <div class="settings-card">
+        <div class="setting setting--stack">
+          <div class="setting-text"><strong>Theme</strong></div>
+          <div class="themes" role="radiogroup" aria-label="Theme">
+            <button class="theme-tile" role="radio" aria-checked="false" data-set-theme="system"><span class="theme-prev theme-prev--system"></span><span class="theme-name">System<span class="radio"></span></span></button>
+            <button class="theme-tile" role="radio" aria-checked="true" data-set-theme="light"><span class="theme-prev"></span><span class="theme-name">Parchment<span class="radio"></span></span></button>
+            <button class="theme-tile" role="radio" aria-checked="false" data-set-theme="dark"><span class="theme-prev theme-prev--dark"></span><span class="theme-name">Night Chart<span class="radio"></span></span></button>
+          </div>
+        </div>
+        <div class="setting">
+          <div class="setting-text"><strong>Reduce motion</strong><span>Jump to places instead of flying there, and skip screen transitions.</span></div>
+          <span class="switch" role="switch" aria-checked="false" tabindex="0" aria-label="Reduce motion"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-group">
+      <header><h2>Play</h2><p>Defaults for every level. You can still change them when you start one.</p></header>
+      <div class="settings-card">
+        <div class="setting setting--wrap">
+          <div class="setting-text"><strong>Difficulty</strong></div>
+          <div class="seg" role="radiogroup" aria-label="Difficulty">
+            <button role="radio" aria-checked="true">Normal</button>
+            <button role="radio" aria-checked="false">Hard</button>
+            <button role="radio" aria-checked="false">Uncharted</button>
+          </div>
+          <ul class="difflist" style="grid-column:1/-1">
+            <li><b>Normal</b><span>Places you find stay marked on the globe.</span></li>
+            <li><b>Hard</b><span>Nothing stays marked. Every answer is from memory.</span></li>
+            <li><b>Uncharted</b><span>Satellite imagery with no borders at all.</span></li>
+          </ul>
+        </div>
+        <div class="setting setting--wrap">
+          <div class="setting-text"><strong>Map style</strong><span>Satellite needs a connection. Imagery © Esri.</span></div>
+          <div class="seg" role="radiogroup" aria-label="Map style">
+            <button role="radio" aria-checked="true"><svg class="icon icon--sm"><use href="#i-map"/></svg>Chart</button>
+            <button role="radio" aria-checked="false"><svg class="icon icon--sm"><use href="#i-sat"/></svg>Satellite</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-group">
+      <header><h2>Sync</h2><p>Your records live on this device. Sync keeps a copy so your other devices match.</p></header>
+      <div class="settings-card">
+        <div class="sync-linked">
+          <div class="setting">
+            <div class="sync-id">
+              <span class="sync-avatar"><svg class="icon icon--lg"><use href="#i-cloud"/></svg></span>
+              <div><strong>Syncing as <em>harbor-finch</em></strong><span><i class="dot dot--good"></i>Up to date · last synced 2 minutes ago</span></div>
+            </div>
+            <button class="btn btn--secondary">Sync now</button>
+          </div>
+          <div class="setting setting--wrap">
+            <div class="setting-text"><strong>Sync code</strong><span>Enter this on another device to link it. Anyone with the code can read and change your records.</span></div>
+            <div class="setting-actions">
+              <span class="code">•••• •••• •••• 7f3a</span>
+              <button class="icon-btn" aria-label="Copy sync code"><svg class="icon"><use href="#i-copy"/></svg></button>
+            </div>
+          </div>
+          <div class="setting">
+            <div class="setting-text"><strong>This device</strong><span>Stop syncing here. Your records stay on this device.</span></div>
+            <button class="btn btn--ghost">Unlink</button>
+          </div>
+        </div>
+        <div class="sync-setup">
+          <h3>Keep your atlas on every device</h3>
+          <p>Create a sync code and enter it on your phone or laptop. No account, no password — the code is the key. The app keeps working offline either way.</p>
+          <div class="setting-actions">
+            <button class="btn btn--primary">Create a sync code</button>
+            <button class="btn btn--secondary">I have a code</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-group">
+      <header><h2>Data</h2><p>Careful: this one can’t be undone.</p></header>
+      <div class="settings-card">
+        <div class="setting setting--wrap">
+          <div class="setting-text"><strong>Reset progress</strong><span>Clears records, mastery, streaks and Daily Five history on this device.</span></div>
+          <button class="btn btn--danger">Reset progress…</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="about">
+      <span>Cartographer’s Atlas · version 3.0</span>
+      <span>Borders: Natural Earth · Imagery: Esri World Imagery</span>
+    </footer>
+  </div>
+</section>
+
+<!-- ===== App chrome: tab bar (phone) ===== -->
+<nav class="tabbar" aria-label="Primary">
+  <a href="#home" data-nav="home"><svg class="icon"><use href="#i-home"/></svg>Home</a>
+  <a href="#explore" data-nav="explore"><svg class="icon"><use href="#i-globe"/></svg>Explore</a>
+  <a href="#stats" data-nav="stats"><svg class="icon"><use href="#i-stats"/></svg>Stats</a>
+  <a href="#settings" data-nav="settings"><svg class="icon"><use href="#i-settings"/></svg>Settings</a>
+</nav>
