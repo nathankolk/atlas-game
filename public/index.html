@@ -971,6 +971,7 @@
   .bests .is-current th::after { content: ''; display: inline-block; width: 5px; height: 5px; margin-left: 8px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
   .sheet-note { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--text-3); }
 
+  .sheet-play > div > .eyebrow { margin-bottom: 12px; }
   .modes { display: grid; gap: 8px; }
   .mode {
     display: flex;
@@ -999,399 +1000,6 @@
   .option { display: grid; gap: 8px; }
   .option-note { font-size: 12.5px; color: var(--text-3); }
   .sheet-options { display: grid; gap: 16px; }
-
-  /* ---------- MENU SCREEN ---------- */
-  #menu-screen {
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
-    overflow-y: auto;
-  }
-
-  .menu-inner {
-    max-width: 1100px;
-    width: 100%;
-    text-align: center;
-  }
-
-  .title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(48px, 8vw, 92px);
-    font-weight: 500;
-    letter-spacing: -0.02em;
-    line-height: 0.95;
-    color: var(--ink);
-    opacity: 0;
-    animation: fadeUp 0.8s 0.2s ease forwards;
-  }
-
-  .title em {
-    font-style: italic;
-    font-weight: 400;
-    color: var(--sepia);
-  }
-
-  .subtitle {
-    font-family: 'Crimson Pro', serif;
-    font-size: clamp(14px, 1.5vw, 17px);
-    font-weight: 300;
-    font-style: italic;
-    color: var(--ink-faded);
-    margin-top: 14px;
-    letter-spacing: 0.04em;
-    opacity: 0;
-    animation: fadeUp 0.8s 0.3s ease forwards;
-  }
-
-  .compass {
-    margin: 28px auto 32px;
-    width: 52px;
-    height: 52px;
-    opacity: 0;
-    animation: fadeUp 0.8s 0.4s ease forwards, spinSlow 60s linear infinite 0.4s;
-  }
-
-  .section-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    margin: 4px 0 24px;
-    opacity: 0;
-    animation: fadeUp 0.8s 0.5s ease forwards;
-  }
-
-  .section-label span {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 11px;
-    letter-spacing: 0.4em;
-    text-transform: uppercase;
-    color: var(--sepia);
-  }
-
-  .section-label::before,
-  .section-label::after {
-    content: '';
-    width: 40px;
-    height: 1px;
-    background: var(--sepia);
-    opacity: 0.5;
-  }
-
-  /* Difficulty picker + satellite switch */
-  .mode-toggle-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: stretch;
-    gap: 10px;
-    margin: 0 auto 22px;
-    opacity: 0;
-    animation: fadeUp 0.7s 0.52s ease forwards;
-  }
-
-  .mode-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    padding: 10px 18px;
-    background: rgba(255, 250, 235, 0.35);
-    border: 1px dashed var(--land-border);
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    user-select: none;
-    font-family: inherit;
-  }
-
-  .mode-toggle:hover {
-    background: rgba(255, 250, 235, 0.6);
-    border-color: var(--sepia);
-  }
-
-  .mode-toggle input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-    pointer-events: none;
-  }
-
-  .switch-box {
-    flex: 0 0 auto;
-    position: relative;
-    width: 42px;
-    height: 22px;
-    border-radius: 11px;
-    background: rgba(107, 68, 35, 0.25);
-    transition: background 0.25s ease;
-  }
-
-  .switch-knob {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--parchment);
-    border: 1px solid var(--sepia);
-    transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
-  }
-
-  .mode-toggle input:checked ~ .switch-box {
-    background: var(--ink);
-  }
-
-  .mode-toggle input:checked ~ .switch-box .switch-knob {
-    transform: translateX(20px);
-    background: var(--gold-bright);
-    border-color: var(--gold-bright);
-  }
-
-  .switch-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    text-align: left;
-  }
-
-  .switch-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 16px;
-    font-style: italic;
-    font-weight: 500;
-    color: var(--ink);
-    letter-spacing: 0.02em;
-  }
-
-  .switch-desc {
-    font-family: 'Crimson Pro', serif;
-    font-size: 12px;
-    color: var(--ink-faded);
-    letter-spacing: 0.01em;
-  }
-
-  /* Satellite switch is forced on (and locked) in Uncharted */
-  .mode-toggle.is-locked { cursor: default; opacity: 0.6; }
-  .mode-toggle.is-locked:hover {
-    background: rgba(255, 250, 235, 0.35);
-    border-color: var(--land-border);
-  }
-
-  /* Three-way difficulty selector, in the same dashed frame as the switch */
-  .difficulty-picker {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 8px 16px 9px;
-    background: rgba(255, 250, 235, 0.35);
-    border: 1px dashed var(--land-border);
-    border-radius: 2px;
-  }
-
-  .difficulty-segs {
-    display: inline-flex;
-    border: 1px solid rgba(107, 68, 35, 0.35);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .difficulty-seg {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 15px;
-    font-style: italic;
-    font-weight: 500;
-    color: var(--ink);
-    background: transparent;
-    border: none;
-    border-left: 1px solid rgba(107, 68, 35, 0.25);
-    padding: 3px 14px;
-    cursor: pointer;
-    letter-spacing: 0.02em;
-    transition: background 0.2s ease, color 0.2s ease;
-  }
-
-  .difficulty-seg:first-child { border-left: none; }
-  .difficulty-seg:hover { background: rgba(255, 250, 235, 0.7); }
-
-  .difficulty-seg.active,
-  .difficulty-seg.active:hover {
-    background: var(--ink);
-    color: var(--parchment);
-  }
-
-  .difficulty-seg.active[data-difficulty="uncharted"] { color: var(--gold-bright); }
-
-  .difficulty-picker .switch-desc { text-align: center; }
-
-  .regions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 14px;
-    max-width: 980px;
-    margin: 0 auto;
-  }
-
-  .region-card {
-    background: rgba(255,250,235,0.35);
-    border: 1px solid var(--land-border);
-    border-radius: 2px;
-    padding: 22px 20px 20px;
-    cursor: pointer;
-    transition: all 0.35s cubic-bezier(0.2,0.8,0.2,1);
-    text-align: left;
-    position: relative;
-    overflow: hidden;
-    opacity: 0;
-    animation: fadeUp 0.7s ease forwards;
-    font-family: inherit;
-    color: inherit;
-  }
-
-  .region-card:nth-child(1) { animation-delay: 0.55s; }
-  .region-card:nth-child(2) { animation-delay: 0.62s; }
-  .region-card:nth-child(3) { animation-delay: 0.69s; }
-  .region-card:nth-child(4) { animation-delay: 0.76s; }
-  .region-card:nth-child(5) { animation-delay: 0.83s; }
-  .region-card:nth-child(6) { animation-delay: 0.90s; }
-  .region-card:nth-child(7) { animation-delay: 0.97s; }
-
-  .region-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, transparent 0%, rgba(200,149,60,0.12) 100%);
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    pointer-events: none;
-  }
-
-  .region-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--sepia);
-    background: rgba(255,250,235,0.6);
-    box-shadow: 0 6px 20px rgba(107,68,35,0.15);
-  }
-
-  .region-card:hover::before {
-    opacity: 1;
-  }
-
-  .region-card.featured {
-    grid-column: 1 / -1;
-    background: linear-gradient(135deg, rgba(31,42,58,0.92) 0%, rgba(58,74,96,0.92) 100%);
-    border: 1px solid var(--gold);
-    color: var(--parchment);
-    padding: 28px 28px 26px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-  }
-
-  .region-card.featured::before {
-    background: linear-gradient(135deg, rgba(200,149,60,0.2) 0%, transparent 60%);
-  }
-
-  .region-card.featured:hover {
-    border-color: var(--gold-bright);
-    box-shadow: 0 8px 30px rgba(31,42,58,0.3);
-  }
-
-  .featured-left {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-  }
-
-  .featured-mark {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 44px;
-    font-style: italic;
-    font-weight: 500;
-    color: var(--gold);
-    line-height: 1;
-  }
-
-  .region-card .r-name {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 28px;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    line-height: 1.1;
-    margin-bottom: 6px;
-  }
-
-  .region-card .r-subname {
-    font-family: 'Crimson Pro', serif;
-    font-style: italic;
-    font-size: 13px;
-    color: var(--ink-faded);
-    letter-spacing: 0.02em;
-  }
-
-  .region-card.featured .r-subname {
-    color: rgba(241,231,210,0.7);
-  }
-
-  .region-card .r-count {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    color: var(--sepia);
-    margin-top: 14px;
-    padding-top: 10px;
-    border-top: 1px dashed rgba(107,68,35,0.3);
-  }
-
-  .region-card.featured .r-count {
-    color: var(--gold);
-    border-top: 1px dashed rgba(200,149,60,0.4);
-  }
-
-  /* Personal best badge on region cards */
-  .r-best {
-    font-family: 'Crimson Pro', serif;
-    font-size: 12px;
-    color: var(--moss);
-    margin-top: 6px;
-    font-style: italic;
-    letter-spacing: 0.02em;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .r-best::before {
-    content: '★';
-    color: var(--gold);
-    font-style: normal;
-    font-size: 11px;
-  }
-
-  .region-card.featured .r-best {
-    color: var(--gold-bright);
-  }
-
-  .region-card.featured .r-best::before {
-    color: var(--gold-bright);
-  }
-
-  .featured-cta {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 22px;
-    font-style: italic;
-    color: var(--gold);
-    white-space: nowrap;
-    transition: transform 0.3s ease;
-  }
-
-  .region-card.featured:hover .featured-cta {
-    transform: translateX(6px);
-  }
 
   /* ---------- GAME SCREEN ---------- */
   #game-screen {
@@ -2383,46 +1991,6 @@
     color: var(--text-3);
   }
 
-  /* Fresh-vs-focus chooser (frame reuses the sync modal styles) */
-  .focus-choices {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .focus-choice {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 14px 16px;
-    background: var(--surface);
-    border: 1px solid var(--rule-strong);
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .focus-choice:hover {
-    border-color: var(--accent-text);
-    background: rgba(200, 149, 60, 0.12);
-    transform: translateY(-1px);
-  }
-  .focus-choice.focus {
-    border-left: 3px solid var(--accent);
-  }
-  .focus-choice-title {
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 500;
-    color: var(--text);
-    letter-spacing: 0.02em;
-  }
-  .focus-choice-desc {
-    font-family: var(--font-ui);
-    font-size: 13px;
-    color: var(--text-3);
-    margin-top: 3px;
-    line-height: 1.4;
-  }
-
   .results-actions {
     display: flex;
     gap: 14px;
@@ -2431,16 +1999,8 @@
     flex-wrap: wrap;
   }
 
-  /* Animations */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes spinSlow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
+  /* Cormorant sets old-style figures by default; scores read better lined up */
+  .stat-value, .grade-big, .r-stat-value, .best-value { font-variant-numeric: lining-nums; }
 
   /* US mode - choices panel for state → capital */
   .choices-panel {
@@ -2563,22 +2123,6 @@
     stroke-width: 1.5px;
     pointer-events: none;
   }
-  .focus-choice.learn {
-    border-left: 3px solid var(--good);
-  }
-  .focus-reset-link {
-    display: block;
-    margin: 2px auto 0;
-    background: none;
-    border: none;
-    font-family: var(--font-ui);
-    font-size: 13px;
-    font-style: italic;
-    color: var(--text-3);
-    text-decoration: underline;
-    cursor: pointer;
-  }
-
   /* ===== Pin the City ===== */
   #game-screen.pin-mode #world-map { cursor: crosshair; }
   #game-screen.pin-mode .country { cursor: crosshair; }
@@ -2635,15 +2179,6 @@
   /* On satellite, light lines and rings read against dark imagery */
   .map-wrap.sat-on .pin-line { stroke: var(--parchment); }
   .map-wrap.sat-on .pin-truth-ring { stroke: var(--parchment); }
-  .pin-scoring-note {
-    margin: 18px auto 0;
-    max-width: 560px;
-    text-align: center;
-    font-family: var(--font-ui);
-    font-style: italic;
-    font-size: 13px;
-    color: var(--text-3);
-  }
   .pin-weak {
     display: block;
     margin-top: 8px;
@@ -2658,314 +2193,6 @@
   /* US mode backdrop */
   .us-ocean {
     fill: var(--g-ocean-2);
-  }
-
-  /* Section divider between world and US sections on menu */
-  .section-divider {
-    grid-column: 1 / -1;
-    margin: 18px 0 6px;
-  }
-
-  .us-section-label {
-    margin: 4px 0 !important;
-    animation: none !important;
-    opacity: 1 !important;
-  }
-
-  .us-section-label span {
-    color: var(--text) !important;
-    font-size: 12px !important;
-  }
-
-  /* Hierarchical menu: when in a sub-view (continents/us), the big
-     title and compass collapse to give the sub-content room to breathe. */
-  #menu-screen.view-sub .menu-header {
-    transform: scale(0.6);
-  .stat-value, .grade-big, .r-stat-value, .best-value { font-variant-numeric: lining-nums; }
-
-    transform-origin: top center;
-    margin-bottom: -90px;
-    opacity: 0.55;
-    transition: all 0.4s ease;
-    pointer-events: none;
-  }
-
-  #menu-screen .menu-header {
-    transition: all 0.4s ease;
-  }
-
-  /* Sub-menu header strip: back arrow + section title */
-  .submenu-header {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    margin: 8px auto 24px;
-    max-width: 980px;
-    padding: 0 4px;
-    text-align: left;
-    animation: fadeUp 0.5s ease;
-  }
-
-  .back-link {
-    background: none;
-    border: 1px solid var(--text);
-    color: var(--text);
-    padding: 8px 16px;
-    font-family: var(--font-display);
-    font-size: 14px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    border-radius: 1px;
-    flex: 0 0 auto;
-  }
-
-  .back-link:hover {
-    background: var(--text);
-    color: var(--bg);
-  }
-
-  .submenu-title-block {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .submenu-title {
-    font-family: var(--font-display);
-    font-size: 32px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1;
-    letter-spacing: -0.01em;
-  }
-
-  .submenu-subtitle {
-    font-family: var(--font-ui);
-    font-style: italic;
-    font-size: 14px;
-    color: var(--text-3);
-    margin-top: 4px;
-    letter-spacing: 0.02em;
-  }
-
-  /* Daily Five card — the headline, top-of-menu offering */
-  .daily-card {
-    grid-column: 1 / -1;
-    text-align: left;
-    background: linear-gradient(135deg, rgba(31,42,58,0.94) 0%, rgba(58,74,96,0.94) 100%) !important;
-    border: 1px solid var(--accent) !important;
-    color: var(--bg);
-    padding: 22px 26px !important;
-    box-shadow: 0 6px 24px rgba(31,42,58,0.2), inset 0 0 50px rgba(200,149,60,0.08);
-  }
-
-  .daily-card:hover {
-    border-color: var(--accent) !important;
-    box-shadow: 0 8px 32px rgba(31,42,58,0.3), inset 0 0 50px rgba(200,149,60,0.15);
-  }
-
-  .daily-card .r-name {
-    color: var(--bg);
-    font-size: 32px;
-    margin-top: 6px;
-  }
-
-  .daily-card .r-subname {
-    color: rgba(241,231,210,0.7);
-    font-size: 15px;
-  }
-
-  .daily-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .daily-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    background: var(--accent);
-    color: var(--text);
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    border-radius: 1px;
-  }
-
-  .daily-streak {
-    font-family: var(--font-ui);
-    font-size: 13px;
-    color: var(--accent);
-    letter-spacing: 0.04em;
-  }
-
-  .daily-cta {
-    margin-top: 14px;
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 18px;
-    color: var(--accent);
-    text-align: right;
-    transition: transform 0.25s ease;
-  }
-
-  .daily-card.daily-fresh:hover .daily-cta {
-    transform: translateX(4px);
-  }
-
-  /* Already-played state */
-  .daily-card.daily-done {
-    cursor: default;
-  }
-
-  .daily-done-msg {
-    margin-top: 14px;
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 19px;
-    color: var(--accent);
-    text-align: center;
-  }
-
-  .daily-result-grid {
-    margin: 12px 0 8px;
-    text-align: center;
-    font-size: 28px;
-    letter-spacing: 4px;
-    line-height: 1;
-  }
-
-  .daily-result-stats {
-    text-align: center;
-    font-family: var(--font-ui);
-    font-size: 14px;
-    color: rgba(241,231,210,0.85);
-    letter-spacing: 0.04em;
-  }
-
-  .daily-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin: 16px 0 10px;
-    flex-wrap: wrap;
-  }
-
-  .daily-actions .ctrl-btn {
-    background: rgba(241,231,210,0.1);
-    color: var(--bg);
-    border-color: rgba(200,149,60,0.6);
-  }
-
-  .daily-actions .ctrl-btn:hover:not(:disabled) {
-    background: rgba(200,149,60,0.2);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .daily-actions .ctrl-btn.share {
-    background: var(--accent);
-    color: var(--text);
-    border-color: var(--accent);
-  }
-
-  .daily-actions .ctrl-btn.share:hover:not(:disabled) {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text);
-  }
-
-  .daily-actions .ctrl-btn.copied {
-    background: var(--good) !important;
-    border-color: var(--good) !important;
-    color: #fff !important;
-  }
-
-  .daily-next {
-    text-align: center;
-    font-family: var(--font-ui);
-    font-style: italic;
-    font-size: 12px;
-    color: rgba(241,231,210,0.55);
-    letter-spacing: 0.06em;
-    margin-top: 6px;
-  }
-
-  .daily-next [data-countdown] {
-    font-family: var(--font-mono);
-    font-style: normal;
-    color: var(--accent);
-  }
-
-  /* Folder cards on the main menu - they open sub-views rather than playing */
-  .folder-card {
-    grid-column: 1 / -1;
-    display: flex !important;
-    align-items: center !important;
-    gap: 22px;
-    padding: 22px 24px !important;
-    background: linear-gradient(135deg, var(--surface), var(--surface)) !important;
-    border-left: 3px solid var(--accent-text) !important;
-  }
-
-  .folder-card:hover {
-    background: linear-gradient(135deg, var(--surface), var(--surface)) !important;
-    border-left-color: var(--accent) !important;
-  }
-
-  .folder-icon {
-    font-family: var(--font-display);
-    font-size: 38px;
-    color: var(--accent);
-    line-height: 1;
-    flex: 0 0 auto;
-  }
-
-  .folder-body {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .folder-arrow {
-    font-family: var(--font-display);
-    font-size: 36px;
-    color: var(--accent-text);
-    line-height: 1;
-    flex: 0 0 auto;
-    transition: transform 0.25s ease, color 0.25s ease;
-  }
-
-  .folder-card:hover .folder-arrow {
-    transform: translateX(4px);
-    color: var(--accent);
-  }
-
-  .us-card,
-  .province-card {
-    background: linear-gradient(135deg, var(--surface), var(--surface)) !important;
-    border-left: 3px solid var(--accent-text) !important;
-  }
-
-  .us-card:hover,
-  .province-card:hover {
-    background: linear-gradient(135deg, var(--surface), var(--surface)) !important;
-    border-left-color: var(--accent) !important;
-  }
-
-  /* Disabled / "coming soon" region cards (US Cities sub-menu Stage 1) */
-  .region-card.disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-  .region-card.disabled .r-count {
-    font-style: italic;
-    color: var(--text-3);
   }
 
   /* Loading overlay for lazy-loaded datasets */
@@ -3253,7 +2480,7 @@
     letter-spacing: 0.01em;
   }
 
-  /* Responsive */
+  /* Game and results on narrow windows */
   @media (max-width: 720px) {
     .game-header {
       padding: calc(10px + env(safe-area-inset-top)) 14px 8px;
@@ -3281,29 +2508,6 @@
     .best-value { font-size: 18px; }
     .choices-panel { grid-template-columns: repeat(2, 1fr); gap: 6px; max-width: none; margin-top: 10px; }
     .choice-btn { font-size: 15px; padding: 9px 10px; }
-    /* Sub-menu adjustments for narrow screens */
-    .submenu-title { font-size: 26px; }
-    .submenu-subtitle { font-size: 13px; }
-    .submenu-header { gap: 12px; margin-bottom: 18px; }
-    .back-link { padding: 6px 12px; font-size: 12px; }
-    .folder-card { padding: 16px 18px !important; gap: 14px; }
-    .folder-icon { font-size: 30px; }
-    .folder-arrow { font-size: 28px; }
-    .daily-card { padding: 18px 20px !important; }
-    .daily-card .r-name { font-size: 26px; }
-    .daily-card .r-subname { font-size: 13px; }
-    .daily-result-grid { font-size: 22px; letter-spacing: 3px; }
-    .daily-actions { flex-direction: column; }
-    .daily-actions .ctrl-btn { width: 100%; }
-    #menu-screen.view-sub .menu-header { transform: scale(0.5); margin-bottom: -110px; }
-    .regions { grid-template-columns: 1fr 1fr; }
-    .region-card.featured {
-      grid-column: 1 / -1;
-      flex-direction: column;
-      text-align: center;
-      gap: 14px;
-    }
-    .featured-left { flex-direction: column; gap: 10px; }
   }
 
   /* ===== Tablet and small laptop ===== */
@@ -3466,6 +2670,9 @@
     .breakdown > div { padding-left: 12px; }
     .breakdown dd { font-size: 30px; }
     .breakdown dt { font-size: 12px; gap: 5px; }
+    .bests thead th { letter-spacing: 0.06em; }
+    .bests th:nth-child(n+2), .bests td { width: 16%; }
+    .bests th:nth-child(4), .bests td:nth-child(4) { width: 23%; }
     .sheet-play .mode { background: none; }
     .sheet-start {
       flex: none;
@@ -3540,9 +2747,8 @@
   <symbol id="i-device" viewBox="0 0 24 24"><rect x="7" y="3.5" width="10" height="17" rx="2"/><path d="M11 17.5h2"/></symbol>
   <symbol id="i-enter" viewBox="0 0 24 24"><path d="M19 6v6a2 2 0 0 1-2 2H6M9.5 10.5 6 14l3.5 3.5"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21c4.3-4.3 6.5-8 6.5-11a6.5 6.5 0 0 0-13 0c0 3 2.2 6.7 6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
-  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.5 21V4M5.5 5h11l-2 3.5 2 3.5h-11"/></symbol>
   <!-- Line-art globe behind the Daily Five -->
-  <symbol id="art-globe" viewBox="0 0 200 200"><circle cx="100" cy="100" r="96"/><ellipse cx="100" cy="100" rx="48" ry="96"/><ellipse cx="100" cy="100" rx="83.1" ry="96"/><path d="M100 4v192M4 100h192M16.9 52h166.2M16.9 148h166.2M52 16.9h96M52 183.1h96"/></symbol>
+  <symbol id="art-globe" viewBox="0 0 200 200"><circle cx="100" cy="100" r="96"/><ellipse cx="100" cy="100" rx="48" ry="96"/><ellipse cx="100" cy="100" rx="83.1" ry="96"/><path d="M100 4v192"/><ellipse cx="100" cy="100" rx="96" ry="30"/><ellipse cx="100" cy="55" rx="83.1" ry="26"/><ellipse cx="100" cy="145" rx="83.1" ry="26"/><ellipse cx="100" cy="22" rx="48" ry="15"/><ellipse cx="100" cy="178" rx="48" ry="15"/></symbol>
 </svg>
 
 <header class="topnav">
@@ -3720,6 +2926,7 @@
 
       <div class="results-actions">
         <button class="ctrl-btn share" id="share-btn">Share Results</button>
+        <button class="ctrl-btn primary" id="review-next-btn" style="display:none;">Next</button>
         <button class="ctrl-btn primary" id="practice-btn" style="display:none;">Practice These</button>
         <button class="ctrl-btn primary" id="replay-btn">Study Again</button>
         <button class="ctrl-btn primary" id="daily-practice-btn" style="display:none;">Practice Replay</button>
@@ -3741,31 +2948,17 @@
     </div>
   </div>
 
-  <!-- FOCUS CHOOSER (fresh game vs. practice round; borrows the sync modal frame) -->
-  <div class="sync-modal-overlay" id="focus-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="focus-modal-title">
-    <div class="sync-modal">
-      <div class="sync-modal-header">
-        <h2 class="sync-modal-title" id="focus-modal-title">—</h2>
-        <p class="sync-modal-subtitle" id="focus-modal-subtitle"></p>
-        <button class="sync-modal-close" id="focus-modal-close" aria-label="Close">×</button>
-      </div>
-      <div class="sync-modal-body">
-        <div class="focus-choices">
-          <button class="focus-choice" id="focus-choice-fresh" type="button">
-            <div class="focus-choice-title">Fresh Game</div>
-            <div class="focus-choice-desc" id="focus-choice-fresh-desc"></div>
-          </button>
-          <button class="focus-choice focus" id="focus-choice-focus" type="button">
-            <div class="focus-choice-title" id="focus-choice-focus-title">Focus Practice</div>
-            <div class="focus-choice-desc">Just the ones you missed or found on a second try · practice only, your records stay as they are</div>
-          </button>
-          <button class="focus-choice learn" id="focus-choice-learn" type="button" style="display:none;">
-            <div class="focus-choice-title" id="focus-choice-learn-title">Learn Them</div>
-            <div class="focus-choice-desc" id="focus-choice-learn-desc"></div>
-          </button>
-          <button class="focus-reset-link" id="focus-learn-reset" type="button" style="display:none;">Start learning over from one</button>
-        </div>
-      </div>
+  <!-- LEVEL SHEET (opened by a level card; contents drawn by the script) -->
+  <div class="sheet-scrim" id="level-sheet-scrim" data-action="sheet-close" hidden></div>
+  <div class="sheet" id="level-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+    <span class="sheet-grabber" aria-hidden="true"></span>
+    <button type="button" class="icon-btn sheet-close" data-action="sheet-close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+    <div class="sheet-scroll">
+      <div class="sheet-info" id="sheet-info"></div>
+      <div class="sheet-play" id="sheet-play"></div>
+    </div>
+    <div class="sheet-start">
+      <button type="button" class="btn btn--primary btn--xl btn--block" id="sheet-start-btn" data-action="sheet-start"></button>
     </div>
   </div>
 
@@ -4383,27 +3576,27 @@
   // group property baked into provinces-russia.json).
   const PROVINCE_ROUNDS = {
     'canada-provinces': {
-      country: 'canada', label: 'Provinces of Canada', short: 'Canada', count: 13,
+      country: 'canada', label: 'Provinces of Canada', count: 13,
       subname: 'ten provinces and three territories'
     },
     'china-provinces': {
-      country: 'china', label: 'Provinces & Regions of China', short: 'China', count: 33,
+      country: 'china', label: 'Provinces & Regions of China', count: 33,
       subname: 'provinces, regions, municipalities & SARs'
     },
     'india-states': {
-      country: 'india', label: 'States of India', short: 'India', count: 36,
+      country: 'india', label: 'States of India', count: 36,
       subname: 'twenty-eight states and eight territories'
     },
     'russia-west': {
-      country: 'russia', group: 'west', label: 'Central & Northwest Russia', short: 'Russia W', count: 29,
+      country: 'russia', group: 'west', label: 'Central & Northwest Russia', count: 29,
       subname: 'Moscow, St. Petersburg, and the Arctic west'
     },
     'russia-south': {
-      country: 'russia', group: 'south', label: 'Southern Russia & the Volga', short: 'Russia S', count: 27,
+      country: 'russia', group: 'south', label: 'Southern Russia & the Volga', count: 27,
       subname: 'the Caucasus, the Black Sea, and the Volga'
     },
     'russia-east': {
-      country: 'russia', group: 'east', label: 'Urals, Siberia & the Far East', short: 'Russia E', count: 27,
+      country: 'russia', group: 'east', label: 'Urals, Siberia & the Far East', count: 27,
       subname: 'from the Urals to the Pacific'
     }
   };
@@ -4578,7 +3771,8 @@
     return all[dateKey] || null;
   }
 
-  // Daily streak: consecutive days played (any result) ending today.
+  // Daily streak: consecutive days played (any result) ending today, or
+  // ending yesterday while today's puzzle is still to play.
   function calculateDailyStreak() {
     const all = loadDailyAttempts();
     let streak = 0;
@@ -4591,7 +3785,7 @@
                 String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
                 String(d.getUTCDate()).padStart(2, '0');
       if (all[k]) streak++;
-      else break;
+      else if (offset > 0) break;
     }
     return streak;
   }
@@ -4715,7 +3909,7 @@
     difficulty: 'normal',     // 'normal' | 'hard' | 'uncharted' (hardMode is true for both hard and uncharted)
     mapStyle: 'parchment',    // 'parchment' | 'satellite' (Uncharted always shows satellite)
     view: 'home',             // the view showing, or the one to come back to after a round (key into VIEWS)
-    menuView: 'main',         // 'main' | 'continents' | 'us' | 'us-cities' | 'provinces' | 'provinces-russia'
+    review: null,             // Smart Review in progress: { queue: [{ level, names }] } still to play
 
     svg: null,
     projection: null,
@@ -4986,10 +4180,10 @@
    * ========================================================= */
 
   const COLLECTIONS = [
-    { key: 'world', title: 'World & Continents', desc: 'Find every country on the globe' },
-    { key: 'us', title: 'United States', desc: 'States, capitals and cities' },
-    { key: 'provinces', title: 'Provinces & States', desc: 'The inner divisions of Canada, China, India and Russia' },
-    { key: 'pins', title: 'Pin the City', desc: 'A blank map, a city name, and a pin' }
+    { key: 'world', icon: 'globe', title: 'World & Continents', desc: 'Find every country on the globe' },
+    { key: 'us', icon: 'star', title: 'United States', desc: 'States, capitals and cities' },
+    { key: 'provinces', icon: 'layers', title: 'Provinces & States', desc: 'The inner divisions of Canada, China, India and Russia' },
+    { key: 'pins', icon: 'pin', title: 'Pin the City', desc: 'A blank map, a city name, and a pin' }
   ];
 
   // Canonical names of the countries asked for in one continent, or in all
@@ -5133,19 +4327,6 @@
     } catch (e) { /* some embedded browsers block this - harmless */ }
   }
 
-  // The menu folder a level's card lives in, so "← Atlas" lands beside it
-  function menuViewForStartArg(startArg) {
-    const target = resolveGameTarget(startArg);
-    if (target.mode === 'province') {
-      return PROVINCE_ROUNDS[startArg].country === 'russia' ? 'provinces-russia' : 'provinces';
-    }
-    if (target.mode === 'us-city') return 'us-cities';
-    if (target.mode === 'city-pin') return 'pins';
-    if (target.mode.indexOf('us-') === 0) return 'us';
-    if (target.mode === 'world-country' && startArg !== 'World') return 'continents';
-    return 'main';
-  }
-
   // On load: start the level named in ?play=. A slug that is no playable
   // level stays on the menu and says so.
   function openLinkedLevel() {
@@ -5162,605 +4343,993 @@
         : 'That link doesn’t lead to a level.');
       return;
     }
-    state.menuView = menuViewForStartArg(startArg);
     startGame(startArg, params.get('learn') === '1' && PROVINCE_ROUNDS[startArg] ? { learn: true } : null);
   }
 
   /* =========================================================
-   * MENU
+   * HOME (masthead, Today, the Library)
+   *
+   * Drawn into #menu-content in three parts that can be redrawn on their
+   * own: the masthead, Today (Daily Five and Smart Review) and the
+   * Library (every collection with all of its level cards, from LEVELS).
+   * A level card opens the level sheet; nothing starts from Home directly
+   * except the Daily Five and a review.
    * ========================================================= */
 
-  // Continent metadata for the continents sub-menu's cards
-  const CONTINENT_ORDINALS = {
-    'Africa': 'I', 'Asia': 'II', 'Europe': 'III',
-    'North America': 'IV', 'South America': 'V', 'Oceania': 'VI'
-  };
-  const CONTINENT_SUBNAMES = {
-    'Africa': 'the cradle of nations',
-    'Asia': 'the vast eastern lands',
-    'Europe': 'the old continent',
-    'North America': 'north of the equator',
-    'South America': 'below the line',
-    'Oceania': 'islands of the Pacific'
-  };
+  const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const TENS_WORDS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
 
-  // Build a short "best" label summarizing the standout record
-  // for this region × current mode. Prefers accuracy → score.
-  function bestLabel(region, gameMode) {
-    const rec = getRecords(region, state.difficulty, gameMode);
-    if (!rec) return '';
-    const parts = [];
-    if (rec.bestAccuracy && rec.bestAccuracy.pct === 100 && rec.bestTime) {
-      parts.push('Perfect · ' + formatTimeSeconds(rec.bestTime.value));
-    } else if (rec.bestAccuracy) {
-      parts.push('Best: ' + rec.bestAccuracy.correct + '/' + rec.bestAccuracy.total);
-    }
-    if (rec.bestScore) {
-      parts.push(rec.bestScore.value + ' pts');
-    }
-    return parts.join(' · ');
+  // A count as running text: words up to ninety-nine, digits beyond
+  function numberWord(n) {
+    if (n < 20) return NUMBER_WORDS[n];
+    if (n < 100) return TENS_WORDS[Math.floor(n / 10)] + (n % 10 ? '-' + NUMBER_WORDS[n % 10] : '');
+    return n.toLocaleString('en-US');
   }
 
-  // Returns the best-overall summary for a "folder" card by scanning all
-  // sub-modes/regions inside that folder. Picks the highest accuracy %
-  // as the standout, falling back to total games played.
-  function folderBestLabel(folder) {
-    let bestPct = -1;
-    let bestText = '';
-    let totalGames = 0;
-    if (folder === 'continents') {
-      CONTINENT_ORDER.forEach(c => {
-        const rec = getRecords(c, state.difficulty, 'world-country');
-        if (!rec) return;
-        totalGames += rec.gamesPlayed || 0;
-        if (rec.bestAccuracy && rec.bestAccuracy.pct > bestPct) {
-          bestPct = rec.bestAccuracy.pct;
-          bestText = c + ' ' + rec.bestAccuracy.pct + '%';
-        }
-      });
-    } else if (folder === 'us') {
-      const modes = ['us-state', 'us-capital-to-state', 'us-state-to-capital'];
-      const labels = {
-        'us-state': 'States',
-        'us-capital-to-state': 'Cap→St',
-        'us-state-to-capital': 'St→Cap'
-      };
-      modes.forEach(m => {
-        const rec = getRecords(resolveGameTarget(m).region, state.difficulty, m);
-        if (!rec) return;
-        totalGames += rec.gamesPlayed || 0;
-        if (rec.bestAccuracy && rec.bestAccuracy.pct > bestPct) {
-          bestPct = rec.bestAccuracy.pct;
-          bestText = labels[m] + ' ' + rec.bestAccuracy.pct + '%';
-        }
-      });
-    } else if (folder === 'provinces' || folder === 'provinces-russia') {
-      Object.keys(PROVINCE_ROUNDS).forEach(key => {
-        const round = PROVINCE_ROUNDS[key];
-        if (folder === 'provinces-russia' && round.country !== 'russia') return;
-        const rec = getRecords(key, state.difficulty, 'province');
-        if (!rec) return;
-        totalGames += rec.gamesPlayed || 0;
-        if (rec.bestAccuracy && rec.bestAccuracy.pct > bestPct) {
-          bestPct = rec.bestAccuracy.pct;
-          bestText = round.short + ' ' + rec.bestAccuracy.pct + '%';
-        }
-      });
-    }
-    if (bestText) return 'Best: ' + bestText;
-    if (totalGames > 0) return totalGames + ' games played';
-    return '';
+  function capitalize(text) {
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
+
+  // Singular of each level noun, for a count of one
+  const SINGULAR_NOUNS = {
+    'countries': 'country', 'states': 'state', 'capitals': 'capital', 'cities': 'city', 'regions': 'region',
+    'provinces & territories': 'province or territory', 'provinces & regions': 'province or region', 'places': 'place'
+  };
+
+  // "1 state", "6 states"
+  function countNoun(n, noun) {
+    return n.toLocaleString('en-US') + ' ' + (n === 1 && SINGULAR_NOUNS[noun] ? SINGULAR_NOUNS[noun] : noun);
+  }
+
+  // A line about the level that leads each collection, shown on its wider card
+  const LEAD_BLURBS = {
+    'world': 'Every continent, every nation. The grand tour.',
+    'us-state': 'Find each state on the map, Alaska and Hawaii included.',
+    'pin-world': 'A blank map and a city name. The closer the pin, the higher the score.'
+  };
+
+  /* ----- What is known about a level ----- */
+
+  function skillSeen(skill) {
+    return mastery.skills().indexOf(skill) !== -1;
+  }
+
+  // Mastery over a set of levels whose names aren't in yet, from the names
+  // the store itself holds for the skill; `total` is the known item count
+  function storedSummary(skill, total) {
+    const summary = mastery.summary(skill);
+    summary.total = total;
+    summary.new = Math.max(0, total - summary.seen);
+    return summary;
+  }
+
+  // A level's mastery summary. Until a province map is in, the store's own
+  // names stand in, which is exact for a country taught by one level.
+  // Russia's three rounds share a skill, so with history there the answer
+  // is null until the map says which name belongs to which round.
+  function levelSummary(level) {
+    if (level.ready()) return mastery.summary(level.skill, level.names());
+    const shared = LEVELS.some(other => other !== level && other.skill === level.skill);
+    if (shared && skillSeen(level.skill)) return null;
+    return storedSummary(level.skill, level.count());
+  }
+
+  // One mastery summary per skill among the given levels. Levels that teach
+  // the same names share a skill, so each name counts once.
+  function skillSummaries(levels) {
+    const bySkill = new Map();
+    levels.filter(level => level.available).forEach(level => {
+      if (!bySkill.has(level.skill)) bySkill.set(level.skill, []);
+      bySkill.get(level.skill).push(level);
+    });
+    return Array.from(bySkill, ([skill, group]) => {
+      if (group.every(level => level.ready())) {
+        const names = new Set();
+        group.forEach(level => level.names().forEach(name => names.add(name)));
+        return mastery.summary(skill, Array.from(names));
+      }
+      return storedSummary(skill, group.reduce((n, level) => n + level.count(), 0));
+    });
+  }
+
+  function addSummaries(summaries) {
+    const sum = { total: 0, seen: 0, new: 0, learning: 0, familiar: 0, mastered: 0, due: 0 };
+    summaries.forEach(s => Object.keys(sum).forEach(k => { sum[k] += s[k]; }));
+    return sum;
+  }
+
+  // Fetch a level's map in the background and redraw when it lands, so a
+  // card that could not show its mastery fills in. One try per level per visit.
+  const levelDataAsked = new Set();
+  function loadLevelData(level) {
+    if (levelDataAsked.has(level.key)) return;
+    levelDataAsked.add(level.key);
+    level.load().then(() => {
+      if (level.ready()) refreshView();
+    }, () => { /* offline or missing: the card keeps its plain ring */ });
+  }
+
+  // The stored record for a level at one difficulty (not Pin the City, whose
+  // history lives in the pin store)
+  function levelRecord(level, difficulty) {
+    return getRecords(resolveGameTarget(level.arg).region, difficulty, level.mode);
+  }
+
+  function levelPinStats(level, difficulty) {
+    return pinRegionStats(resolveGameTarget(level.arg).region, difficulty);
+  }
+
+  // True once a full round of the level has been finished at any difficulty
+  function levelPlayed(level) {
+    return Object.keys(DIFFICULTY_INFO).some(d =>
+      level.mode === 'city-pin' ? levelPinStats(level, d).games > 0 : !!levelRecord(level, d));
+  }
+
+  // A level's best at one difficulty in a few characters ("49 / 54",
+  // "1,712 pts"), or '' when it has none
+  function levelBestText(level, difficulty) {
+    if (level.mode === 'city-pin') {
+      const stats = levelPinStats(level, difficulty);
+      return stats.games ? stats.best.toLocaleString('en-US') + ' pts' : '';
+    }
+    const rec = levelRecord(level, difficulty);
+    return rec && rec.bestAccuracy ? rec.bestAccuracy.correct + ' / ' + rec.bestAccuracy.total : '';
+  }
+
+  // "54 countries", "20 drawn from 120"
+  function levelCountText(level) {
+    const count = level.count();
+    if (level.mode === 'city-pin' && count > PIN_ROUND_SIZE) return PIN_ROUND_SIZE + ' drawn from ' + count;
+    return countNoun(count, level.noun);
+  }
+
+  // The focus list saved by the level's last full round, or null
+  function levelFocusList(level) {
+    const focus = getFocusList(level.mode, resolveGameTarget(level.arg).region);
+    return focus && focus.names.length > 0 ? focus : null;
+  }
+
+  /* ----- Mastery marks ----- */
+
+  // Ring for a summary: the mastered share as a number, the three tiers as arcs
+  function renderRing(summary) {
+    if (!summary || !summary.seen || !summary.total) return '<span class="ring"></span>';
+    const share = n => Math.round(n / summary.total * 1000) / 10;
+    const pct = Math.round(summary.mastered / summary.total * 100);
+    return '<span class="ring' + (pct === 100 ? ' is-full' : '') + '" style="--a:' + share(summary.mastered) +
+      ';--b:' + share(summary.mastered + summary.familiar) +
+      ';--c:' + share(summary.mastered + summary.familiar + summary.learning) + '"><b>' + pct + '</b></span>';
+  }
+
+  // Bar for a summary: mastered, familiar, learning, new, each as wide as its count
+  function renderMasteryBar(summary, extraClass) {
+    const part = (n, cls) => n > 0 ? '<i' + (cls ? ' class="' + cls + '"' : '') + ' style="--n:' + n + '"></i>' : '';
+    return '<span class="mbar' + (extraClass ? ' ' + extraClass : '') + '" role="img" aria-label="' +
+      summary.mastered + ' mastered, ' + summary.familiar + ' familiar, ' + summary.learning + ' learning, ' + summary.new + ' new">' +
+      part(summary.mastered, 'm3') + part(summary.familiar, 'm2') + part(summary.learning, 'm1') + part(summary.new, '') +
+      '</span>';
+  }
+
+  /* ----- Home ----- */
 
   function renderHome() {
-    if (state.menuView === 'continents') return renderContinentsMenu();
-    if (state.menuView === 'us') return renderUsMenu();
-    if (state.menuView === 'us-cities') return renderUsCitiesMenu();
-    if (state.menuView === 'provinces') return renderProvincesMenu();
-    if (state.menuView === 'pins') return renderPinsMenu();
-    if (state.menuView === 'provinces-russia') return renderRussiaMenu();
-    return renderMainMenu();
-  }
-
-  // Top-level menu: featured World card + two folder cards (Continents, US)
-  function renderMainMenu() {
+    // The country levels have nothing to show until the world map is in;
+    // the loading line in the markup stands until then
+    if (!state.allFeatures.length) return;
     const container = document.getElementById('menu-content');
-    const allFeaturesLoaded = state.allFeatures.length > 0;
-    if (!allFeaturesLoaded) {
-      container.innerHTML = '<div class="loading-state">Unfurling the world map</div>';
-      return;
+    if (!document.getElementById('home-masthead')) {
+      container.innerHTML =
+        '<header class="masthead" id="home-masthead"></header>' +
+        '<section class="today" aria-labelledby="today-label">' +
+          '<h2 class="eyebrow section-label" id="today-label">Today</h2>' +
+          '<div class="today-grid" id="home-today"></div>' +
+        '</section>' +
+        '<section class="library" aria-labelledby="library-title" id="home-library"></section>';
+      renderLibraryFrame();
     }
-
-    let worldCount = 0;
-    CONTINENT_ORDER.forEach(c => { worldCount += countEligibleInContinent(c); });
-
-    const worldBest = bestLabel('World', 'world-country');
-    const continentsBest = folderBestLabel('continents');
-    const usBest = folderBestLabel('us');
-    const provincesBest = folderBestLabel('provinces');
-
-    let html = '';
-
-    html += '<div class="section-label"><span>Choose Your Study</span></div>';
-
-    html += renderModeToggles();
-
-    html += '<div class="regions">';
-
-    // --- Daily Five card (top of menu, most prominent) ---
-    const dateKey = todayUtcKey();
-    const dailyAttempt = getDailyAttempt(dateKey);
-    const puzzleNum = dailyPuzzleNumber(dateKey);
-    const streak = calculateDailyStreak();
-
-    if (dailyAttempt) {
-      // Player has already played today - show their result + replay option
-      const pct = dailyAttempt.total > 0
-        ? Math.round((dailyAttempt.correct / dailyAttempt.total) * 100)
-        : 0;
-      const grid = (dailyAttempt.sequence || [])
-        .map(r => r === 2 ? '🟩' : (r === 1 ? '🟨' : '🟥'))
-        .join('');
-      html +=
-        '<div class="region-card daily-card daily-done" data-no-action="1">' +
-          '<div class="daily-header">' +
-            '<div class="daily-badge">Daily #' + puzzleNum + '</div>' +
-            (streak > 1 ? '<div class="daily-streak">🔥 ' + streak + ' day streak</div>' : '') +
-          '</div>' +
-          '<div class="daily-done-msg">Today\u2019s puzzle complete</div>' +
-          '<div class="daily-result-grid">' + grid + '</div>' +
-          '<div class="daily-result-stats">' +
-            dailyAttempt.correct + '/' + dailyAttempt.total + ' found · ' +
-            dailyAttempt.score + ' pts · ' + pct + '%' +
-          '</div>' +
-          '<div class="daily-actions">' +
-            '<button class="ctrl-btn share daily-share-btn" data-action="share-daily">Share Result</button>' +
-            '<button class="ctrl-btn daily-replay-btn" data-action="replay-daily">Practice Replay</button>' +
-          '</div>' +
-          '<div class="daily-next">Next puzzle in <span data-countdown></span></div>' +
-        '</div>';
-    } else {
-      // Fresh daily, ready to play
-      html +=
-        '<button class="region-card daily-card daily-fresh" data-action="play" data-region="daily-five">' +
-          '<div class="daily-header">' +
-            '<div class="daily-badge">Daily #' + puzzleNum + '</div>' +
-            (streak > 0 ? '<div class="daily-streak">🔥 ' + streak + ' day streak</div>' : '') +
-          '</div>' +
-          '<div class="r-name">The Daily Five</div>' +
-          '<div class="r-subname">five countries · today\u2019s puzzle for the world</div>' +
-          '<div class="daily-cta">Play Today\u2019s Puzzle →</div>' +
-        '</button>';
-    }
-
-    // Featured "Whole World" card - direct play
-    html +=
-      '<button class="region-card featured" data-action="play" data-region="World">' +
-        '<div class="featured-left">' +
-          '<div class="featured-mark">✦</div>' +
-          '<div>' +
-            '<div class="r-name">The Whole World</div>' +
-            '<div class="r-subname">every continent, every nation</div>' +
-            '<div class="r-count">' + worldCount + ' countries · all regions</div>' +
-            (worldBest ? '<div class="r-best">' + worldBest + '</div>' : '') +
-          '</div>' +
-        '</div>' +
-        '<div class="featured-cta">Begin Grand Tour →</div>' +
-      '</button>';
-
-    // Folder card: By Continent
-    html +=
-      '<button class="region-card folder-card" data-action="open-folder" data-folder="continents">' +
-        '<div class="folder-icon">⌖</div>' +
-        '<div class="folder-body">' +
-          '<div class="r-name">By Continent</div>' +
-          '<div class="r-subname">study one region at a time</div>' +
-          '<div class="r-count">6 continents</div>' +
-          (continentsBest ? '<div class="r-best">' + continentsBest + '</div>' : '') +
-        '</div>' +
-        '<div class="folder-arrow">›</div>' +
-      '</button>';
-
-    // Folder card: United States
-    html +=
-      '<button class="region-card folder-card" data-action="open-folder" data-folder="us">' +
-        '<div class="folder-icon">★</div>' +
-        '<div class="folder-body">' +
-          '<div class="r-name">The United States</div>' +
-          '<div class="r-subname">states, capitals, and more</div>' +
-          '<div class="r-count">3 study modes</div>' +
-          (usBest ? '<div class="r-best">' + usBest + '</div>' : '') +
-        '</div>' +
-        '<div class="folder-arrow">›</div>' +
-      '</button>';
-
-    // Folder card: Pin the City
-    const pinsBest = pinBestLabel('World');
-    html +=
-      '<button class="region-card folder-card" data-action="open-folder" data-folder="pins">' +
-        '<div class="folder-icon">⌾</div>' +
-        '<div class="folder-body">' +
-          '<div class="r-name">Pin the City</div>' +
-          '<div class="r-subname">a blank map · scored by how close you land</div>' +
-          '<div class="r-count">' + PIN_CITY_BY_NAME.size + ' cities · 6 continents</div>' +
-          (pinsBest ? '<div class="r-best">World ' + pinsBest + '</div>' : '') +
-        '</div>' +
-        '<div class="folder-arrow">›</div>' +
-      '</button>';
-
-    // Folder card: Provinces & States of other nations
-    html +=
-      '<button class="region-card folder-card" data-action="open-folder" data-folder="provinces">' +
-        '<div class="folder-icon">❖</div>' +
-        '<div class="folder-body">' +
-          '<div class="r-name">Provinces &amp; States</div>' +
-          '<div class="r-subname">Canada, China, India, and Russia</div>' +
-          '<div class="r-count">4 nations</div>' +
-          (provincesBest ? '<div class="r-best">' + provincesBest + '</div>' : '') +
-        '</div>' +
-        '<div class="folder-arrow">›</div>' +
-      '</button>';
-
-    html += '</div>';
-
-    container.innerHTML = html;
-    attachMenuHandlers();
-    if (dailyAttempt) startDailyCountdown();
+    renderMasthead();
+    renderToday();
+    syncPlayControls();
+    renderCollections();
   }
 
-  // Updates the "Next puzzle in HH:MM:SS" countdown on the daily card.
-  // Self-rebinds via setTimeout(1000) until the menu is left. Each menu
-  // redraw restarts it, so cancel the previous loop to keep just one.
+  // True until this device holds any progress at all
+  function isNewPlayer() {
+    const totals = mastery.totals();
+    return !totals.games && !totals.itemsSeen && !Object.keys(loadAllRecords()).length &&
+      !Object.keys(loadDailyAttempts()).length && !loadPinStore().games.length;
+  }
+
+  function renderMasthead() {
+    const now = new Date();
+    const dateLine = now.toLocaleDateString('en-US', { weekday: 'long' }) + ', ' + now.getDate() + ' ' +
+      now.toLocaleDateString('en-US', { month: 'long' }) + ' ' + now.getFullYear();
+    const hour = now.getHours();
+    const fresh = isNewPlayer();
+    const greeting = fresh ? 'Welcome.'
+      : hour >= 5 && hour < 12 ? 'Good morning.' : hour >= 12 && hour < 18 ? 'Good afternoon.' : 'Good evening.';
+
+    const due = reviewDueCount();
+    const dailyDone = !!getDailyAttempt(todayUtcKey());
+    let lede;
+    if (fresh) {
+      lede = 'Find places on the map and the atlas keeps track of the ones you know. Start with today’s Daily Five, or pick a level from the library.';
+    } else if (due > 0) {
+      lede = '<b>' + capitalize(numberWord(due)) + ' ' + (due === 1 ? 'place</b> is' : 'places</b> are') + ' due for review' +
+        (dailyDone ? '. Today’s Daily Five is done.' : ', and today’s Daily Five is waiting.');
+    } else {
+      lede = dailyDone ? 'Nothing is due for review, and today’s Daily Five is done. Pick any level to keep going.'
+        : 'Nothing is due for review. Today’s Daily Five is waiting.';
+    }
+
+    const totals = mastery.totals();
+    const all = addSummaries(skillSummaries(LEVELS));
+    const month = mastery.activity(30).reduce((sum, day) => {
+      sum.questions += day.questions;
+      sum.firstTry += day.firstTry;
+      return sum;
+    }, { questions: 0, firstTry: 0 });
+    const streak = mastery.streak();
+    const figure = (value, unit, label, sub) =>
+      '<div><dd class="num' + (value === null ? ' is-empty' : '') + '">' + (value === null ? '—' : value + (unit ? '<small>' + unit + '</small>' : '')) +
+      '</dd><dt class="eyebrow">' + label + '</dt><span class="summary-sub">' + sub + '</span></div>';
+
+    document.getElementById('home-masthead').innerHTML =
+      '<div class="masthead-copy">' +
+        '<p class="eyebrow">' + dateLine + '</p>' +
+        '<h1 class="display-xl">' + greeting + '</h1>' +
+        '<p class="lede">' + lede + '</p>' +
+      '</div>' +
+      '<dl class="summary" aria-label="Your progress">' +
+        figure(totals.itemsSeen ? all.mastered.toLocaleString('en-US') : null, '', 'Places mastered', 'of ' + all.total.toLocaleString('en-US')) +
+        figure(month.questions ? Math.round(month.firstTry / month.questions * 100) : null, '%', 'First-try accuracy', 'last 30 days') +
+        figure(totals.games ? streak.current : null, '', 'Day streak', totals.games ? 'longest ' + streak.longest : 'starts with a round') +
+      '</dl>';
+  }
+
+  /* ----- Today: the Daily Five ----- */
+
+  // The last seven UTC days, oldest first, each with its attempt (or null)
+  function dailyWeek() {
+    const all = loadDailyAttempts();
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const days = [];
+    for (let back = 6; back >= 0; back--) {
+      const d = new Date(today);
+      d.setUTCDate(d.getUTCDate() - back);
+      const key = d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+      days.push({
+        key: key,
+        name: d.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }),
+        attempt: all[key] || null
+      });
+    }
+    return days;
+  }
+
+  // How many of an attempt's five were found on the first try
+  function dailyFirstTries(attempt) {
+    if (Array.isArray(attempt.sequence)) return attempt.sequence.filter(points => points === 2).length;
+    return attempt.correct || 0;
+  }
+
+  function renderDailyWeek(streak) {
+    const todayKey = todayUtcKey();
+    const cells = dailyWeek().map(day => {
+      const first = day.attempt ? dailyFirstTries(day.attempt) : null;
+      const cls = (first === 5 ? ' is-perfect' : '') + (day.key === todayKey ? ' is-today' : '') + (day.attempt ? ' is-played' : '');
+      const said = day.name + ': ' + (day.attempt ? first + ' of 5 on the first try' : day.key === todayKey ? 'not played yet' : 'not played');
+      return '<li' + (cls ? ' class="' + cls.trim() + '"' : '') + ' aria-label="' + said + '"><span aria-hidden="true">' + day.name.charAt(0) +
+        '</span><i aria-hidden="true">' + (first === null ? '' : first) + '</i></li>';
+    }).join('');
+    return '<div class="daily-week">' +
+      '<ol class="week" aria-label="Your last seven days">' + cells + '</ol>' +
+      (streak > 0 ? '<span class="week-label"><b>' + streak + (streak === 1 ? ' day' : ' days') + '</b> running</span>' : '') +
+    '</div>';
+  }
+
+  function renderDailyCard() {
+    const dateKey = todayUtcKey();
+    const attempt = getDailyAttempt(dateKey);
+    const streak = calculateDailyStreak();
+    const art = '<svg class="daily-art" viewBox="0 0 200 200" aria-hidden="true"><use href="#art-globe"/></svg>';
+    const eyebrow = '<span class="eyebrow">Puzzle <b>No. ' + dailyPuzzleNumber(dateKey) + '</b></span>';
+
+    if (!attempt) {
+      return '<article class="daily" data-daily="unplayed" data-action="play-daily">' + art +
+        '<div class="daily-top">' + eyebrow +
+          '<span class="daily-count">' + icon('clock', 'icon--sm') + 'Resets in <span data-countdown="words"></span></span>' +
+        '</div>' +
+        '<div class="daily-body">' +
+          '<h3 class="daily-title">The Daily Five</h3>' +
+          '<p class="daily-desc">Five countries, easy to hard. The same puzzle for everyone, once a day.</p>' +
+        '</div>' +
+        '<div class="daily-foot">' + renderDailyWeek(streak) +
+          '<button type="button" class="btn btn--inverse" data-action="play-daily">Play today’s five ' + icon('arrow') + '</button>' +
+        '</div>' +
+      '</article>';
+    }
+
+    const pct = attempt.total > 0 ? Math.round((attempt.correct / attempt.total) * 100) : 0;
+    const said = { 2: 'first try', 1: 'second try', 0: 'missed' };
+    const marks = (attempt.sequence || []).map(points =>
+      '<li class="mark mark--' + (points === 2 ? 'first' : points === 1 ? 'second' : 'missed') + '" aria-label="' + said[points] + '">' +
+        (points === 2 ? icon('check') : points === 1 ? '2' : icon('close')) + '</li>').join('');
+    return '<article class="daily is-done" data-daily="played">' + art +
+      '<div class="daily-top">' + eyebrow +
+        '<span class="daily-count">' + icon('clock', 'icon--sm') + 'Next puzzle in <span data-countdown="clock"></span></span>' +
+      '</div>' +
+      '<div class="daily-body">' +
+        '<h3 class="daily-title">Today’s puzzle complete</h3>' +
+        '<div class="daily-result">' +
+          '<ol class="marks" aria-label="Your five answers">' + marks + '</ol>' +
+          '<p class="daily-score"><b>' + attempt.correct + '/' + attempt.total + ' found</b> · ' + attempt.score + ' pts · ' + pct + '%</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="daily-foot">' + renderDailyWeek(streak) +
+        '<div class="daily-actions">' +
+          '<button type="button" class="btn btn--inverse daily-share-btn" data-action="share-daily">Share Result</button>' +
+          '<button type="button" class="btn btn--secondary" data-action="replay-daily">Practice Replay</button>' +
+        '</div>' +
+      '</div>' +
+    '</article>';
+  }
+
+  // Keeps the Daily Five card's countdown to the next puzzle (UTC midnight)
+  // current: "5 h 12 m" on the card still to play, HH:MM:SS once played.
+  // Each redraw of Today restarts it; it stops when the card is gone.
   function startDailyCountdown() {
     clearTimeout(startDailyCountdown._t);
     function tick() {
       const el = document.querySelector('[data-countdown]');
-      if (!el) return; // Element gone (menu re-rendered or left) - stop ticking
-      const now = new Date();
+      if (!el) return;
       const next = new Date();
       next.setUTCHours(24, 0, 0, 0);
-      const ms = next - now;
+      const ms = next - new Date();
+      // The day rolled over while the page sat open: show the new puzzle
+      if (ms <= 0) { renderToday(); return; }
       const hrs = Math.floor(ms / 3600000);
       const mins = Math.floor((ms % 3600000) / 60000);
       const secs = Math.floor((ms % 60000) / 1000);
-      el.textContent = String(hrs).padStart(2, '0') + ':' +
-                       String(mins).padStart(2, '0') + ':' +
-                       String(secs).padStart(2, '0');
-      // If the day rolled over while we were sitting here, refresh
-      // the menu so the user gets the fresh-puzzle card
-      if (ms <= 0) { renderHome(); return; }
+      el.textContent = el.dataset.countdown === 'words'
+        ? (hrs ? hrs + ' h ' : '') + mins + ' m'
+        : String(hrs).padStart(2, '0') + ':' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
       startDailyCountdown._t = setTimeout(tick, 1000);
     }
     tick();
   }
 
-  // Shows the "already played today" view as a transient overlay on
-  // the menu screen if a player taps Daily after completing it.
-  // (Currently unused since we render the same info inline on the Daily
-  // card itself; kept in case we want to enable a tap-to-confirm flow.)
-  function showDailyAlreadyPlayed(_attempt, _dateKey) {
-    state.menuView = 'main';
-    switchScreen('menu'); // redraws the menu
-  }
-
-  // Continents sub-menu: back arrow + section heading + 6 continent cards
-  function renderContinentsMenu() {
-    const container = document.getElementById('menu-content');
-    let html = '';
-    html += renderSubMenuHeader('By Continent', 'Six regions of the known world');
-    html += renderModeToggles();
-    html += '<div class="regions">';
-    CONTINENT_ORDER.forEach(c => {
-      const count = countEligibleInContinent(c);
-      const best = bestLabel(c, 'world-country');
-      html +=
-        '<button class="region-card" data-action="play" data-region="' + c + '">' +
-          '<div class="r-name">' + c + '</div>' +
-          '<div class="r-subname">№ ' + CONTINENT_ORDINALS[c] + ' — ' + CONTINENT_SUBNAMES[c] + '</div>' +
-          '<div class="r-count">' + count + ' countries to study</div>' +
-          (best ? '<div class="r-best">' + best + '</div>' : '') +
-        '</button>';
-    });
-    html += '</div>';
-    container.innerHTML = html;
-    attachMenuHandlers();
-  }
-
-  // US sub-menu: back arrow + section heading + 3 mode cards + Cities sub-folder
-  function renderUsMenu() {
-    const container = document.getElementById('menu-content');
-    const usModes = [
-      {
-        mode: 'us-state',
-        name: 'The Fifty States',
-        subname: 'find each state on the map',
-        count: '50 states to study'
-      },
-      {
-        mode: 'us-capital-to-state',
-        name: 'Capitals → States',
-        subname: 'capital given, find the state',
-        count: '50 capitals to place'
-      },
-      {
-        mode: 'us-state-to-capital',
-        name: 'States → Capitals',
-        subname: 'state given, name its capital',
-        count: '50 capitals to recall'
-      }
-    ];
-    let html = '';
-    html += renderSubMenuHeader('The United States', 'A closer study of the fifty states');
-    html += renderModeToggles();
-    html += '<div class="regions">';
-    usModes.forEach(m => {
-      const best = bestLabel(resolveGameTarget(m.mode).region, m.mode);
-      html +=
-        '<button class="region-card us-card" data-action="play" data-region="' + m.mode + '">' +
-          '<div class="r-name">' + m.name + '</div>' +
-          '<div class="r-subname">' + m.subname + '</div>' +
-          '<div class="r-count">' + m.count + '</div>' +
-          (best ? '<div class="r-best">' + best + '</div>' : '') +
-        '</button>';
-    });
-    // US Cities is a sub-folder: opens its own view with per-region cards.
-    html +=
-      '<button class="region-card us-card folder-card" data-action="open-folder" data-folder="us-cities">' +
-        '<div class="r-name">US Cities ▸</div>' +
-        '<div class="r-subname">find cities region by region</div>' +
-        '<div class="r-count">4 regions to study</div>' +
-      '</button>';
-    html += '</div>';
-    container.innerHTML = html;
-    attachMenuHandlers();
-  }
-
-  // US Cities sub-menu: nested under "The United States" folder. Back arrow
-  // returns to the US folder, not all the way to main. Stage 1 ships only
-  // Northeast; the others land in Stage 2 once the framework is proven.
-  function renderUsCitiesMenu() {
-    const container = document.getElementById('menu-content');
-    const regions = [
-      { key: 'northeast-cities', name: 'Northeast Cities',
-        subname: '9 states · NY, MA, PA, and neighbors',
-        count: '40 cities to find', enabled: true },
-      { key: 'midwest-cities', name: 'Midwest Cities',
-        subname: '12 states · OH, IL, MI, and neighbors',
-        count: 'coming soon', enabled: false },
-      { key: 'south-cities', name: 'Southern Cities',
-        subname: '16 states + DC · TX, FL, GA, and neighbors',
-        count: 'coming soon', enabled: false },
-      { key: 'west-cities', name: 'Western Cities',
-        subname: '13 states · CA, WA, AZ, and neighbors',
-        count: 'coming soon', enabled: false }
-    ];
-    let html = '';
-    html += renderSubMenuHeader('US Cities', 'Four regions of the United States', 'us');
-    html += renderModeToggles();
-    html += '<div class="regions">';
-    regions.forEach(r => {
-      if (r.enabled) {
-        const best = bestLabel(US_CITY_REGION_KEYS[r.key], 'us-city');
-        html +=
-          '<button class="region-card us-card" data-action="play" data-region="' + r.key + '">' +
-            '<div class="r-name">' + r.name + '</div>' +
-            '<div class="r-subname">' + r.subname + '</div>' +
-            '<div class="r-count">' + r.count + '</div>' +
-            (best ? '<div class="r-best">' + best + '</div>' : '') +
-          '</button>';
-      } else {
-        // Disabled card: same shape but unclickable + visually subdued.
-        html +=
-          '<button class="region-card us-card disabled" disabled>' +
-            '<div class="r-name">' + r.name + '</div>' +
-            '<div class="r-subname">' + r.subname + '</div>' +
-            '<div class="r-count">' + r.count + '</div>' +
-          '</button>';
-      }
-    });
-    html += '</div>';
-    container.innerHTML = html;
-    attachMenuHandlers();
-  }
-
-  // One playable card for a PROVINCE_ROUNDS entry
-  function renderProvinceRoundCard(roundKey) {
-    const round = PROVINCE_ROUNDS[roundKey];
-    const noun = PROVINCE_COUNTRIES[round.country].noun.toLowerCase();
-    const best = bestLabel(roundKey, 'province');
-    return (
-      '<button class="region-card province-card" data-action="play" data-region="' + roundKey + '">' +
-        '<div class="r-name">' + round.label + '</div>' +
-        '<div class="r-subname">' + round.subname + '</div>' +
-        '<div class="r-count">' + round.count + ' ' + noun + ' to find</div>' +
-        (best ? '<div class="r-best">' + best + '</div>' : '') +
-      '</button>'
-    );
-  }
-
-  // Provinces sub-menu: one card per whole-country round, plus Russia as a
-  // nested folder since its 83 regions are split into three rounds.
-  function renderProvincesMenu() {
-    const container = document.getElementById('menu-content');
-    const russiaBest = folderBestLabel('provinces-russia');
-    let html = '';
-    html += renderSubMenuHeader('Provinces & States', 'The inner divisions of great nations');
-    html += renderModeToggles();
-    html += '<div class="regions">';
-    html += renderProvinceRoundCard('canada-provinces');
-    html += renderProvinceRoundCard('china-provinces');
-    html += renderProvinceRoundCard('india-states');
-    html +=
-      '<button class="region-card province-card" data-action="open-folder" data-folder="provinces-russia">' +
-        '<div class="r-name">Russia ▸</div>' +
-        '<div class="r-subname">83 federal subjects in three rounds</div>' +
-        '<div class="r-count">3 regions to study</div>' +
-        (russiaBest ? '<div class="r-best">' + russiaBest + '</div>' : '') +
-      '</button>';
-    html += '</div>';
-    container.innerHTML = html;
-    attachMenuHandlers();
-  }
-
-  // Pin the City sub-menu: the whole world, then one card per continent
-  function renderPinsMenu() {
-    const container = document.getElementById('menu-content');
-    let html = '';
-    html += renderSubMenuHeader('Pin the City', 'A blank map, a city name, and a pin');
-    html += renderModeToggles({
-      normal: 'Country borders drawn, no names',
-      hard: 'No borders — just coastlines and your memory',
-      uncharted: 'Satellite only, no borders'
-    });
-    html += '<div class="regions">';
-    Object.keys(PIN_ROUNDS).forEach(key => {
-      const region = PIN_ROUNDS[key];
-      const cities = pinCitiesFor(region);
-      const best = pinBestLabel(region);
-      const sample = region === 'World'
-        ? 'a mix from every continent'
-        : cities.slice(0, 3).map(c => c.name).join(', ') + '…';
-      const n = Math.min(PIN_ROUND_SIZE, cities.length);
-      html +=
-        '<button class="region-card pin-card" data-action="play" data-region="' + key + '">' +
-          '<div class="r-name">' + (region === 'World' ? 'The Whole World' : region) + '</div>' +
-          '<div class="r-subname">' + sample + '</div>' +
-          '<div class="r-count">' + n + ' cities · ' + (n * 100).toLocaleString('en-US') + ' pts</div>' +
-          (best ? '<div class="r-best">' + best + '</div>' : '') +
-        '</button>';
-    });
-    html += '</div>';
-    html += '<div class="pin-scoring-note">100 points within ' + PIN_PERFECT_KM + ' km of the city · ' +
-      pinPoints(100) + ' at 100 km · ' + pinPoints(250) + ' at 250 km · ' + pinPoints(500) + ' at 500 km · ' +
-      pinPoints(1000) + ' at 1,000 km</div>';
-    container.innerHTML = html;
-    attachMenuHandlers();
-  }
-
-  // Russia sub-menu, nested under Provinces & States (back returns there)
-  function renderRussiaMenu() {
-    const container = document.getElementById('menu-content');
-    let html = '';
-    html += renderSubMenuHeader('Russia', 'Eleven time zones in three rounds', 'provinces');
-    html += renderModeToggles();
-    html += '<div class="regions">';
-    html += renderProvinceRoundCard('russia-west');
-    html += renderProvinceRoundCard('russia-south');
-    html += renderProvinceRoundCard('russia-east');
-    html += '</div>';
-    container.innerHTML = html;
-    attachMenuHandlers();
-  }
-
-  // Header used at the top of sub-menus (Continents, US, etc).
-  // Includes a back button. backTarget defaults to 'main', but nested
-  // sub-folders pass their parent view's name (e.g. 'us-cities' passes 'us').
-  function renderSubMenuHeader(title, subtitle, backTarget) {
-    const target = backTarget || 'main';
-    return (
-      '<div class="submenu-header">' +
-        '<button class="back-link" data-action="back-to" data-target="' + target + '">← Back</button>' +
-        '<div class="submenu-title-block">' +
-          '<div class="submenu-title">' + title + '</div>' +
-          '<div class="submenu-subtitle">' + subtitle + '</div>' +
+  function renderReviewCard() {
+    const names = reviewDueNames();
+    if (!names.length) {
+      return '<section class="review review--empty" aria-label="Smart Review">' +
+        '<span class="eyebrow">Smart Review</span>' +
+        '<div class="review-body">' +
+          '<span class="review-icon">' + icon('check', 'icon--lg') + '</span>' +
+          '<div><strong>Nothing due</strong>' +
+          '<p>Places you miss come back here when it is time to see them again.</p></div>' +
         '</div>' +
-      '</div>'
-    );
+      '</section>';
+    }
+    const totals = mastery.totals();
+    // A typical answer takes this player this long; eight seconds until there is history
+    const perAnswer = totals.questions >= 20 ? Math.min(20, Math.max(4, totals.seconds / totals.questions)) : 8;
+    const minutes = Math.max(1, Math.round(names.length * perAnswer / 60));
+    const shown = names.slice(0, 2);
+    return '<section class="review" aria-label="Smart Review">' +
+      '<span class="eyebrow">Smart Review</span>' +
+      '<div class="review-body">' +
+        '<span class="num review-num">' + names.length + '</span>' +
+        '<div><strong>' + (names.length === 1 ? 'place' : 'places') + ' due for review</strong>' +
+        '<p>The ones you’re closest to forgetting. About ' + numberWord(minutes) + (minutes === 1 ? ' minute.' : ' minutes.') + '</p></div>' +
+      '</div>' +
+      '<div class="review-foot">' +
+        '<div class="chips">' + shown.map(name => '<span class="chip">' + escapeHtml(name) + '</span>').join('') +
+          (names.length > shown.length ? '<span class="chip chip--more">+' + (names.length - shown.length) + '</span>' : '') +
+        '</div>' +
+        '<button type="button" class="btn btn--primary" data-action="start-review">Start review</button>' +
+      '</div>' +
+    '</section>';
   }
+
+  function renderToday() {
+    const today = document.getElementById('home-today');
+    if (!today) return;
+    today.innerHTML = renderDailyCard() + renderReviewCard();
+    startDailyCountdown();
+  }
+
+  /* ----- The Library ----- */
 
   const DIFFICULTY_INFO = {
     normal: { label: 'Normal', desc: 'Found targets stay marked on the map' },
     hard: { label: 'Hard', desc: 'No process of elimination — completed targets stay unmarked' },
     uncharted: { label: 'Uncharted', desc: 'Satellite only, no borders — a shape shows only once you answer' }
   };
+  // Pin the City draws no names at any difficulty, so its three mean something else
+  const PIN_DIFFICULTY_DESCS = {
+    normal: 'Country borders drawn, no names',
+    hard: 'No borders — just coastlines and your memory',
+    uncharted: 'Satellite only, no borders'
+  };
 
-  // Difficulty picker (Normal / Hard / Uncharted) and the satellite switch.
-  // Uncharted forces satellite on, so the switch shows locked there.
-  // descs: optional per-difficulty descriptions for this view
-  function renderModeToggles(descs) {
+  // Difficulty picker. bests (optional): difficulty -> a line shown under its label.
+  function renderDifficultySeg(extraClass, bests) {
+    return '<div class="seg' + (extraClass ? ' ' + extraClass : '') + '" role="radiogroup" aria-label="Difficulty">' +
+      Object.keys(DIFFICULTY_INFO).map(key =>
+        '<button type="button" role="radio" data-action="set-difficulty" data-value="' + key + '">' +
+          '<span>' + DIFFICULTY_INFO[key].label + '</span>' +
+          (bests ? '<small>' + (bests[key] || 'No best yet') + '</small>' : '') +
+        '</button>').join('') +
+    '</div>';
+  }
+
+  function renderMapSeg(extraClass) {
+    return '<div class="seg' + (extraClass ? ' ' + extraClass : '') + '" role="radiogroup" aria-label="Map style">' +
+      '<button type="button" role="radio" data-action="set-map" data-value="parchment">' + icon('map', 'icon--sm') + 'Chart</button>' +
+      '<button type="button" role="radio" data-action="set-map" data-value="satellite">' + icon('sat', 'icon--sm') + 'Satellite</button>' +
+    '</div>';
+  }
+
+  // Bring every difficulty and map control on the page (Home's and the
+  // level sheet's) in line with the settings. Uncharted is satellite only,
+  // so the map control locks there.
+  function syncPlayControls() {
     const uncharted = state.difficulty === 'uncharted';
-    const satOn = uncharted || state.mapStyle === 'satellite';
-    let segs = '';
-    Object.keys(DIFFICULTY_INFO).forEach(key => {
-      segs += '<button type="button" class="difficulty-seg' + (state.difficulty === key ? ' active' : '') +
-        '" data-difficulty="' + key + '" aria-pressed="' + (state.difficulty === key) + '">' +
-        DIFFICULTY_INFO[key].label + '</button>';
+    const satellite = uncharted || state.mapStyle === 'satellite';
+    const mark = (btn, on) => {
+      btn.setAttribute('aria-checked', String(on));
+      btn.tabIndex = on ? 0 : -1;
+    };
+    document.querySelectorAll('[data-action="set-difficulty"]').forEach(btn => mark(btn, btn.dataset.value === state.difficulty));
+    document.querySelectorAll('[data-action="set-map"]').forEach(btn => {
+      mark(btn, (btn.dataset.value === 'satellite') === satellite);
+      btn.disabled = uncharted && btn.dataset.value !== 'satellite';
     });
-    return (
-      '<div class="mode-toggle-row">' +
-        '<div class="difficulty-picker" role="group" aria-label="Difficulty">' +
-          '<div class="difficulty-segs">' + segs + '</div>' +
-          '<span class="switch-desc">' + ((descs && descs[state.difficulty]) || DIFFICULTY_INFO[state.difficulty].desc) + '</span>' +
+    document.querySelectorAll('[data-difficulty-note]').forEach(el => {
+      const descs = el.dataset.difficultyNote === 'pin' ? PIN_DIFFICULTY_DESCS : null;
+      el.innerHTML = '<b>' + DIFFICULTY_INFO[state.difficulty].label + '</b> · ' +
+        (descs ? descs[state.difficulty] : DIFFICULTY_INFO[state.difficulty].desc);
+    });
+    document.querySelectorAll('[data-map-note]').forEach(el => { el.hidden = !uncharted; });
+  }
+
+  function chooseDifficulty(difficulty) {
+    if (difficulty === state.difficulty) return;
+    setDifficulty(difficulty);
+    saveDifficulty(state.difficulty);
+    syncPlayControls();
+    renderCollections();
+    if (sheet.level) renderSheetInfo();
+  }
+
+  function chooseMapStyle(style) {
+    if (state.difficulty === 'uncharted' || style === state.mapStyle) return;
+    state.mapStyle = style;
+    saveMapStyle(state.mapStyle);
+    syncPlayControls();
+  }
+
+  // The Library's heading, controls and collection chips. Drawn once; the
+  // collections under it are redrawn whenever progress or difficulty changes.
+  function renderLibraryFrame() {
+    const playable = LEVELS.filter(level => level.available).length;
+    document.getElementById('home-library').innerHTML =
+      '<div class="library-head">' +
+        '<div>' +
+          '<h2 class="display-l" id="library-title">The Library</h2>' +
+          '<p>' + capitalize(numberWord(playable)) + ' levels in ' + numberWord(COLLECTIONS.length) + ' collections.</p>' +
         '</div>' +
-        '<label class="mode-toggle' + (uncharted ? ' is-locked' : '') + '">' +
-          '<input type="checkbox" id="satellite-toggle"' +
-            (satOn ? ' checked' : '') + (uncharted ? ' disabled' : '') + ' />' +
-          '<span class="switch-box">' +
-            '<span class="switch-knob"></span>' +
+        '<div>' +
+          '<div class="playbar">' +
+            '<div class="field"><span class="eyebrow">Difficulty</span>' + renderDifficultySeg() + '</div>' +
+            '<div class="field"><span class="eyebrow">Map</span>' + renderMapSeg() + '</div>' +
+          '</div>' +
+          '<p class="playbar-note" data-difficulty-note></p>' +
+        '</div>' +
+      '</div>' +
+      '<nav class="chips jump" aria-label="Collections">' +
+        COLLECTIONS.map(collection =>
+          '<button type="button" class="chip" data-action="jump" data-collection="' + collection.key + '">' + escapeHtml(collection.title) + '</button>').join('') +
+      '</nav>' +
+      '<div id="library-collections"></div>';
+  }
+
+  function renderLevelCard(level, lead) {
+    const title = escapeHtml(level.title);
+    if (!level.available) {
+      return '<div class="level is-soon">' +
+        '<span class="level-title">' + title + '</span>' +
+        '<span class="level-sub"><span class="level-meta">Coming soon</span></span>' +
+        '<span class="level-due"><span class="tag">Soon</span></span>' +
+        '<span class="ring"></span>' +
+      '</div>';
+    }
+
+    const summary = levelSummary(level);
+    if (!summary) loadLevelData(level);
+    const said = [level.title, levelCountText(level)];
+
+    let meta = levelCountText(level);
+    let best = '';
+    if (level.mode === 'city-pin') {
+      const stats = levelPinStats(level, state.difficulty);
+      if (stats.games && stats.recentKm != null) meta += ' · avg ' + formatKm(stats.recentKm);
+      if (stats.games) best = '<em>Best</em>' + levelBestText(level, state.difficulty);
+    } else {
+      const rec = levelRecord(level, state.difficulty);
+      if (rec && rec.bestAccuracy) {
+        best = '<em>Best</em>' + levelBestText(level, state.difficulty) +
+          (rec.bestTime ? '<span class="t"><span class="sep">·</span>' + formatTimeSeconds(rec.bestTime.value) + '</span>' : '');
+      }
+    }
+    const hasBest = !!best;
+    const ladder = level.mode === 'province' ? getLearnProgress(level.arg) : null;
+    const untouched = !!summary && !summary.seen && !ladder && !levelPlayed(level);
+    if (hasBest) {
+      said.push('best ' + levelBestText(level, state.difficulty).replace(' / ', ' of '));
+    } else if (!untouched) {
+      best = ladder ? 'Learning · level ' + ladder.level + ' of ' + ladder.order.length
+        : levelPlayed(level) ? 'Not played on ' + DIFFICULTY_INFO[state.difficulty].label
+        : 'Not played yet';
+      said.push(best);
+    }
+
+    // Trailing slot: what there is to do here, if anything
+    let due = '';
+    if (summary && summary.due > 0) due = summary.due + ' due';
+    else if (untouched) due = 'New';
+    if (due) said.push(due);
+    if (summary && summary.seen) said.splice(2, 0, summary.mastered + ' of ' + summary.total + ' mastered');
+
+    const blurb = lead && LEAD_BLURBS[level.key];
+    return '<a class="level' + (lead ? ' level--feature' : '') + (hasBest ? '' : ' no-best') + '" href="?play=' + level.key +
+        '" data-action="open-level" data-level="' + level.key + '" aria-haspopup="dialog" aria-label="' + escapeHtml(said.join(', ')) + '">' +
+      '<span class="level-title">' + title + '</span>' +
+      '<span class="level-sub"><span class="level-meta">' + meta + '</span>' + (best ? '<span class="level-best">' + best + '</span>' : '') + '</span>' +
+      (blurb ? '<span class="level-blurb">' + blurb + '</span>' : '') +
+      '<span class="level-due' + (summary && summary.due > 0 ? ' is-due' : '') + '">' + due + '</span>' +
+      renderRing(summary) +
+    '</a>';
+  }
+
+  function renderCollections() {
+    const container = document.getElementById('library-collections');
+    if (!container) return;
+    const focused = document.activeElement && container.contains(document.activeElement)
+      ? document.activeElement.dataset.level : null;
+
+    container.innerHTML = COLLECTIONS.map(collection => {
+      const levels = LEVELS.filter(level => level.collection === collection.key);
+      const sum = addSummaries(skillSummaries(levels));
+      // Seven cards sit as a wide lead plus two rows of three; six as two rows of three
+      const lead = levels.length % 4 === 3;
+      const three = !lead && levels.length % 3 === 0 && levels.length % 4 !== 0;
+      return '<section class="collection" id="collection-' + collection.key + '" aria-labelledby="collection-' + collection.key + '-title">' +
+        '<header class="collection-head">' +
+          '<span class="collection-icon">' + icon(collection.icon) + '</span>' +
+          '<h3 class="collection-title" id="collection-' + collection.key + '-title">' + escapeHtml(collection.title) + '</h3>' +
+          '<p class="collection-desc">' + escapeHtml(collection.desc) + '.</p>' +
+          '<span class="collection-sum">' + renderMasteryBar(sum) +
+            '<span><b>' + sum.mastered.toLocaleString('en-US') + '</b> of ' + sum.total.toLocaleString('en-US') + '<span class="x"> mastered</span></span>' +
           '</span>' +
-          '<span class="switch-text">' +
-            '<span class="switch-title">Satellite Map</span>' +
-            '<span class="switch-desc">' +
-              (uncharted ? 'Always on in Uncharted' : 'Real imagery under the borders') +
-            '</span>' +
-          '</span>' +
-        '</label>' +
-      '</div>'
-    );
+        '</header>' +
+        '<div class="levels' + (three ? ' levels--three' : '') + '">' +
+          levels.map((level, i) => renderLevelCard(level, lead && i === 0)).join('') +
+        '</div>' +
+      '</section>';
+    }).join('');
+
+    if (focused) {
+      const card = container.querySelector('[data-level="' + focused + '"]');
+      if (card) card.focus({ preventScroll: true });
+    }
   }
 
-  // Wires up clicks for the three card types: play, open-folder, and back.
-  // Called after every refreshView() since innerHTML wipes existing handlers.
-  function attachMenuHandlers() {
-    // Update body class so CSS can subtly differ between main/sub views
-    const screen = document.getElementById('menu-screen');
-    screen.classList.toggle('view-sub', state.menuView !== 'main');
-
-    document.querySelectorAll('[data-action="play"]').forEach(card => {
-      card.addEventListener('click', () => chooseAndStart(card.dataset.region));
-    });
-    document.querySelectorAll('[data-action="open-folder"]').forEach(card => {
-      card.addEventListener('click', () => {
-        state.menuView = card.dataset.folder;
-        renderHome();
-        // Scroll to top so the user sees the new view from the start
-        const screenEl = document.getElementById('menu-screen');
-        if (screenEl) screenEl.scrollTop = 0;
-      });
-    });
-    document.querySelectorAll('[data-action="back-to"]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        state.menuView = btn.dataset.target || 'main';
-        renderHome();
-        const screenEl = document.getElementById('menu-screen');
-        if (screenEl) screenEl.scrollTop = 0;
-      });
-    });
-    // Daily-specific actions on the locked-out card
-    document.querySelectorAll('[data-action="share-daily"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        shareDailyResultFromMenu();
-      });
-    });
-    document.querySelectorAll('[data-action="replay-daily"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        startDailyReplay(todayUtcKey());
-      });
-    });
-
-    initModeToggles();
+  function jumpToCollection(key) {
+    const section = document.getElementById('collection-' + key);
+    if (section) section.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
   }
 
-  function countEligibleInContinent(continent) {
-    let count = 0;
-    state.allFeatures.forEach(f => {
-      const c = state.continentByFeature.get(featureKey(f));
-      if (c === continent) count++;
-    });
-    return count;
+  /* =========================================================
+   * SMART REVIEW (what is due, as a playlist of practice rounds)
+   *
+   * Due names come from the mastery store, skill by skill. Each is handed
+   * to a level that can quiz exactly those names as a practice round, so a
+   * review never touches records or focus lists. The rounds run largest
+   * first; after each, the results screen offers the next.
+   * ========================================================= */
+
+  // Skills taught by several levels name the one that hosts their reviews.
+  // The rest (cities, provinces) go to whichever level holds each name.
+  const REVIEW_HOSTS = { 'country': 'world', 'us-state': 'us-state', 'us-capital': 'us-state-to-capital' };
+
+  // The levels that can run reviews for a skill; none for Pin the City,
+  // whose practice rounds would be saved as full games
+  function reviewLevels(skill) {
+    if (REVIEW_HOSTS[skill]) return [levelByKey(REVIEW_HOSTS[skill])];
+    return LEVELS.filter(level => level.skill === skill && level.available && level.mode !== 'city-pin');
   }
+
+  // Due names per reviewable skill, biggest group first. Names the store
+  // still holds for something no level asks any more are left out, as far
+  // as the maps loaded so far can tell.
+  function reviewDue() {
+    const skills = [];
+    LEVELS.forEach(level => {
+      if (level.available && level.mode !== 'city-pin' && skills.indexOf(level.skill) === -1) skills.push(level.skill);
+    });
+    return skills.map(skill => {
+      const levels = reviewLevels(skill);
+      let names = mastery.due(skill);
+      if (levels.every(level => level.ready())) {
+        const asked = new Set();
+        levels.forEach(level => level.names().forEach(name => asked.add(name)));
+        names = names.filter(name => asked.has(name));
+      }
+      return { skill: skill, levels: levels, names: names };
+    }).filter(group => group.names.length > 0).sort((a, b) => b.names.length - a.names.length);
+  }
+
+  function reviewDueNames() {
+    return reviewDue().reduce((all, group) => all.concat(group.names), []);
+  }
+
+  function reviewDueCount() {
+    return reviewDueNames().length;
+  }
+
+  // Resolves to the review as practice rounds, largest first:
+  // [{ level, names }]. Loads the maps it needs; a skill whose map can't be
+  // fetched is left for another day.
+  async function buildReviewPlaylist() {
+    const steps = [];
+    for (const group of reviewDue()) {
+      try {
+        await Promise.all(group.levels.map(level => level.load()));
+      } catch (err) {
+        continue;
+      }
+      const left = new Set(group.names);
+      group.levels.forEach(level => {
+        const names = level.names().filter(name => left.has(name));
+        names.forEach(name => left.delete(name));
+        if (names.length) steps.push({ level: level, names: names });
+      });
+    }
+    return steps.sort((a, b) => b.names.length - a.names.length);
+  }
+
+  async function startReview() {
+    if (startReview.busy) return;
+    startReview.busy = true;
+    showLoadingOverlay('Gathering your review');
+    let steps = [];
+    try {
+      steps = await buildReviewPlaylist();
+    } finally {
+      hideLoadingOverlay();
+      startReview.busy = false;
+    }
+    if (!steps.length) {
+      renderToday();
+      showNotice('Nothing could be gathered for review just now.');
+      return;
+    }
+    state.review = { queue: steps };
+    startNextReview();
+  }
+
+  // Play the next round of the review in progress
+  function startNextReview() {
+    const review = state.review;
+    const step = review && review.queue.shift();
+    if (!step) return;
+    startGame(step.level.arg, { practice: step.names, review: review });
+  }
+
+  // The results action that carries a review on: "Next: 6 states" while
+  // rounds are left, hidden otherwise
+  function showReviewNext() {
+    const step = state.review && state.review.queue[0];
+    const btn = document.getElementById('review-next-btn');
+    btn.style.display = step ? '' : 'none';
+    if (step) btn.textContent = 'Next: ' + countNoun(step.names.length, step.level.noun);
+  }
+
+  /* =========================================================
+   * LEVEL SHEET (what a level card opens)
+   *
+   * One dialog per level: its mastery, bests at each difficulty, the ways
+   * to play it (a full round; focus practice when the last full round left
+   * a list; Learn for province levels), difficulty and map style, and
+   * Start. Centred on wide windows, a bottom sheet on phones.
+   * ========================================================= */
+
+  // What a round of each mode asks for, in a few words
+  const MODE_HOW = {
+    'world-country': 'find each on the map',
+    'us-state': 'find each on the map',
+    'us-capital-to-state': 'a capital is named, find its state',
+    'us-state-to-capital': 'a state is shown, pick its capital',
+    'us-city': 'find each city on the map',
+    'city-pin': 'drop a pin, score by how close you land',
+    'province': 'find each on the map'
+  };
+
+  // The level on show (null when closed), the way to play picked in it, and
+  // the card that opened it, which gets the focus back
+  const sheet = { level: null, way: 'play', opener: null };
+
+  function openLevelSheet(key, opener) {
+    const level = levelByKey(key);
+    if (!level || !level.available) return;
+    sheet.level = level;
+    sheet.way = 'play';
+    sheet.opener = opener || null;
+    renderSheetInfo();
+    renderSheetPlay();
+    document.getElementById('level-sheet-scrim').hidden = false;
+    document.getElementById('level-sheet').hidden = false;
+    document.getElementById('sheet-start-btn').focus();
+    // A province map that isn't in yet: fetch it now, so the breakdown can
+    // fill in and Start has nothing left to wait for
+    if (!level.ready()) {
+      level.load().then(() => {
+        if (sheet.level === level) renderSheetInfo();
+        refreshView();
+      }, () => { /* Start will try again and say so if it still can't */ });
+    }
+  }
+
+  // opts.keepFocus: leave the focus where it is (a round is about to start)
+  function closeLevelSheet(opts) {
+    if (!sheet.level) return;
+    const key = sheet.level.key;
+    const opener = sheet.opener;
+    sheet.level = null;
+    sheet.opener = null;
+    document.getElementById('level-sheet-scrim').hidden = true;
+    document.getElementById('level-sheet').hidden = true;
+    if (opts && opts.keepFocus) return;
+    // The library may have been redrawn since: find the card again by its level
+    const card = opener && document.contains(opener) ? opener : document.querySelector('[data-level="' + key + '"]');
+    if (card) card.focus({ preventScroll: true });
+  }
+
+  function renderSheetInfo() {
+    const level = sheet.level;
+    const collection = COLLECTIONS.find(c => c.key === level.collection);
+    const round = PROVINCE_ROUNDS[level.arg];
+    const summary = levelSummary(level);
+    const pin = level.mode === 'city-pin';
+    const dash = '—';
+
+    let mastered = '';
+    if (summary) {
+      const step = (n, cls, label) =>
+        '<div><dd class="num">' + n + '</dd><dt><i class="swatch' + (cls ? ' ' + cls : '') + '"></i>' + label + '</dt></div>';
+      mastered =
+        '<div class="sheet-block">' +
+          '<p class="eyebrow">Your mastery <span class="muted">' + summary.mastered + ' of ' + summary.total + ' mastered</span></p>' +
+          renderMasteryBar(summary, 'mbar--lg') +
+          '<dl class="breakdown">' +
+            step(summary.mastered, 'm3', 'Mastered') + step(summary.familiar, 'm2', 'Familiar') +
+            step(summary.learning, 'm1', 'Learning') + step(summary.new, '', 'New') +
+          '</dl>' +
+        '</div>';
+    }
+
+    let rows = '';
+    let games = 0;
+    let last = 0;
+    Object.keys(DIFFICULTY_INFO).forEach(d => {
+      let cells;
+      if (pin) {
+        const stats = levelPinStats(level, d);
+        games += stats.games;
+        cells = stats.games
+          ? '<td class="is-strong">' + stats.best.toLocaleString('en-US') + '</td><td>' + Math.round(stats.recentAvg).toLocaleString('en-US') +
+            '</td><td>' + (stats.recentKm != null ? formatKm(stats.recentKm) : dash) + '</td><td>' + stats.games + '</td>'
+          : null;
+      } else {
+        const rec = levelRecord(level, d);
+        if (rec) {
+          games += rec.gamesPlayed || 0;
+          last = Math.max(last, new Date(rec.lastPlayed).getTime() || 0);
+        }
+        cells = rec && rec.bestAccuracy
+          ? '<td class="is-strong">' + rec.bestAccuracy.correct + ' / ' + rec.bestAccuracy.total + '</td><td>' +
+            (rec.bestTime ? formatTimeSeconds(rec.bestTime.value) : dash) + '</td><td>' + rec.bestAccuracy.pct + '%</td><td>' + (rec.gamesPlayed || 0) + '</td>'
+          : null;
+      }
+      rows += '<tr class="' + (d === state.difficulty ? 'is-current' : '') + (cells ? '' : ' is-empty') + '">' +
+        '<th scope="row">' + DIFFICULTY_INFO[d].label + '</th>' +
+        (cells || '<td>' + dash + '</td><td>' + dash + '</td><td>' + dash + '</td><td>0</td>') + '</tr>';
+    });
+    if (pin) {
+      const store = loadPinStore().games.filter(g => g.region === resolveGameTarget(level.arg).region);
+      last = store.reduce((m, g) => Math.max(m, g.at || 0), 0);
+    }
+    const head = pin ? ['Best', 'Average', 'Avg miss', 'Rounds'] : ['Best', 'Time', 'Accuracy', 'Rounds'];
+    let note = games ? (games === 1 ? '1 round' : games + ' rounds') + ' in all' : 'No full round played yet';
+    if (games && last) {
+      note = 'Last played ' + new Date(last).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ' + note;
+    }
+    if (pin) {
+      note += '. 100 points within ' + PIN_PERFECT_KM + ' km of the city · ' + pinPoints(100) + ' at 100 km · ' +
+        pinPoints(250) + ' at 250 km · ' + pinPoints(500) + ' at 500 km · ' + pinPoints(1000) + ' at 1,000 km';
+    }
+
+    document.getElementById('sheet-info').innerHTML =
+      '<header class="sheet-head">' +
+        '<p class="eyebrow">' + escapeHtml(collection.title) + '</p>' +
+        '<h2 class="display-l" id="sheet-title">' + escapeHtml(level.title) + '</h2>' +
+        '<p class="sheet-sub">' + (round ? capitalize(round.subname) : levelCountText(level)) +
+          '<span class="x"> · ' + MODE_HOW[level.mode] + '</span></p>' +
+      '</header>' +
+      mastered +
+      '<div class="sheet-block sheet-block--bests">' +
+        '<p class="eyebrow">Personal bests</p>' +
+        '<table class="bests">' +
+          '<thead><tr><th scope="col">Difficulty</th>' + head.map(h => '<th scope="col">' + h + '</th>').join('') + '</tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+        '<p class="sheet-note">' + note + '</p>' +
+      '</div>';
+  }
+
+  // The ways to play this level: [{ key, icon, title, desc, count }]
+  function sheetWays(level) {
+    const count = level.count();
+    const drawn = level.mode === 'city-pin' && count > PIN_ROUND_SIZE;
+    const ways = [{
+      key: 'play', icon: 'play', title: 'Play',
+      desc: (drawn ? capitalize(numberWord(PIN_ROUND_SIZE)) + ' cities drawn from ' + count : 'All ' + countNoun(count, level.noun) + ', in random order') +
+        ' · counts toward your records'
+    }];
+    const focus = levelFocusList(level);
+    if (focus) {
+      const n = focus.names.length;
+      const savedOn = new Date(focus.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      ways.push({
+        key: 'focus', icon: 'focus', title: 'Focus Practice', count: n,
+        desc: (n === 1 ? 'The one' : 'The ' + numberWord(n)) + ' you missed or needed two tries for in your last full game (' + savedOn +
+          ') · practice only'
+      });
+    }
+    if (level.mode === 'province') {
+      const ladder = getLearnProgress(level.arg);
+      ways.push({
+        key: 'learn', icon: 'learn', title: ladder ? 'Keep Learning' : 'Learn Them',
+        desc: (ladder ? 'Pick up at level ' + ladder.level + ' of ' + ladder.order.length + ' · ' : '') +
+          'Start with one, add one each level. A miss restarts the level · practice only'
+      });
+    }
+    return ways;
+  }
+
+  function renderSheetPlay() {
+    const level = sheet.level;
+    const ways = sheetWays(level);
+    if (!ways.some(way => way.key === sheet.way)) sheet.way = 'play';
+    const bests = {};
+    Object.keys(DIFFICULTY_INFO).forEach(d => { bests[d] = levelBestText(level, d); });
+    const ladder = level.mode === 'province' ? getLearnProgress(level.arg) : null;
+
+    document.getElementById('sheet-play').innerHTML =
+      '<div>' +
+        '<p class="eyebrow" id="sheet-ways-label">Ways to play</p>' +
+        '<div class="modes" role="radiogroup" aria-labelledby="sheet-ways-label">' +
+          ways.map(way =>
+            '<button type="button" class="mode" role="radio" data-action="sheet-way" data-value="' + way.key + '" aria-checked="' + (way.key === sheet.way) +
+              '" tabindex="' + (way.key === sheet.way ? 0 : -1) + '">' +
+              '<span class="mode-icon">' + icon(way.icon) + '</span>' +
+              '<span class="mode-text"><strong>' + way.title + (way.count ? ' <i class="count">' + way.count + '</i>' : '') + '</strong>' +
+                '<span>' + way.desc + '</span></span>' +
+              '<span class="radio"></span>' +
+            '</button>').join('') +
+        '</div>' +
+        (ladder ? '<button type="button" class="link sheet-reset" data-action="sheet-learn-reset">Start learning over from one</button>' : '') +
+      '</div>' +
+      '<div class="sheet-options">' +
+        '<div class="option">' +
+          '<p class="eyebrow">Difficulty</p>' +
+          renderDifficultySeg('seg--block seg--rich', bests) +
+          '<p class="option-note" data-difficulty-note="' + (level.mode === 'city-pin' ? 'pin' : '') + '"></p>' +
+        '</div>' +
+        '<div class="option">' +
+          '<p class="eyebrow">Map</p>' +
+          renderMapSeg('seg--block') +
+          '<p class="option-note" data-map-note hidden>Always on in Uncharted</p>' +
+        '</div>' +
+      '</div>';
+    syncPlayControls();
+    renderSheetStart();
+  }
+
+  // Start's label says what is about to begin
+  function renderSheetStart() {
+    const level = sheet.level;
+    let what = levelCountText(level);
+    if (sheet.way === 'focus') {
+      const focus = levelFocusList(level);
+      what = focus ? focus.names.length + ' to revisit' : what;
+    } else if (sheet.way === 'learn') {
+      const ladder = getLearnProgress(level.arg);
+      what = ladder ? 'level ' + ladder.level + ' of ' + ladder.order.length : 'from one';
+    }
+    document.getElementById('sheet-start-btn').innerHTML =
+      (sheet.way === 'learn' ? 'Learn' : 'Start') + ' <span class="btn-count">· ' + what + '</span>' + icon('arrow');
+  }
+
+  function chooseSheetWay(way) {
+    sheet.way = way;
+    document.querySelectorAll('[data-action="sheet-way"]').forEach(btn => {
+      const on = btn.dataset.value === way;
+      btn.setAttribute('aria-checked', String(on));
+      btn.tabIndex = on ? 0 : -1;
+    });
+    renderSheetStart();
+  }
+
+  // Start the level the way the sheet says. opts.learnFresh: begin the
+  // Learn ladder again from one.
+  function startFromSheet(opts) {
+    const level = sheet.level;
+    if (!level) return;
+    const way = opts && opts.learnFresh ? 'learn' : sheet.way;
+    const focus = levelFocusList(level);
+    closeLevelSheet({ keepFocus: true });
+    if (way === 'learn') startGame(level.arg, { learn: true, learnFresh: !!(opts && opts.learnFresh) });
+    else if (way === 'focus' && focus) startGame(level.arg, { practice: focus.names });
+    else startGame(level.arg);
+  }
+
+  // Escape closes the sheet; Tab stays inside it
+  document.addEventListener('keydown', (e) => {
+    if (!sheet.level) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeLevelSheet();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const panel = document.getElementById('level-sheet');
+    const stops = Array.from(panel.querySelectorAll('button, a[href], [tabindex]'))
+      .filter(el => !el.disabled && el.tabIndex >= 0 && el.offsetParent !== null);
+    if (!stops.length) return;
+    const first = stops[0];
+    const last = stops[stops.length - 1];
+    if (!panel.contains(document.activeElement)) {
+      e.preventDefault();
+      first.focus();
+    } else if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
+
+  // Arrow keys move through a radio group and pick as they go, the way
+  // native radio buttons do
+  document.addEventListener('keydown', (e) => {
+    const radio = e.target && e.target.getAttribute && e.target.getAttribute('role') === 'radio' ? e.target : null;
+    if (!radio) return;
+    const step = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : (e.key === 'ArrowLeft' || e.key === 'ArrowUp') ? -1 : 0;
+    if (!step) return;
+    const group = radio.closest('[role="radiogroup"]');
+    const radios = group ? Array.from(group.querySelectorAll('[role="radio"]')).filter(el => !el.disabled) : [];
+    if (radios.length < 2) return;
+    e.preventDefault();
+    const next = radios[(radios.indexOf(radio) + step + radios.length) % radios.length];
+    next.focus();
+    next.click();
+  });
 
   /* =========================================================
    * GAME
@@ -5827,6 +5396,8 @@
     state.practice = false;
     state.learn = null;
     state.pin = null;
+    // Any round that isn't the next step of a review ends the review
+    state.review = (opts && opts.review) || null;
     // Set (or cleared) per start and left in place through finishGame, so
     // the results screen still knows a daily replay was practice.
     state.dailyReplay = opts && opts.dailyReplay ? { dateKey: opts.dailyReplay } : null;
@@ -5842,7 +5413,7 @@
       const dateKey = todayUtcKey();
       const existing = getDailyAttempt(dateKey);
       if (existing) {
-        showDailyAlreadyPlayed(existing, dateKey);
+        switchScreen('menu');   // Home's card shows today's result
         return;
       }
       // Stash today's date key on state so finishGame knows what to save under
@@ -5995,7 +5566,7 @@
       headerLabel = 'Daily #' + dailyPuzzleNumber(state.dailyDateKey);
       if (state.dailyReplay) headerLabel += ' (Practice)';
     }
-    if (state.practice) headerLabel += ' · Practice';
+    if (state.practice) headerLabel += state.review ? ' · Review' : ' · Practice';
     if (state.learn) headerLabel += ' · Learn';
     document.getElementById('region-tag').textContent = headerLabel;
     const zoomHintEl = document.getElementById('zoom-hint');
@@ -7079,6 +6650,7 @@
       viewMapBtn.style.display = state.hardMode ? 'none' : '';
     }
 
+    showReviewNext();
     switchScreen('results');
   }
 
@@ -8755,6 +8327,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     document.getElementById('view-map-btn').style.display = 'none';
     document.getElementById('pin-btn').style.display = 'none';
 
+    showReviewNext();
     switchScreen('results');
   }
 
@@ -8883,14 +8456,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       .filter(x => x && x.avgKm > PIN_PERFECT_KM * 4)
       .sort((x, y) => y.avgKm - x.avgKm)
       .slice(0, n);
-  }
-
-  // Menu card line: "Best 1,640 · last 10 avg 1,420"
-  function pinBestLabel(region) {
-    const st = pinRegionStats(region, state.difficulty);
-    if (!st.games) return '';
-    return 'Best ' + st.best.toLocaleString('en-US') +
-      (st.games > 1 ? ' · avg ' + Math.round(st.recentAvg).toLocaleString('en-US') : '');
   }
 
   /* =========================================================
@@ -9340,105 +8905,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
 
     state.learn = null;
     setLearnChrome(false);
+    showReviewNext();
     switchScreen('results');
-  }
-
-  /* =========================================================
-   * FOCUS CHOOSER (fresh game vs. practice round, on card tap)
-   * ========================================================= */
-
-  // Tapping a level card: offer a focus round when the last full game
-  // there left something to revisit; otherwise start straight away.
-  // Province levels always open the chooser, since Learn mode lives there.
-  function chooseAndStart(startArg) {
-    const target = resolveGameTarget(startArg);
-    const focus = target.mode === 'daily-five' ? null : getFocusList(target.mode, target.region);
-    const hasFocus = !!(focus && focus.names.length > 0);
-    if (!hasFocus && target.mode !== 'province') {
-      startGame(startArg);
-      return;
-    }
-    openFocusChooser(startArg, target, hasFocus ? focus : null);
-  }
-
-  // focus may be null (province level with nothing to revisit yet)
-  function openFocusChooser(startArg, target, focus) {
-    const noun = targetNoun(target.mode, target.region).toLowerCase();
-    document.getElementById('focus-modal-title').textContent =
-      GAME_MODES[target.mode].label(target.region);
-
-    const focusBtn = document.getElementById('focus-choice-focus');
-    if (focus) {
-      const count = focus.names.length;
-      const savedOn = new Date(focus.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      document.getElementById('focus-modal-subtitle').textContent =
-        'Your last full game here (' + savedOn + ') left ' + count + ' to revisit.';
-      document.getElementById('focus-choice-focus-title').textContent =
-        count === 1 ? 'Focus on That One' : 'Focus on Those ' + count;
-      focusBtn.style.display = '';
-    } else {
-      document.getElementById('focus-modal-subtitle').textContent = 'How would you like to play?';
-      focusBtn.style.display = 'none';
-    }
-    const total = focus ? focus.total : provinceRoundNames(target.region).length;
-    document.getElementById('focus-choice-fresh-desc').textContent =
-      'All ' + (total ? total + ' ' : '') + noun + ' · counts toward your records';
-
-    // Learn mode (province levels only): resume where the ladder left off
-    const learnBtn = document.getElementById('focus-choice-learn');
-    const resetBtn = document.getElementById('focus-learn-reset');
-    if (target.mode === 'province') {
-      const progress = getLearnProgress(target.region);
-      const ladderDesc = 'Start with one, add one each level. A miss restarts the level · practice only';
-      if (progress) {
-        document.getElementById('focus-choice-learn-title').textContent = 'Keep Learning';
-        document.getElementById('focus-choice-learn-desc').textContent =
-          'Pick up at level ' + progress.level + ' of ' + progress.order.length + ' · ' + ladderDesc.split(' · ')[0];
-      } else {
-        document.getElementById('focus-choice-learn-title').textContent = 'Learn Them';
-        document.getElementById('focus-choice-learn-desc').textContent = ladderDesc;
-      }
-      learnBtn.style.display = '';
-      resetBtn.style.display = progress ? '' : 'none';
-      learnBtn.onclick = () => {
-        closeFocusChooser();
-        startGame(startArg, { learn: true });
-      };
-      resetBtn.onclick = () => {
-        closeFocusChooser();
-        startGame(startArg, { learn: true, learnFresh: true });
-      };
-    } else {
-      learnBtn.style.display = 'none';
-      resetBtn.style.display = 'none';
-    }
-
-    // Buttons are permanent DOM, so swap handlers via onclick (no stacking)
-    document.getElementById('focus-choice-fresh').onclick = () => {
-      closeFocusChooser();
-      startGame(startArg);
-    };
-    focusBtn.onclick = () => {
-      closeFocusChooser();
-      if (focus) startGame(startArg, { practice: focus.names });
-    };
-    document.getElementById('focus-modal-overlay').classList.add('show');
-  }
-
-  function closeFocusChooser() {
-    document.getElementById('focus-modal-overlay').classList.remove('show');
-  }
-
-  // Close button, click-outside, and Escape — wired once at module load
-  function wireFocusChooserChrome() {
-    const overlay = document.getElementById('focus-modal-overlay');
-    document.getElementById('focus-modal-close').addEventListener('click', closeFocusChooser);
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) closeFocusChooser();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && overlay.classList.contains('show')) closeFocusChooser();
-    });
   }
 
   /* =========================================================
@@ -9491,31 +8959,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     } catch (e) { /* ignore */ }
   }
 
-  // Load once at startup, before the first menu render reads them
+  // Load once at startup, before anything is drawn from them
   setDifficulty(loadDifficulty());
   state.mapStyle = loadMapStyle();
-
-  // The menu DOM is recreated on every refreshView(), so it's safe (and
-  // required) to attach fresh listeners every time.
-  function initModeToggles() {
-    document.querySelectorAll('.difficulty-seg').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (btn.dataset.difficulty === state.difficulty) return;
-        setDifficulty(btn.dataset.difficulty);
-        saveDifficulty(state.difficulty);
-        renderHome();
-      });
-    });
-    const satToggle = document.getElementById('satellite-toggle');
-    if (satToggle) {
-      satToggle.addEventListener('change', (e) => {
-        if (state.difficulty === 'uncharted') return;
-        state.mapStyle = e.target.checked ? 'satellite' : 'parchment';
-        saveMapStyle(state.mapStyle);
-        renderHome();
-      });
-    }
-  }
 
   /* =========================================================
    * SHARE RESULTS
@@ -9858,8 +9304,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   // hold a ?play= link that has yet to be read.
   function switchScreen(name, opts) {
     const view = VIEWS.find(v => v.screen === name);
+    closeLevelSheet({ keepFocus: true });
     if (view) {
       state.roundId++;   // whatever the round still had queued up no longer applies
+      state.review = null;
       state.view = view.key;
       // Drawn on the way in, so bests and the daily card reflect the round just played
       if (view.render) view.render();
@@ -9908,12 +9356,28 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       }
     },
     'toggle-theme': () => setThemePref(resolveTheme(loadThemePref()) === 'dark' ? 'light' : 'dark'),
-    'open-sync': () => syncOpenModal()
+    'open-sync': () => syncOpenModal(),
+    'play-daily': () => startGame('daily-five'),
+    'share-daily': () => shareDailyResultFromMenu(),
+    'replay-daily': () => startDailyReplay(todayUtcKey()),
+    'start-review': () => startReview(),
+    'set-difficulty': (el) => chooseDifficulty(el.dataset.value),
+    'set-map': (el) => chooseMapStyle(el.dataset.value),
+    'jump': (el) => jumpToCollection(el.dataset.collection),
+    'open-level': (el) => openLevelSheet(el.dataset.level, el),
+    'sheet-close': () => closeLevelSheet(),
+    'sheet-way': (el) => chooseSheetWay(el.dataset.value),
+    'sheet-start': () => startFromSheet(),
+    'sheet-learn-reset': () => startFromSheet({ learnFresh: true })
   };
   document.addEventListener('click', (e) => {
     const el = e.target.closest ? e.target.closest('[data-action]') : null;
     if (!el || !ACTIONS[el.dataset.action]) return;
-    if (el.tagName === 'A') e.preventDefault();
+    if (el.tagName === 'A') {
+      // Leave "open in a new tab" and its relatives to the browser
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+    }
     ACTIONS[el.dataset.action](el, e);
   });
 
@@ -9927,6 +9391,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   });
   document.getElementById('learn-ready-btn').addEventListener('click', beginLearnQuiz);
   document.getElementById('pin-btn').addEventListener('click', handlePinButton);
+  document.getElementById('review-next-btn').addEventListener('click', startNextReview);
   document.getElementById('practice-btn').addEventListener('click', () => {
     startGame(state.startArg, { practice: state.roundNeedsWork });
   });
@@ -10675,7 +10140,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   }
 
   wireSyncModalChrome();
-  wireFocusChooserChrome();
 
   renderNav();
   applyTheme();
