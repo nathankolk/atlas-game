@@ -86,5 +86,14 @@ Screenshots: `$S/shots/app/shell/`.
 3. Level sheet replacing the focus chooser.
 4. Screenshots both themes/sizes, smoke suite, fixes.
 
-### Done and verified
-(nothing yet)
+### Done and verified (see commits; from here on edit public/index.html directly, the fragments in shell/ are spent)
+- 0adb5d5 design system + themes + shell (VIEWS, #stats/#settings, theme toggle, streak chip, sync row in Settings).
+  smoke 13/13 desktop. Legacy game/results/sync CSS re-pointed at tokens by shell/retoken.js + assemble-a.js.
+- (next commit) Home + level sheet + Smart Review: old menu tree, focus chooser and their CSS removed.
+  smoke 13/13 desktop. Looked at: shots/app/shell/b-home-*.png, c-sheet-*.png (light/dark, desktop/phone).
+- Seeds for screenshots: shell/seed-rich.json (played today), seed-rich-unplayed.json, seed-old.json (no mastery);
+  regenerate with shell/gen-seed.js. Shot helpers: shell/shoot.js (views, --js to click), shell/shoot-game.js.
+
+### Still to do
+- interaction checks (keyboard, focus trap, start paths, review playlist, hash nav, lazy province data)
+- smoke --mobile; game/results shots both themes after the Home step; dead code/CSS sweep; final report

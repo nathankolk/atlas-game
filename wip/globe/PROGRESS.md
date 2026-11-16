@@ -180,3 +180,49 @@ imagery-south-pole, demo-desktop-imagery.
 - The far-meridian seam only shows when the middle of the host falls inside a 2×2 pixel block (host width
   802, not 800): the pole check resizes the host for that reason.
 - Tests that make tiles fail must call `forgiveTileErrors(h)`: the browser logs each failed image.
+
+---
+
+# Review B (visual quality + performance) — IN PROGRESS
+
+Reviewer only: globe.js and test-globe.js are NOT edited by this stage. Probe scripts live in
+`review-b/`, screenshots in `$S/shots/globe/review-b/`. Run a probe with
+`cd review-b && NODE_PATH=/opt/node-tools/node_modules node <script>.js` (python ones: `python3 <script>.py`).
+
+## Done (scripts exist, were run, output looked at)
+- `review-b/lib.js` (open/settle/setView/shot helpers), `review-b/crop.py` (crop + enlarge + side by side).
+- `review-b/shots.js [d1|dark|d2|phone]` → 53 screenshots (`d1-*`, `dark-*`, `d2-*`, `phone-*`); log `shots.log`.
+  All looked at (whole or as `sheet-*.png` contact sheets, details as `crop-*.png`).
+- `review-b/seams.js` + `seams.py` (flat scene: land red, ocean blue, borders off; opaque and 50 %):
+  results in `seams-d1-result.txt`, `seams-interior-result.txt`. RESULT: no cracks, no double blending
+  (0 off-colour px in 3.8 M interior land px, 12 views incl. US/China/Russia sets; the "crack px" the
+  first script lists are real sub-pixel inlets, checked in `crop-cracks.png`).
+- `review-b/limb.js` + `limb.py` (does land reach the disc edge; truth = featureAt): `limb-d1-result.txt`.
+
+## Remaining
+- Extra shots: Caribbean x40 re-centred (first try was open sea), borders-hidden real theme.
+- `review-b/perf.js` (240-frame rotation, zoom sweep, allocations, draw calls, memory, build times).
+- Final findings report (StructuredOutput).
+
+## Findings so far (evidence = files in `$S/shots/globe/review-b/`)
+1. MAJOR — detailed coastlines turn into dark, heavy blots at low zoom (alpha of overlapping border
+   quads accumulates): `crop-us-china-coast.png`, `crop-phone-us.png`, `crop-limb-d1.png` (middle),
+   `crop-img-pole-limb.png` (white clumps with imagery). Straight borders stay thin and light.
+2. MINOR/MAJOR — imagery on DPR 2 desktop is soft (tile zoom 5 where ~6.5 matches device px at Europe x8):
+   `crop-d2.png` right panel. PROGRESS "Known limits" already admits it.
+3. MINOR — with imagery the cap beyond 85.05° is a flat disc with pie wedges (last tile row smeared);
+   at k = 1 near the limb it is blocky: `crop-img-pole-limb.png` left, `sheet-img-a.png`. Mock tiles
+   exaggerate it (their last row is a border line).
+4. MINOR — the outermost limb pixel over land is ~27 % ocean colour (limb coverage applied in both the
+   sphere pass and the fill pass on top of MSAA clipping): `limb-d1-result.txt`. Hidden by the rim tint
+   in the default theme.
+5. NOTE — 50m islands are 5-8 vertex polygons at x40 (data, not engine): `d1-carib40.png`.
+6. NOTE — canvas is capped at DPR 2, so DPR 3 phones upscale 1.5x (by spec): `crop-phone-us.png`.
+- Clean: translucent fills (0.3 / 0.65 / 0.5) with and without imagery, antimeridian, Antarctica/pole
+  fill, halo (no banding on dark or parchment), borders on the far side (none), DPR 2 vectors (crisp).
+
+---
+
+# Review A (correctness / robustness) — IN PROGRESS
+Running log, probes and confirmed defects: `review-a/PROGRESS-A.md` (kept there because two reviewers write
+PROGRESS.md at the same time; review B: please keep this section when you rewrite the file).

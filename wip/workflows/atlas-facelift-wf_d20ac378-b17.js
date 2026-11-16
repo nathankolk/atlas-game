@@ -6,6 +6,7 @@ export const meta = {
     { title: 'Shell', detail: 'design system, themes, app shell, Home, level sheet' },
     { title: 'Pages', detail: 'Stats and Settings' },
     { title: 'Game', detail: 'game HUD and results screen' },
+    { title: 'Globe', detail: 'the WebGL globe replaces the flat map in every mode' },
     { title: 'Review', detail: 'three independent reviewers' },
     { title: 'Fix', detail: 'reproduce and fix confirmed findings' },
   ],
@@ -278,7 +279,49 @@ and bests, a province level with Learn, a new level), new-player home, returning
 results screens in both themes (to confirm they still work). Compare against ${S}/shots/design/a/ and close
 the gaps you see.
 `
-const shell = await agent(shellPrompt, { label: 'shell-home-sheet', phase: 'Shell', schema: STAGE_SCHEMA })
+// Finished results handed in by the orchestrator, so a restart never runs a finished stage again.
+const PIN = (args && args.pinned) || {}
+
+// The stage built and pushed its work in two commits and was then cut off by a usage limit before its
+// closing checks; this record was written by the orchestrator from its progress notes and commits.
+const shell = {
+  summary: 'Built and pushed in two commits before a usage limit cut the stage off; its closing checks were ' +
+    'not run. 0adb5d5: the design system (semantic tokens over the brand palette, light and dark themes with ' +
+    'the no-flash head script, Cormorant Garamond + Inter), the shared components, and the app shell (VIEWS ' +
+    'registry, top nav and phone tab bar, #stats and #settings hash views with placeholder pages, theme ' +
+    'toggle, streak chip, a sync row in Settings); the legacy game, results and sync CSS was re-pointed at ' +
+    'the semantic tokens. 3f66458: Home (masthead with real figures, the Daily Five card in both states, ' +
+    'Smart Review with its playlist, the Library drawn from LEVELS with every card visible) and the level ' +
+    'sheet replacing the focus chooser; the old menu tree, the focus chooser and their CSS are gone.',
+  commit: '3f66458',
+  checks: 'Smoke suite 13 of 13 on desktop after each commit. Screenshots looked at: shots/app/shell/a-*, ' +
+    'b-home-*, c-sheet-* (light and dark, desktop and phone). NOT run: smoke --mobile, keyboard and focus ' +
+    'checks, game and results screenshots after the Home commit.',
+  notDone: [
+    'Interaction checks were never run: keyboard use and the focus trap in the level sheet; every start path ' +
+      'from the sheet (Play, Focus practice, Learn and its start-over link); the Smart Review playlist end to ' +
+      'end including "Next" on the results screen; hash navigation with the back button and hand-typed ' +
+      'hashes; level cards filling in as lazy province data arrives.',
+    'smoke.js --mobile was not run after the Home commit.',
+    'The game and results screens were not re-checked in both themes after the Home commit.',
+    'No sweep for dead code and dead CSS after the old menu tree was removed.',
+    'The phone full-page screenshot shots/app/shell/b-home-rich-mobile-dark.png shows Home twice, one copy ' +
+      'under the other (the page seems to start again after the Provinces & States heading). Not ' +
+      'investigated: it may be real duplication or a scroll-container problem at phone width, or an artifact ' +
+      'of the full-page capture.',
+    'A brand-new player and a returning player with an old store were built for, but there is no record ' +
+      'that either was looked at.',
+  ],
+  notesForNextStage: [
+    'Working files of the stage: ' + S + '/work/integration/shell/ (seed-rich.json = played today, ' +
+      'seed-rich-unplayed.json, seed-old.json = no mastery; gen-seed.js regenerates them; shoot.js takes view ' +
+      'screenshots and accepts --js to click; shoot-game.js for the game screens).',
+    'Stats and Settings exist as placeholder views; Settings already holds the sync row.',
+    'Smart Review leaves Pin the City out because its practice rounds would be saved as full games.',
+    'The stage wrote no closing report: grep public/index.html for the names you need (VIEWS, the level ' +
+      'sheet, the Home render functions) instead of expecting a list here.',
+  ],
+}
 if (!shell) throw new Error('shell stage returned nothing')
 done.push(Object.assign({ stage: 'Shell, Home, level sheet' }, shell))
 log('Shell: ' + (shell.commit || 'no commit'))
@@ -286,7 +329,13 @@ log('Shell: ' + (shell.commit || 'no commit'))
 // ---------- Pages ----------
 phase('Pages')
 const pagesPrompt = COMMON2 + notes(done) + `
-YOUR STAGE: the Stats and Settings pages (PLAN.md section 2, "Stats" and "Settings"), on the shell and
+FIRST, close out the stage before yours. It built and pushed its work but was cut off before its final
+checks (its report above lists them under "Not done"). Run them now: the smoke suite on desktop and with
+--mobile, the interaction checks, the question of Home appearing twice at phone width, a brand-new player and
+a returning player with an old store, the game and results screens in both themes. Fix what they turn up and
+commit and push that on its own before you start on Stats.
+
+THEN YOUR STAGE: the Stats and Settings pages (PLAN.md section 2, "Stats" and "Settings"), on the shell and
 components the previous stage built. Look at ${S}/shots/design/a/stats-*.png and settings-*.png and lift
 from ${S}/work/design/a/src/styles.css and body.html.
 
@@ -317,7 +366,7 @@ levels and due items; mastery.js accepts an injected clock for building history)
 ${S}/harness/seed-rich.js for later stages; (c) sync set up and not set up; (d) the reset dialog and each
 sync modal step.
 `
-const pages = await agent(pagesPrompt, { label: 'stats-settings', phase: 'Pages', schema: STAGE_SCHEMA })
+const pages = PIN.pages || await agent(pagesPrompt, { label: 'stats-settings', phase: 'Pages', schema: STAGE_SCHEMA })
 if (!pages) throw new Error('pages stage returned nothing')
 done.push(Object.assign({ stage: 'Stats and Settings' }, pages))
 log('Pages: ' + (pages.commit || 'no commit'))
@@ -361,13 +410,114 @@ with choices; a US Cities round; Pin the City before and after a drop; Learn stu
 Hard; Uncharted with mock satellite tiles; results for a full round with a record, a daily, a practice
 round, a Pin round. Compare against the mockups and close the gaps.
 `
-const game = await agent(gamePrompt, { label: 'game-results', phase: 'Game', schema: STAGE_SCHEMA })
+const game = PIN.game || await agent(gamePrompt, { label: 'game-results', phase: 'Game', schema: STAGE_SCHEMA })
 if (!game) throw new Error('game stage returned nothing')
 done.push(Object.assign({ stage: 'Game HUD and results' }, game))
 log('Game: ' + (game.commit || 'no commit'))
 
-// The review runs only when asked for, so the orchestrator can look at the three stages first.
-if (!(args && args.review)) return { stages: done, stoppedAfter: 'Game' }
+// ---------- Globe ----------
+phase('Globe')
+const globeBrief = `
+YOUR STAGE: put the game on the globe. Replace the flat SVG map and the CPU-reprojected satellite canvas with
+the WebGL globe engine in every mode, and remove the old renderers.
+
+Why: the owner asked for a globe instead of a flat map and for much better speed in both the regular and the
+satellite view. Today every frame of a pan or zoom repaints thousands of SVG paths, and satellite tiles are
+reprojected pixel by pixel in JavaScript. The engine draws both on the GPU.
+
+Read first, in this order:
+- ${S}/work/globe/SPEC.md with its Addendum (the engine's API) and ${S}/work/globe/PROGRESS.md (what was
+  built, deviations, additions such as anchorRadiusDeg and stats().imagery, known limits). The engine is
+  ${S}/work/globe/globe.js (287 of 287 checks pass); ${S}/work/globe/site/index.html is a working example.
+- ${S}/maps/map-port-checklist.md in full: every place the game touches the map, the per-mode setup, the
+  subtle behaviours that must survive, and bugs B1-B10. It is your list of what "done" means. Its line
+  numbers are from before the redesign; grep for the current code.
+
+Decisions already made (do not reopen):
+- Globe only: orthographic, north up, no flat map, no Albers insets for Alaska and Hawaii, no per-country
+  conic projections. Without WebGL the engine's own Canvas 2D renderer is the fallback.
+- The engine is pasted into the script as its own section between a banner and an END marker, byte for byte
+  as in globe.js, the way the mastery module is; keep a check script that compares the two. If the engine
+  itself needs a change, change globe.js, rerun its test file (NODE_PATH=/opt/node-tools/node_modules node
+  test-globe.js, about 4 minutes; single groups with a filter argument), and paste again.
+- Libraries are self-hosted: public/vendor/ has d3-array, d3-geo, topojson-client and earcut (min.js). Load
+  those, and drop the cdnjs d3 and topojson script tags once nothing uses them (d3.zoom, d3.select,
+  d3.geoPath and friends go away with the SVG map). The app must start with no network beyond its own origin
+  and the fonts.
+- World data: public/data/countries-110m.json for the first paint, then countries-50m.json for play (both
+  are in the repo). US states and provinces keep their files.
+- A layer's feature key is featureKey(f) ('name:' + the feature's raw name, from the logic stage). Marks are
+  styles: never rebuild a layer to recolour a place.
+- Colours come from the --g-* tokens and follow the theme when it changes.
+- Satellite: the engine's setImagery with the Esri World Imagery tile address the app uses today, the Esri
+  credit visible whenever imagery shows, "Loading imagery…" driven by the status callback. When
+  supportsImagery() is false (Canvas 2D), the Satellite option and Uncharted are shown as unavailable with a
+  short reason instead of failing.
+- Nothing that floats over the map uses backdrop-filter.
+
+Milestones, in order. Commit and push after each one. Every commit leaves every mode playable: while you move
+modes over, the old renderer may stay for the ones not yet moved, and it is deleted when the last has moved.
+M1 Engine in the page. World, the six continents and the Daily Five on the globe: layers, taps and clicks,
+   hover, marks (found / second try / missed), the wrong-answer flash, reveal, Hard (no marks kept), zoom
+   buttons and keys, recentre, each level's framing (fitTo after the first prompt has laid out), review mode
+   ("View on the map"). The smoke suite's map adapter rewritten for the globe: expose the engine on
+   window.__atlas as globe, aim real clicks with project() at a place's anchor, and turn or zoom the globe
+   when the place is hidden or tiny.
+M2 United States (states, both capital modes, city dots) and the province rounds, including Learn: study
+   labels placed with the engine's anchor and anchorRadiusDeg, placed again when a zoom settles, and the
+   "Zoom in to see every name" pill.
+M3 Satellite and Uncharted in every mode through setImagery. Pin the City: aim, Drop Pin, the distance line
+   and rings on the overlay, its framing on the cities' bounding box, and its Hard and Uncharted variants.
+M4 Remove what the globe replaced: the SVG renderer, d3.zoom, the projection code, the CPU satellite canvas
+   and its tile cache, their CSS, the CDN script tags. Then the edges: first paint on 110m with the swap to
+   50m, a resize and a phone rotation, reduced motion, a lost WebGL context, and a full round played with
+   forceCanvas2D.
+M5 Measure and report: milliseconds of script per frame while turning and zooming the 50m world, with and
+   without imagery, at desktop and phone size (the engine's stats()); time from navigation to an interactive
+   map; and the same for the old app (git commit 1c74e1d) on the same machine. This sandbox renders WebGL in
+   software, so say plainly what the numbers do and do not show.
+
+How the rounds work: this stage is long, so it is run as a short series of engineers. Do the earliest
+unfinished milestones. When you have finished and pushed one or two of them and your context is getting long,
+stop: bring progress.md up to date and return with done = false. A fresh engineer continues from progress.md.
+Return done = true only when every milestone is finished, the smoke suite passes on desktop and with
+--mobile, and you have looked at the screenshots.
+
+Screenshots to take and look at (${S}/shots/app/globe/): each kind of level mid-round at desktop and phone
+size, light and dark, chart and satellite; Uncharted; Pin the City before and after a drop; Learn study and
+quiz; review mode; the Canvas 2D fallback.
+`
+const GLOBE_SCHEMA = {
+  type: 'object',
+  properties: Object.assign({}, STAGE_SCHEMA.properties, {
+    done: { type: 'boolean', description: 'true only when every milestone is finished and verified' },
+    milestonesDone: { type: 'array', items: { type: 'string' }, description: 'Milestones finished so far, e.g. ["M1", "M2"]' },
+  }),
+  required: STAGE_SCHEMA.required.concat(['done', 'milestonesDone']),
+}
+// At most four rounds, and the rounds stop if one of them adds no commit.
+const MAX_GLOBE_ROUNDS = 4
+const globeRounds = (PIN.globeRounds || []).slice()
+globeRounds.forEach((g, i) => done.push(Object.assign({ stage: 'Globe swap, round ' + (i + 1) }, g)))
+let globeDone = globeRounds.some(g => g.done)
+let lastGlobeCommit = globeRounds.length ? globeRounds[globeRounds.length - 1].commit : game.commit
+for (let round = globeRounds.length + 1; round <= MAX_GLOBE_ROUNDS && !globeDone; round++) {
+  const g = await agent(COMMON2 + notes(done) + globeBrief + `\nThis is round ${round} of at most ${MAX_GLOBE_ROUNDS}.\n`,
+    { label: 'globe-swap-' + round, phase: 'Globe', schema: GLOBE_SCHEMA })
+  if (!g) throw new Error('globe round ' + round + ' returned nothing')
+  globeRounds.push(g)
+  done.push(Object.assign({ stage: 'Globe swap, round ' + round }, g))
+  log('Globe round ' + round + ': ' + (g.commit || 'no commit') + (g.done ? ' (finished)' : ''))
+  globeDone = g.done
+  if (!globeDone && g.commit === lastGlobeCommit) {
+    log('Globe round ' + round + ' added no commit; stopping the rounds')
+    break
+  }
+  lastGlobeCommit = g.commit
+}
+
+// The review runs only when asked for, so the orchestrator can look at the result first.
+if (!(args && args.review)) return { stages: done, globeFinished: globeDone, stoppedAfter: 'Globe' }
 
 // ---------- Review ----------
 phase('Review')
