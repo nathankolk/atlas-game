@@ -3911,6 +3911,9 @@
    *               names come from map files, so this is [] until ready().
    *   ready()     true once names() is complete
    *   load()      fetches whatever names() needs; resolves when ready()
+   *   count()     how many items the level has. Unlike names(), a province
+   *               level knows this before its map is in; the country levels
+   *               still wait for the world map (0 until then).
    * ========================================================= */
 
   const COLLECTIONS = [
@@ -3987,7 +3990,8 @@
         noun: country.noun.toLowerCase(),
         names: () => provinceRoundNames(key),
         ready: () => !!state.provinceStores[round.country],
-        load: () => loadProvinceData(round.country)
+        load: () => loadProvinceData(round.country),
+        count: () => round.count
       };
     }),
     // A World round draws 20 of these; a continent round asks them all
@@ -3996,7 +4000,11 @@
       arg: key, mode: 'city-pin', skill: 'city-pin', noun: 'cities',
       names: () => pinCitiesFor(PIN_ROUNDS[key]).map(c => c.name)
     }))
-  ).map(def => Object.assign({ available: true, ready: () => true, load: () => Promise.resolve() }, def));
+  ).map(def => {
+    const level = Object.assign({ available: true, ready: () => true, load: () => Promise.resolve() }, def);
+    if (!level.count) level.count = () => level.names().length;
+    return level;
+  });
 
   function levelByKey(key) {
     return LEVELS.find(level => level.key === key) || null;
