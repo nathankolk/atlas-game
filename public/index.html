@@ -1793,7 +1793,7 @@
     left: 24px;
     top: 20px;
     bottom: 20px;
-    z-index: 5;
+    z-index: 6;         /* over the tools: the list of search results opens across them on a phone */
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1834,7 +1834,7 @@
   .explore-results li.explore-none { font-weight: 400; color: var(--text-3); cursor: default; }
 
   /* The place card: what the atlas knows about a country, and how the player stands with it */
-  .place { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 22px 22px; border-radius: var(--r-lg); }
+  .place { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 22px 22px; border-radius: var(--r-lg); background: var(--surface); }
   /* Focus is sent here by the script after a search; the card needs no ring for it */
   .place:focus-visible { border-radius: var(--r-lg); box-shadow: var(--shadow-2); }
   .place-head { display: flex; align-items: center; gap: 12px; min-height: 44px; }
@@ -2227,7 +2227,7 @@
        sheet over the bottom of the screen, and what sits at the bottom
        stands on top of it (--place-h is the sheet's height, 0 when shut) */
     .explore-side { position: static; display: block; width: auto; }
-    .explore-search { position: absolute; left: 12px; right: 12px; top: 12px; z-index: 6; }
+    .explore-search { position: absolute; left: 12px; right: 12px; top: 12px; }
     .explore-field { font-size: 16px; }
     .explore-tools { left: 12px; right: 12px; top: 68px; padding: 10px 12px 12px; }
     .explore-legend { justify-content: space-between; gap: 4px 8px; margin-top: 10px; font-size: 11.5px; }
@@ -2237,7 +2237,6 @@
       left: 0;
       right: 0;
       bottom: 0;
-      z-index: 6;
       max-height: 46%;
       padding: 12px 20px 20px;
       border-width: 1px 0 0;
@@ -8254,6 +8253,8 @@
     paintExplore();
     const linked = countryFromHash();
     if (linked && linked !== explore.selected) selectCountry(linked, { instant: arriving });
+    // A country the atlas does not have is dropped from the address
+    else if (!linked && window.location.hash.indexOf('=') !== -1) setAddressBar(viewUrl('explore'));
   }
 
   // Moves the globe into the Explore screen and sets it up for looking around
@@ -8454,7 +8455,9 @@
     const room = Math.min(clear.right - clear.left, clear.bottom - clear.top) / 2;
     const sine = Math.max(Math.sin(Math.min(focus.radius, Math.PI / 2)), 1e-6);
     // Whole, with air around it; a speck of an island comes up to a size that can be made out
-    let k = Math.min(room * 0.62 / (base * sine), Math.max(EXPLORE_CLOSE, EXPLORE_MIN_PX / (2 * base * sine)));
+    // (most of the room where there is little of it, on a phone)
+    const reach = Math.max(room * 0.62, Math.min(room * 0.85, 90));
+    let k = Math.min(reach / (base * sine), Math.max(EXPLORE_CLOSE, EXPLORE_MIN_PX / (2 * base * sine)));
     k = Math.max(k, explore.home.k);
     if (opts && opts.gentle) {
       const across = 2 * base * view.k * sine;
