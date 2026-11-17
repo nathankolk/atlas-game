@@ -1148,95 +1148,17 @@
     background: radial-gradient(ellipse 80% 80% at 50% 46%, var(--stage-1) 0%, var(--stage-2) 62%, var(--stage-3) 100%);
   }
 
-  #world-map { position: relative; display: block; width: 100%; height: 100%; cursor: grab; }
-  #world-map:active { cursor: grabbing; }
-
   /* The globe covers the stage, and reaches past its top or bottom edge so
      that the globe's middle is the middle of what the HUD leaves clear
-     (see placeGlobeHost) */
-  .globe-host { position: absolute; left: 0; right: 0; top: 0; bottom: 0; visibility: hidden; }
-  .stage.on-globe .globe-host { visibility: visible; }
-  .stage.on-globe #world-map, .stage.on-globe .sat-canvas { visibility: hidden; }
+     (see placeGlobeHost). Its colours are the --g-* tokens as they stand
+     on the stage, handed over by applyMapLook(). */
+  .globe-host { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
   .stage.no-borders .globe-host, #game-screen.pin-mode .globe-host { --globe-cursor: crosshair; }
 
-  .sphere-bg { fill: var(--g-ocean-2); stroke: var(--g-limb); stroke-width: 0.5; vector-effect: non-scaling-stroke; }
-  .graticule { fill: none; stroke: var(--g-grat); stroke-width: 0.5; vector-effect: non-scaling-stroke; pointer-events: none; }
-  /* US and province maps: sea to every edge */
-  .us-ocean { fill: var(--g-ocean-2); }
-
-  .country {
-    fill: var(--g-land);
-    stroke: var(--g-border);
-    stroke-width: var(--g-line, 0.5);
-    stroke-linejoin: round;
-    vector-effect: non-scaling-stroke;
-    transition: fill 0.2s ease;
-    cursor: pointer;
-  }
-  @media (hover: hover) { .country.eligible:hover { fill: var(--g-near); } }
-  .country.ineligible { opacity: 0.5; cursor: default; }
-
-  /* Unseen target under a tiny island: a wide stroke that takes the tap.
-     It is drawn below the land, so a neighbour's own shape still wins. */
-  .country-hitzone { fill: none; stroke: transparent; stroke-width: 22; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: pointer; }
-
-  /* Marks, weakest first. A later rule wins, so an answer's flash and the
-     reveal show over the tint of the state being asked about. */
-  .stage .country.prompt-highlight { fill: color-mix(in srgb, var(--g-select) 38%, var(--g-land)); stroke: var(--g-select); stroke-width: 2; }
-  .stage .country.learn-known { fill: color-mix(in srgb, var(--g-select) 30%, var(--g-land)); stroke: var(--g-select); stroke-width: 1; }
-  .stage .country.learn-new { fill: var(--g-select); stroke: var(--g-label); stroke-width: 2; }
-  .stage .country.completed-correct { fill: var(--g-found); cursor: default; }
-  .stage .country.completed-second { fill: var(--g-second); cursor: default; }
-  .stage .country.completed-wrong { fill: var(--g-missed); cursor: default; }
-  .stage .country.target-correct { fill: var(--m2); stroke-width: 1; }
-  .stage .country.target-wrong { fill: var(--g-wrong); stroke-width: 1; }
-  .stage .country.reveal { fill: var(--g-select); stroke: var(--g-label); stroke-width: 2.5; animation: flashReveal 1.2s ease infinite; }
-  @keyframes flashReveal {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-  }
-
-  /* Rings that pulse where a missed answer is */
-  .reveal-marker .pulse-ring { fill: none; stroke: var(--g-label); stroke-width: 3; vector-effect: non-scaling-stroke; animation: revealPulse 1.4s ease-out infinite; }
-  .reveal-marker .pulse-ring.delayed { animation-delay: 0.45s; stroke: var(--g-select); }
-  .reveal-marker .center-dot { fill: var(--g-label); stroke: var(--g-select); stroke-width: 2; vector-effect: non-scaling-stroke; }
-  @keyframes revealPulse {
-    0% { r: 6; opacity: 0.95; }
-    100% { r: 42; opacity: 0; }
-  }
-
-  /* City targets (US cities): drawn in map units and counter-scaled on
-     every zoom, so they hold their size on screen */
-  .city-dot { fill: var(--g-label); stroke: var(--g-halo); stroke-width: 2; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill 0.18s ease; }
-  @media (hover: hover) { .city-dot:hover { fill: var(--g-select); } }
-  .stage .city-dot.completed-correct { fill: var(--good); cursor: default; }
-  .stage .city-dot.completed-second { fill: var(--second); cursor: default; }
-  .stage .city-dot.completed-wrong { fill: var(--bad); cursor: default; }
-  .stage .city-dot.target-correct { fill: var(--m2); }
-  .stage .city-dot.target-wrong { fill: var(--g-wrong); }
-  .stage .city-dot.reveal { fill: var(--g-select); stroke: var(--g-label); }
-
-  /* Learn: the names of the provinces being studied */
-  .learn-label text {
-    font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 600;
-    fill: var(--g-label);
-    stroke: var(--g-halo);
-    stroke-width: 3px;
-    paint-order: stroke;
-    text-anchor: middle;
-    dominant-baseline: middle;
-    pointer-events: none;
-  }
-  .learn-label.new text { font-size: 16px; font-weight: 700; }
-  .learn-dot { fill: var(--g-label); stroke: var(--g-halo); stroke-width: 1.5px; pointer-events: none; }
-
-  /* ===== Game: satellite imagery under the map =====
-     .sat-on      imagery (drawn to #sat-canvas) shows through see-through land.
+  /* ===== Game: satellite imagery =====
+     .sat-on      imagery shows through see-through land.
      .no-borders  Uncharted: no borders and no hover tint, so only an answer shows a shape.
      If the imagery cannot load, .sat-on comes off and .no-borders stays. */
-  .sat-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; pointer-events: none; transform-origin: 0 0; }
 
   /* The imagery is dark in both themes, so over it the map's tokens turn
      to light lines and see-through tints */
@@ -1259,25 +1181,8 @@
     --bad: #e58a73;
     background: var(--ink);
   }
-  .stage.sat-on .sat-canvas { display: block; }
-  .stage.sat-on .sphere-bg, .stage.sat-on .us-ocean { fill: none; }
-  .stage.sat-on .graticule { display: none; }
-  .stage.sat-on .country.ineligible { fill: var(--g-shade); stroke-opacity: 0.35; opacity: 1; }
-  .stage.sat-on .country.target-correct, .stage.sat-on .country.target-wrong,
-  .stage.sat-on .country.reveal, .stage.sat-on .country.learn-new { fill-opacity: 0.55; }
-
-  /* Albers USA draws Alaska and Hawaii in insets; over imagery the picture
-     jumps at their edges, so they get a frame */
-  .inset-frame { display: none; }
-  .stage.sat-on .inset-frame { display: block; fill: none; stroke: var(--g-limb); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; pointer-events: none; }
 
   .stage.no-borders { --g-near: var(--g-land); }
-  .stage.no-borders #world-map, .stage.no-borders .country { cursor: crosshair; }
-  .stage.no-borders .country { stroke: none; }
-  .stage.no-borders .country.prompt-highlight, .stage.no-borders .country.learn-known,
-  .stage.no-borders .country.learn-new, .stage.no-borders .country.target-correct,
-  .stage.no-borders .country.target-wrong { stroke: var(--g-border); stroke-width: 1.6; }
-  .stage.no-borders .country.reveal { stroke: var(--g-label); stroke-width: 2.5; }
 
   /* Imagery credit (the tile provider requires it) and the loading note */
   .sat-credit {
@@ -1297,28 +1202,6 @@
   }
   .stage.sat-on .sat-credit { display: block; }
 
-  /* ===== Game: Pin the City ===== */
-  /* Plain land: no hover tint to hint at a country's shape */
-  #game-screen.pin-mode .stage { --g-near: var(--g-land); }
-  #game-screen.pin-mode #world-map, #game-screen.pin-mode .country { cursor: crosshair; }
-  /* Hard: borders off, so only coastlines show */
-  #game-screen.pin-hard .country { stroke: none; }
-  .pin-layer { pointer-events: none; }
-  .pin-guess path { fill: var(--g-wrong); stroke: var(--g-halo); stroke-width: 1.5px; }
-  .pin-guess circle { fill: var(--g-halo); }
-  .pin-truth-ring { fill: none; stroke: var(--g-label); stroke-width: 2px; }
-  .pin-truth-dot { fill: var(--g-select); stroke: var(--g-label); stroke-width: 1.5px; }
-  .pin-truth-label {
-    font-family: var(--font-display);
-    font-size: 16px;
-    font-weight: 700;
-    fill: var(--g-label);
-    stroke: var(--g-halo);
-    stroke-width: 3px;
-    paint-order: stroke;
-    text-anchor: middle;
-  }
-  .pin-line { fill: none; stroke: var(--g-label); stroke-width: 1.5px; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
 
   /* ===== Game: bar ===== */
   .gamebar {
@@ -2354,8 +2237,6 @@
   <!-- GAME SCREEN: the map is the stage; everything else floats over it -->
   <div id="game-screen" class="screen">
     <div class="stage" id="map-wrap">
-      <canvas id="sat-canvas" class="sat-canvas" aria-hidden="true"></canvas>
-      <svg id="world-map" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map"></svg>
       <div class="globe-host" id="globe-host" role="img" aria-label="Globe"></div>
       <div class="sat-credit" id="sat-credit">Imagery © Esri, Maxar, Earthstar Geographics</div>
     </div>
@@ -2469,8 +2350,6 @@
 <script src="/vendor/d3-geo.min.js"></script>
 <script src="/vendor/topojson-client.min.js"></script>
 <script src="/vendor/earcut.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 <script>
 (function(){
   'use strict';
@@ -2718,7 +2597,7 @@
    * Census's standard 4-region split. Each region has a curated list of
    * cities (mostly the largest by population, plus state capitals to
    * ensure every state in the region has at least one entry). Coords are
-   * [longitude, latitude] — d3.geoAlbersUsa() consumes them in that order.
+   * [longitude, latitude], the order the globe takes them in.
    *
    * Coords are sourced from training-data knowledge and are accurate to
    * within ~1km, which is far below the rendering tolerance at a regional
@@ -3033,11 +2912,8 @@
    * (TopoJSON), generated from Natural Earth by tools/build-provinces.js —
    * display names and Russia's round groups are baked into those files.
    *
-   * Each round gets an equal-area conic projection (standard parallels
-   * tuned per country) centered on the round's own land, so high-latitude
-   * land (northern Canada, Siberia) isn't ballooned the way Mercator would
-   * draw it, and a regional round like Central & Northwest Russia sits
-   * upright instead of tilted off the edge of a whole-Russia cone.
+   * Each round opens with the globe turned to the round's own land
+   * (see roundFrame).
    *
    * Border choices, inherited from the data build: Crimea and Sevastopol
    * are left out of Russia; Taiwan is left out of China (world mode already
@@ -3050,29 +2926,25 @@
       name: 'Canada',
       dataUrl: '/data/provinces-canada.json',
       parents: ['Canada'],   // what the world map calls the land this map covers
-      noun: 'Provinces & Territories',
-      parallels: [50, 70]
+      noun: 'Provinces & Territories'
     },
     china: {
       name: 'China',
       dataUrl: '/data/provinces-china.json',
       parents: ['China', 'Hong Kong', 'Macao'],   // what the world map calls the land this map covers
-      noun: 'Provinces & Regions',
-      parallels: [25, 47]
+      noun: 'Provinces & Regions'
     },
     india: {
       name: 'India',
       dataUrl: '/data/provinces-india.json',
       parents: ['India'],   // what the world map calls the land this map covers
-      noun: 'States',
-      parallels: [12, 28]
+      noun: 'States'
     },
     russia: {
       name: 'Russia',
       dataUrl: '/data/provinces-russia.json',
       parents: ['Russia'],   // what the world map calls the land this map covers
-      noun: 'Regions',
-      parallels: [50, 70]
+      noun: 'Regions'
     }
   };
 
@@ -3404,16 +3276,9 @@
     view: 'home',             // the view showing, or the one to come back to after a round (key into VIEWS)
     review: null,             // Smart Review in progress: { queue: [{ level, names }] } still to play
 
-    onGlobe: false,           // the round in play is drawn on the globe (see playedOnGlobe)
     roundSeconds: 0,          // how long the round just finished took
     worldBorders: null,       // every border and coastline of the world map, each once (GeoJSON lines)
 
-    svg: null,
-    projection: null,
-    pathGen: null,
-    mapG: null,
-    zoomBehavior: null,
-    currentTransform: null,
     zoomHintShown: false,
   };
 
@@ -3468,20 +3333,9 @@
     return res.json();
   }
 
-  // US states data, in priority order:
-  //   1. Our own filtered copy of Natural Earth 10m admin_1 (51 US features,
-  //      ~1MB GeoJSON, ~300KB after Cloudflare gzip). NE's 10m is the
-  //      highest-detail commonly available state boundary set — borders are
-  //      visibly smoother than us-atlas 10m at the regional zoom used by
-  //      cities mode. File lives in this repo at public/data/.
-  //   2. us-atlas 10m as graceful-degradation fallback (chunkier borders,
-  //      but the game still plays).
-  // Format-agnostic loader handles either GeoJSON or TopoJSON below.
-  const US_TOPO_URLS = [
-    '/data/us-states-detail.json',
-    'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json',
-    'https://unpkg.com/us-atlas@3/states-10m.json'
-  ];
+  // US states: our own filtered copy of Natural Earth 10m admin_1 (51
+  // features, GeoJSON)
+  const US_STATES_URL = '/data/us-states-detail.json';
 
   async function loadUsStatesData() {
     // Cache: load once per session
@@ -3489,44 +3343,19 @@
     if (state.usLoading) { await state.usLoading; return; }
 
     state.usLoading = (async () => {
-      await ensureTopojson();
-      let lastErr = null;
-      for (const url of US_TOPO_URLS) {
-        try {
-          const res = await fetch(url);
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const data = await res.json();
-
-          // Accept either GeoJSON FeatureCollection or TopoJSON. Our local
-          // high-detail file is GeoJSON; the us-atlas fallback is TopoJSON.
-          let geojson;
-          if (data.type === 'FeatureCollection') {
-            geojson = data;
-          } else if (data.objects) {
-            const key = data.objects.states ? 'states' : Object.keys(data.objects)[0];
-            geojson = topojson.feature(data, data.objects[key]);
-          } else {
-            throw new Error('Unrecognized US states data format');
-          }
-
-          state.usFeatures = geojson.features.filter(f => featureName(f));
-          state.usCanonicalByFeature.clear();
-          state.usFeatureByCanonical.clear();
-          state.usFeatures.forEach(f => {
-            const raw = featureName(f);
-            // State names in us-atlas already match our canonical list
-            state.usCanonicalByFeature.set(featureKey(f), raw);
-            if (!state.usFeatureByCanonical.has(raw)) {
-              state.usFeatureByCanonical.set(raw, f);
-            }
-          });
-          state.usLoaded = true;
-          return;
-        } catch (err) {
-          lastErr = err;
-        }
-      }
-      throw lastErr || new Error('Could not load US states data');
+      const res = await fetch(US_STATES_URL);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const geojson = await res.json();
+      state.usFeatures = geojson.features.filter(f => featureName(f));
+      state.usCanonicalByFeature.clear();
+      state.usFeatureByCanonical.clear();
+      state.usFeatures.forEach(f => {
+        // State names in the file already match our canonical list
+        const raw = featureName(f);
+        state.usCanonicalByFeature.set(featureKey(f), raw);
+        if (!state.usFeatureByCanonical.has(raw)) state.usFeatureByCanonical.set(raw, f);
+      });
+      state.usLoaded = true;
     })();
 
     try {
@@ -3544,7 +3373,6 @@
     if (state.provinceLoading[countryKey]) { await state.provinceLoading[countryKey]; return; }
 
     state.provinceLoading[countryKey] = (async () => {
-      await ensureTopojson();
       const res = await fetch(PROVINCE_COUNTRIES[countryKey].dataUrl);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const topology = await res.json();
@@ -3573,31 +3401,8 @@
     }
   }
 
-  async function ensureTopojson() {
-    if (typeof topojson !== 'undefined' && topojson.feature) return;
-    // Fallback CDNs in case the primary script tag failed
-    const fallbackUrls = [
-      'https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js',
-      'https://unpkg.com/topojson-client@3/dist/topojson-client.min.js'
-    ];
-    for (const url of fallbackUrls) {
-      try {
-        await new Promise((resolve, reject) => {
-          const s = document.createElement('script');
-          s.src = url;
-          s.onload = resolve;
-          s.onerror = () => reject(new Error('Failed to load ' + url));
-          document.head.appendChild(s);
-        });
-        if (typeof topojson !== 'undefined' && topojson.feature) return;
-      } catch (_) { /* try next */ }
-    }
-    throw new Error('Could not load topojson library from any CDN');
-  }
-
   // Fetch the world map and index its countries by key and canonical name
   async function loadWorldFeatures() {
-    await ensureTopojson();
     const topology = await loadWorldData();
     const countriesKey = topology.objects.countries ? 'countries' : Object.keys(topology.objects)[0];
     const geojson = topojson.feature(topology, topology.objects[countriesKey]);
@@ -5476,7 +5281,7 @@
     }
 
     // The globe builds a map the first time it shows it; the round starts once that is drawn
-    if (playedOnGlobe(mode)) await syncMapLayers();
+    await syncMapLayers();
     hideLoadingOverlay();
     if (state.roundId !== round) return;
     applyImagerySupport();
@@ -5585,19 +5390,12 @@
     setGameChrome();
     setAddressBar(levelLink(regionOrMode, !!state.learn));
 
-    // Satellite / borderless classes go on before the map draws; give the
-    // imagery a fresh chance if it failed last game
-    state.onGlobe = playedOnGlobe(mode);
-    document.getElementById('map-wrap').classList.toggle('on-globe', state.onGlobe);
+    // Imagery gets a fresh chance if it failed last round. The globe comes
+    // in already showing this round, near enough in place.
     sat.failed = false;
-    // The globe comes in already showing this round, near enough in place
-    if (state.onGlobe) {
-      applyMapStyle();
-      setupMap();
-      frameMap();
-    } else {
-      applyMapStyle();
-    }
+    applyMapStyle();
+    setupMap();
+    frameMap();
 
     switchScreen('game');
     updateStats();
@@ -5606,12 +5404,10 @@
     document.getElementById('zoom-hint').hidden = state.zoomHintShown;
     state.zoomHintShown = true;
 
-    // Wait for screen transition, then render map
     roundTimeout(() => {
       // The opening view once more, now that the screen is up; the first
       // question may then turn the globe from it (States → Capitals)
-      if (state.onGlobe) frameMap();
-      else renderMap();
+      frameMap();
       if (state.learn) startLearnLevel();
       else nextCountry();
     }, 80);
@@ -5805,189 +5601,6 @@
     // A short window has no room to keep the map clear of the card as well
     if (card && bottom - (card.bottom - stage.top) > 200) top = card.bottom - stage.top;
     return { left: side, right: width - side, top: top + gap, bottom: bottom - gap };
-  }
-
-  function renderMap() {
-    const svgEl = document.getElementById('world-map');
-    const wrap = svgEl.parentElement;
-    const width = wrap.clientWidth;
-    const height = wrap.clientHeight;
-
-    svgEl.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-
-    // Clear
-    while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
-
-    const svg = d3.select(svgEl);
-    state.svg = svg;
-
-    // Feature lists for fitting and background rendering
-    let fitCollection = {
-      type: 'FeatureCollection',
-      features: state.eligibleFeatures
-    };
-    const bgCollection = {
-      type: 'FeatureCollection',
-      features: activeFeatures()
-    };
-
-    // Pin the City frames the round's cities, not the continent's land, so
-    // Europe isn't shrunk to fit all of Russia out to the Pacific
-    if (state.gameMode === 'city-pin' && state.currentContinent !== 'World') {
-      fitCollection = pinFitGeometry(state.currentContinent);
-    }
-
-    // Pick projection based on active dataset
-    let projection;
-    if (state.activeDataset === 'us') {
-      // Albers USA handles Alaska and Hawaii insets automatically,
-      // giving a clean framed map of the 50 states at any size.
-      projection = d3.geoAlbersUsa();
-    } else if (state.activeDataset === 'province') {
-      // Equal-area conic centered on the round's land (see PROVINCE_COUNTRIES).
-      // geoCentroid is spherical, so the Russian Far East round centers
-      // correctly even though Chukotka straddles the antimeridian.
-      const round = PROVINCE_ROUNDS[state.currentProvinceRound];
-      const centroid = d3.geoCentroid(fitCollection);
-      projection = d3.geoConicEqualArea()
-        .parallels(PROVINCE_COUNTRIES[round.country].parallels)
-        .rotate([-centroid[0], 0]);
-    } else if (state.currentContinent === 'World' || state.gameMode === 'daily-five') {
-      // Daily mode also uses the whole world, so it gets the same
-      // Natural Earth projection (and the same fitExtent below).
-      projection = d3.geoNaturalEarth1();
-    } else {
-      // Center Mercator on the continent's centroid longitude so the
-      // land fills the view instead of being offset toward Greenwich.
-      const centroid = d3.geoCentroid(fitCollection);
-      projection = d3.geoMercator()
-        .rotate([-centroid[0], 0]);
-    }
-
-    // Fit the map into what the HUD leaves clear. The whole world goes edge
-    // to edge; a continent or a country keeps a little air around it.
-    const clear = stageClearArea(width, height);
-    const wholeWorld = state.activeDataset === 'world' &&
-      (state.currentContinent === 'World' || state.gameMode === 'daily-five');
-    const airX = wholeWorld ? 0 : Math.min(state.activeDataset === 'world' ? 40 : 20, width * 0.03);
-    const airY = wholeWorld ? 0 : 10;
-    projection.fitExtent(
-      [[clear.left + airX, clear.top + airY], [clear.right - airX, clear.bottom - airY]],
-      wholeWorld ? bgCollection : fitCollection
-    );
-
-    state.projection = projection;
-    state.pathGen = d3.geoPath(projection);
-
-    const g = svg.append('g');
-    state.mapG = g;
-
-    // Zoom & pan behavior
-    // 60× max scale gives plenty of room to click tiny island nations
-    // (Caribbean, Oceania) which are barely a few pixels at 1× zoom.
-    const zoomBehavior = d3.zoom()
-      .scaleExtent([1, 60])
-      .translateExtent([[-width * 0.5, -height * 0.5], [width * 1.5, height * 1.5]])
-      .filter((event) => {
-        if (event.type === 'dblclick') return false;
-        if (event.type === 'mousedown' && event.button !== 0) return false;
-        return true;
-      })
-      .on('zoom', (event) => {
-        state.currentTransform = event.transform;
-        g.attr('transform', event.transform);
-        satOnZoom();
-        if (state.pin) scalePinMarkers(event.transform.k);
-      });
-
-    svg.call(zoomBehavior);
-    state.zoomBehavior = zoomBehavior;
-    // The <svg> element outlives each game, and d3 keeps the last zoom on
-    // it. Start every fresh map at 1× so stored and drawn zoom agree (the
-    // resize handler restores the player's zoom after calling us).
-    svg.call(zoomBehavior.transform, d3.zoomIdentity);
-
-    // Sphere backdrop - only for world projections. Albers USA isn't a
-    // true globe projection so a Sphere would just be a big blue box, and
-    // the per-country conics would draw it as a giant fan shape.
-    if (state.activeDataset === 'world') {
-      g.append('path')
-        .attr('class', 'sphere-bg')
-        .attr('d', state.pathGen({ type: 'Sphere' }));
-      const graticule = d3.geoGraticule().step([20, 20]);
-      g.append('path')
-        .attr('class', 'graticule')
-        .attr('d', state.pathGen(graticule()));
-    } else {
-      // Full-bleed "ocean" rectangle so we get a consistent look
-      g.append('rect')
-        .attr('class', 'us-ocean')
-        .attr('x', -width * 2).attr('y', -height * 2)
-        .attr('width', width * 5).attr('height', height * 5);
-    }
-
-    // Frames around Albers USA's Alaska and Hawaii insets (constants from
-    // d3.geoAlbersUsa). Only shown over satellite imagery, which otherwise
-    // changes abruptly at the inset edges.
-    if (state.activeDataset === 'us') {
-      const k = projection.scale();
-      const [x, y] = projection.translate();
-      const rect = (x0, y0, x1, y1) =>
-        'M' + (x + x0 * k) + ',' + (y + y0 * k) + 'H' + (x + x1 * k) +
-        'V' + (y + y1 * k) + 'H' + (x + x0 * k) + 'Z';
-      g.append('path')
-        .attr('class', 'inset-frame')
-        .attr('d', rect(-0.425, 0.120, -0.214, 0.234) + rect(-0.214, 0.166, -0.115, 0.234));
-    }
-
-    // Hit-zone overlay for tiny eligible features. Rendered first (so it sits
-    // BELOW visible polygons in z-order) — visible neighbors take click
-    // precedence at land borders, but small islands surrounded by ocean now
-    // catch clicks within ~22px of their outline regardless of zoom.
-    const SMALL_FEATURE_PX = 14; // max bounding-box dimension at zoom k=1
-    // Province maps also have scattered territories (Lakshadweep's islands,
-    // Puducherry's four enclaves) whose bounding box is big but whose land
-    // is a few pixels. Catch those by on-screen area instead.
-    const SMALL_AREA_PX2 = 200;
-    g.selectAll('.country-hitzone')
-      .data(activeFeatures().filter(f => {
-        if (!isEligible(f)) return false;
-        const d = state.pathGen(f);
-        if (!d || d.indexOf('NaN') !== -1) return false;
-        const b = state.pathGen.bounds(f);
-        const maxDim = Math.max(b[1][0] - b[0][0], b[1][1] - b[0][1]);
-        return maxDim < SMALL_FEATURE_PX ||
-          (state.activeDataset === 'province' && state.pathGen.area(f) < SMALL_AREA_PX2);
-      }))
-      .enter()
-      .append('path')
-      .attr('class', 'country-hitzone')
-      .attr('d', f => state.pathGen(f))
-      .attr('data-fkey', f => featureKey(f));
-
-    // All features (eligible ones colored as land, others grayed out)
-    // Albers USA returns invalid paths (starting with NaN) for features
-    // outside CONUS/AK/HI — we skip those so they don't render as artifacts.
-    g.selectAll('.country-bg')
-      .data(activeFeatures())
-      .enter()
-      .append('path')
-      .attr('class', f => 'country ' + (isEligible(f) ? 'eligible' : 'ineligible'))
-      .attr('d', f => {
-        const d = state.pathGen(f);
-        return (d && d.indexOf('NaN') === -1) ? d : null;
-      })
-      .filter(function () { return this.getAttribute('d') != null; })
-      .attr('data-fkey', f => featureKey(f));
-
-    // Pin the City: a tap anywhere (land or sea) aims the pin. Country
-    // clicks bubble up here; d3.zoom swallows the click that ends a drag.
-    if (state.gameMode === 'city-pin') {
-      svg.on('click', handlePinClick);
-      drawPinLayer();
-    }
-
-    satReset();
   }
 
   function isEligible(feature) {
@@ -6264,37 +5877,6 @@
       if (state.learn) learnLevelFailed();
       else nextCountry();
     }, 2600);
-  }
-
-  // Pan the SVG map so the given feature is visible, if currently off-screen.
-  function ensureFeatureVisible(feature) {
-    if (!state.svg || !state.zoomBehavior || !state.pathGen) return;
-    const t = state.currentTransform || d3.zoomIdentity;
-    const [cx, cy] = state.pathGen.centroid(feature);
-    if (isNaN(cx) || isNaN(cy)) return;
-
-    const node = state.svg.node();
-    const width = node.clientWidth || node.getBoundingClientRect().width;
-    const height = node.clientHeight || node.getBoundingClientRect().height;
-
-    // Current screen position of the centroid
-    const sx = cx * t.k + t.x;
-    const sy = cy * t.k + t.y;
-
-    const marginX = width * 0.15;
-    const marginY = height * 0.15;
-    const inView = sx >= marginX && sx <= width - marginX &&
-                   sy >= marginY && sy <= height - marginY;
-    if (inView && t.k <= 1.2) return; // already well in view at low zoom
-
-    // Only auto-pan if we're meaningfully zoomed in; at 1x the whole map is visible
-    if (t.k <= 1.05 && inView) return;
-
-    const newX = width / 2 - cx * t.k;
-    const newY = height / 2 - cy * t.k;
-    state.svg.transition().duration(550)
-      .call(state.zoomBehavior.transform,
-            d3.zoomIdentity.translate(newX, newY).scale(t.k));
   }
 
   // An answer given on a city's dot (US cities)
@@ -6916,11 +6498,6 @@
   const DATASET_LAYER = { world: 'world', us: 'us', province: 'prov' };
   const CITY_DOT_RADIUS = 6;                 // px, at every zoom
 
-  // True for the modes drawn on the globe
-  function playedOnGlobe(mode) {
-    return !!mode;
-  }
-
   // A CSS colour as [r, g, b, a]: r, g and b 0–255, a 0–1
   function cssRgba(value) {
     const ctx = cssRgba.ctx || (cssRgba.ctx = document.createElement('canvas').getContext('2d'));
@@ -7223,7 +6800,7 @@
   // A tap or click on the globe that was not a drag
   function onMapClick(e) {
     const screen = document.getElementById('game-screen');
-    if (!state.onGlobe || !screen.classList.contains('active') || screen.classList.contains('review-mode')) return;
+    if (!screen.classList.contains('active') || screen.classList.contains('review-mode')) return;
     if (state.pin) {
       // Aiming: anywhere on the globe, land or sea, moves the pin; the sky around it does not
       if (state.pin.phase === 'aim' && state.current && e.lonlat) {
@@ -7266,7 +6843,7 @@
 
   // The mouse moved over the globe without a button down: the dot under it, if any
   function onMapMove(e) {
-    if (state.gameMode !== 'us-city' || !state.onGlobe) return;
+    if (state.gameMode !== 'us-city') return;
     const dot = dotNear(e.x, e.y, CITY_DOT_RADIUS + 2);
     const name = dot && !map.dotMarks.has(dot.name) && !state.interactionLocked ? dot.name : null;
     if (name === map.dotHover) return;
@@ -7384,19 +6961,12 @@
   }
 
   /* =========================================================
-   * SATELLITE IMAGERY (raster layer under the SVG map)
+   * SATELLITE IMAGERY
    *
-   * Imagery comes from Esri World Imagery tiles, which are Web Mercator.
-   * Our maps use other projections (Natural Earth, Albers USA, conics), so
-   * the tiles can't simply be laid down — they're reprojected: each canvas
-   * pixel is inverted through the current projection to lon/lat, then
-   * sampled from the matching tile pixel. Inverting every pixel is slow,
-   * so we invert a coarse grid and interpolate inside each cell, dropping
-   * to per-pixel only where the projection jumps (the globe's edge,
-   * Albers USA's Alaska/Hawaii insets).
-   *
-   * The canvas is redrawn once zooming settles; mid-gesture it's just
-   * CSS-transformed to follow the SVG.
+   * Imagery comes from Esri World Imagery tiles. The globe lays them over
+   * its sphere on the GPU (setImagery). The game decides when imagery is
+   * on, restyles the map for it, shows the credit, and goes back to the
+   * chart's look when no tile can be loaded.
    * ========================================================= */
 
   const SAT_TILE_URL = (z, x, y) =>
@@ -7404,18 +6974,9 @@
     z + '/' + y + '/' + x;
   const SAT_CREDIT = 'Imagery © Esri, Maxar, Earthstar Geographics';
   const SAT_MAX_ZOOM = 15;     // deepest tile level we ask for
-  const SAT_GRID = 8;          // canvas px between inverted grid points
-  const SAT_MAX_TILES = 72;    // per redraw (the whole world at zoom 3 is 64); we drop a level past this
-  const SAT_CACHE_TILES = 160; // decoded tiles kept in memory (256KB each)
-  const SAT_SETTLE_MS = 160;   // wait this long after zooming stops to redraw
 
   const sat = {
-    tiles: new Map(),  // 'z/x/y' -> { status: 'loading'|'ok'|'error', pixels, promise }; Map order = LRU
-    drawnAt: null,     // zoom transform the canvas content was drawn at
-    timer: null,
-    gen: 0,            // bumped by every redraw/reset; stale async draws bail
-    failed: false,     // last redraw found no imagery at all (offline?)
-    scratch: null      // 256×256 canvas for decoding tiles to pixels
+    failed: false      // the globe could load no imagery at all (offline?)
   };
 
   // False where the globe can draw no imagery (its Canvas 2D renderer, without WebGL)
@@ -7448,7 +7009,7 @@
     const btn = document.getElementById('map-style-btn');
     btn.classList.toggle('is-active', on);
     btn.setAttribute('aria-pressed', String(on));
-    if (!state.onGlobe || !map.globe) return;
+    if (!map.globe) return;
     applyMapLook();
     if (on) map.globe.setImagery({ enabled: true, tileUrl: SAT_TILE_URL, maxZoom: SAT_MAX_ZOOM, onStatus: onImageryStatus });
     else map.globe.setImagery({ enabled: false });
@@ -7481,343 +7042,10 @@
     saveMapStyle(state.mapStyle);
     sat.failed = false;
     applyMapStyle();
-    if (!state.onGlobe) satRedrawSoon(0);
-  }
-
-  // Called from renderMap(): the projection changed, so old pixels are wrong
-  function satReset() {
-    const canvas = document.getElementById('sat-canvas');
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-    canvas.style.transform = '';
-    sat.drawnAt = null;
-    sat.gen++;
-    satRedrawSoon(0);
-  }
-
-  // Zoom-handler hook: follow the gesture now, redraw sharp once it settles
-  function satOnZoom() {
-    if (!satEnabled()) return;
-    satFollowTransform();
-    satRedrawSoon(SAT_SETTLE_MS);
-  }
-
-  // CSS-transform the canvas (drawn at sat.drawnAt) onto the current view
-  function satFollowTransform() {
-    const canvas = document.getElementById('sat-canvas');
-    const t0 = sat.drawnAt;
-    const t = state.currentTransform || d3.zoomIdentity;
-    if (!t0) { canvas.style.transform = ''; return; }
-    const s = t.k / t0.k;
-    canvas.style.transform =
-      'translate(' + (t.x - s * t0.x) + 'px,' + (t.y - s * t0.y) + 'px) scale(' + s + ')';
-  }
-
-  function satRedrawSoon(delay) {
-    clearTimeout(sat.timer);
-    if (!satEnabled()) return;
-    sat.timer = setTimeout(satRedraw, delay);
   }
 
   function satSetLoading(on) {
     document.getElementById('sat-credit').textContent = (on ? 'Loading imagery… · ' : '') + SAT_CREDIT;
-  }
-
-  // Fetch (or reuse) one tile, decoded to raw pixels for fast sampling
-  function satTile(z, x, y) {
-    const key = z + '/' + x + '/' + y;
-    let e = sat.tiles.get(key);
-    if (e) {
-      sat.tiles.delete(key); // move to the fresh end of the LRU order
-      sat.tiles.set(key, e);
-      return e;
-    }
-    e = { status: 'loading', pixels: null, promise: null };
-    e.promise = new Promise(resolve => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous'; // the tile server allows CORS, so pixels stay readable
-      img.onload = () => {
-        try {
-          if (!sat.scratch) {
-            sat.scratch = document.createElement('canvas');
-            sat.scratch.width = sat.scratch.height = 256;
-          }
-          const sctx = sat.scratch.getContext('2d', { willReadFrequently: true });
-          sctx.clearRect(0, 0, 256, 256);
-          sctx.drawImage(img, 0, 0, 256, 256);
-          e.pixels = new Uint32Array(sctx.getImageData(0, 0, 256, 256).data.buffer);
-          e.status = 'ok';
-        } catch (err) {
-          e.status = 'error';
-        }
-        resolve();
-      };
-      img.onerror = () => { e.status = 'error'; resolve(); };
-      img.src = SAT_TILE_URL(z, x, y);
-    });
-    sat.tiles.set(key, e);
-    while (sat.tiles.size > SAT_CACHE_TILES) sat.tiles.delete(sat.tiles.keys().next().value);
-    return e;
-  }
-
-  // Redraw for the current view: right away with whatever's cached
-  // (blurry parent tiles stand in for missing ones), then again once the
-  // missing tiles arrive.
-  function satRedraw() {
-    if (!satEnabled() || !state.projection) return;
-    const gen = ++sat.gen;
-    const plan = satPlan();
-    if (!plan) return;
-    const pending = [];
-    plan.tiles.forEach(([z, x, y]) => {
-      const e = satTile(z, x, y);
-      if (e.status === 'loading') pending.push(e.promise);
-    });
-    if (pending.length === 0) {
-      satDraw(plan, false);
-      return;
-    }
-    satSetLoading(true);
-    satDraw(plan, true);
-    Promise.all(pending).then(() => {
-      if (gen === sat.gen) satDraw(plan, false);
-    });
-  }
-
-  // Work out which tiles the view needs, and where every grid point of
-  // the canvas lands in Web Mercator.
-  function satPlan() {
-    const wrap = document.getElementById('map-wrap');
-    const cssW = wrap.clientWidth, cssH = wrap.clientHeight;
-    if (!cssW || !cssH) return null;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const W = Math.round(cssW * dpr), H = Math.round(cssH * dpr);
-    const t = state.currentTransform || d3.zoomIdentity;
-    const proj = state.projection;
-    // Unwrap longitudes around the projection's own center so they run
-    // continuously across the view; the seam lands on the far side of the
-    // globe. (Albers USA has no rotate(); its lower 48 center on 96°W.)
-    const lon0 = typeof proj.rotate === 'function' ? -proj.rotate()[0] : -96;
-    // Inverting a point off the edge of the globe still returns a lon/lat,
-    // so check it projects back to where we started. Albers USA skips the
-    // check: its forward projection rejects anything outside its insets,
-    // and we want imagery across the whole frame there.
-    const roundTrip = state.activeDataset !== 'us';
-    const tol = 0.5 / (t.k * dpr) + 1e-3;
-    const DEG = Math.PI / 180;
-
-    // Canvas pixel → Web Mercator [x, y] in world units (x unwrapped), or null
-    function invert(cx, cy) {
-      const mx = (cx / dpr - t.x) / t.k;
-      const my = (cy / dpr - t.y) / t.k;
-      const ll = proj.invert([mx, my]);
-      if (!ll || !isFinite(ll[0]) || !(Math.abs(ll[1]) <= 90)) return null;
-      if (roundTrip) {
-        const p = proj(ll);
-        if (!p || Math.abs(p[0] - mx) > tol || Math.abs(p[1] - my) > tol) return null;
-      }
-      let dl = ll[0] - lon0;
-      dl -= 360 * Math.floor((dl + 180) / 360);
-      const lat = Math.max(-85.0511, Math.min(85.0511, ll[1]));
-      const s = Math.sin(lat * DEG);
-      return [(lon0 + dl + 180) / 360, 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)];
-    }
-
-    // Coarse grid, one column/row past the canvas edge so every cell is whole
-    const G = SAT_GRID;
-    const cols = Math.floor(W / G) + 2, rows = Math.floor(H / G) + 2;
-    const gx = new Float64Array(cols * rows), gy = new Float64Array(cols * rows);
-    for (let r = 0, i = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++, i++) {
-        const m = invert(c * G, r * G);
-        gx[i] = m ? m[0] : NaN;
-        gy[i] = m ? m[1] : NaN;
-      }
-    }
-
-    // Tile zoom: match tile pixels to canvas pixels (median over the view)
-    const dens = [];
-    for (let r = 0; r < rows; r += 2) {
-      for (let c = 0; c + 1 < cols; c += 2) {
-        const i = r * cols + c;
-        const d = Math.hypot(gx[i + 1] - gx[i], gy[i + 1] - gy[i]);
-        if (d > 0 && d < 0.1) dens.push(d); // NaN fails both; big jumps are seams
-      }
-    }
-    if (!dens.length) return null;
-    dens.sort((a, b) => a - b);
-    const dMid = dens[dens.length >> 1];
-    let z = Math.ceil(Math.log2(G / (256 * dMid)) - 0.3);
-    z = Math.max(1, Math.min(SAT_MAX_ZOOM, z));
-
-    // Tiles touched by grid points; step down a zoom level if too many
-    let n, tiles, tx0, tx1, ty0, ty1;
-    for (;;) {
-      n = 1 << z;
-      tiles = new Map();
-      tx0 = Infinity; tx1 = -Infinity; ty0 = Infinity; ty1 = -Infinity;
-      for (let i = 0; i < gx.length; i++) {
-        if (gx[i] !== gx[i]) continue;
-        const tx = Math.floor(gx[i] * n);
-        const ty = Math.min(n - 1, Math.max(0, Math.floor(gy[i] * n)));
-        const wx = ((tx % n) + n) % n;
-        tiles.set(wx + '/' + ty, [z, wx, ty]);
-        if (tx < tx0) tx0 = tx;
-        if (tx > tx1) tx1 = tx;
-        if (ty < ty0) ty0 = ty;
-        if (ty > ty1) ty1 = ty;
-      }
-      if (tiles.size <= SAT_MAX_TILES || z <= 1) break;
-      z--;
-    }
-
-    return {
-      W, H, t, cols, rows, gx, gy, z, n, invert,
-      tx0, ty0, nx: tx1 - tx0 + 1, ny: ty1 - ty0 + 1,
-      tiles: Array.from(tiles.values()),
-      // Filled in by the first satDraw and reused by the next one:
-      cellKind: new Uint8Array(cols * rows), // 0 unknown, 1 interpolate, 2 per-pixel
-      cellPix: new Map()                     // per-pixel cell -> Mercator coords
-    };
-  }
-
-  // Paint the canvas from the plan. `interim` draws only if some imagery is
-  // cached, so a zoom-in shows upscaled parents instead of a blank frame.
-  function satDraw(plan, interim) {
-    const { W, H, cols, rows, gx, gy, z, n, tx0, ty0, nx, ny } = plan;
-
-    // One lookup slot per tile in the view's bounding box: the tile's own
-    // pixels, or a cached ancestor's (sampled at 2^dz scale) meanwhile.
-    const slots = nx * ny;
-    const slotPix = new Array(slots).fill(null);
-    const slotDz = new Uint8Array(slots);
-    const slotOx = new Uint16Array(slots);
-    const slotOy = new Uint16Array(slots);
-    let found = 0;
-    for (let j = 0; j < ny; j++) {
-      for (let i = 0; i < nx; i++) {
-        const x = (((tx0 + i) % n) + n) % n, y = ty0 + j;
-        for (let dz = 0; dz <= 6 && dz <= z; dz++) {
-          const e = sat.tiles.get((z - dz) + '/' + (x >> dz) + '/' + (y >> dz));
-          if (e && e.status === 'ok') {
-            const s = j * nx + i;
-            slotPix[s] = e.pixels;
-            slotDz[s] = dz;
-            slotOx[s] = x & ((1 << dz) - 1);
-            slotOy[s] = y & ((1 << dz) - 1);
-            found++;
-            break;
-          }
-        }
-      }
-    }
-    if (interim && !found) return;
-
-    const canvas = document.getElementById('sat-canvas');
-    if (canvas.width !== W) canvas.width = W;
-    if (canvas.height !== H) canvas.height = H;
-    const ctx = canvas.getContext('2d');
-    const img = ctx.createImageData(W, H);
-    const out = new Uint32Array(img.data.buffer);
-    const scale = n * 256;        // world units → tile pixels at zoom z
-    const maxY = scale - 1e-6;
-
-    // Copy the tile pixel under Mercator point (X, Y) into output pixel o
-    function put(o, X, Y) {
-      if (Y < 0) Y = 0; else if (Y > maxY) Y = maxY;
-      const tx = Math.floor(X / 256), ty = Math.floor(Y / 256);
-      const i = tx - tx0, j = ty - ty0;
-      if (i < 0 || i >= nx || j < 0 || j >= ny) return;
-      const s = j * nx + i;
-      const pix = slotPix[s];
-      if (!pix) return;
-      const k = 1 << slotDz[s];
-      const u = ((slotOx[s] * 256 + X - tx * 256) / k) | 0;
-      const v = ((slotOy[s] * 256 + Y - ty * 256) / k) | 0;
-      out[o] = pix[(v << 8) | u];
-    }
-
-    const G = SAT_GRID;
-    for (let r = 0; r + 1 < rows; r++) {
-      const y0 = r * G;
-      if (y0 >= H) break;
-      const y1 = Math.min(y0 + G, H);
-      for (let c = 0; c + 1 < cols; c++) {
-        const x0 = c * G;
-        if (x0 >= W) break;
-        const x1 = Math.min(x0 + G, W);
-        const a = r * cols + c, b = a + 1, cc = a + cols, d = cc + 1;
-        const ax = gx[a] * scale, ay = gy[a] * scale;
-        const bx = gx[b] * scale, by = gy[b] * scale;
-        const cx = gx[cc] * scale, cy = gy[cc] * scale;
-        const dx = gx[d] * scale, dy = gy[d] * scale;
-        let kind = plan.cellKind[a];
-        if (kind === 0) {
-          const va = ax === ax, vb = bx === bx, vc = cx === cx, vd = dx === dx;
-          if (!va && !vb && !vc && !vd) {
-            kind = 3; // wholly off the globe: nothing to paint
-          } else if (va && vb && vc && vd) {
-            // Interpolate only if the real center lands within a pixel of
-            // the interpolated one (no seam or inset edge inside the cell)
-            const m = plan.invert(x0 + G / 2, y0 + G / 2);
-            kind = m &&
-              Math.abs(m[0] * scale - (ax + bx + cx + dx) / 4) +
-              Math.abs(m[1] * scale - (ay + by + cy + dy) / 4) < 1 ? 1 : 2;
-          } else {
-            kind = 2; // straddles the globe's edge
-          }
-          plan.cellKind[a] = kind;
-        }
-        if (kind === 1) {
-          for (let py = y0; py < y1; py++) {
-            const v = (py - y0) / G;
-            const lx = ax + (cx - ax) * v, ly = ay + (cy - ay) * v;
-            const rx = bx + (dx - bx) * v, ry = by + (dy - by) * v;
-            const sx = (rx - lx) / G, sy = (ry - ly) / G;
-            let X = lx, Y = ly, o = py * W + x0;
-            for (let px = x0; px < x1; px++, o++, X += sx, Y += sy) put(o, X, Y);
-          }
-        } else if (kind === 2) {
-          let cell = plan.cellPix.get(a);
-          if (!cell) {
-            cell = new Float64Array(2 * G * G).fill(NaN);
-            for (let py = y0, q = 0; py < y0 + G; py++) {
-              for (let px = x0; px < x0 + G; px++, q += 2) {
-                const m = plan.invert(px, py);
-                if (m) { cell[q] = m[0]; cell[q + 1] = m[1]; }
-              }
-            }
-            plan.cellPix.set(a, cell);
-          }
-          for (let py = y0; py < y1; py++) {
-            let o = py * W + x0, q = (py - y0) * G * 2;
-            for (let px = x0; px < x1; px++, o++, q += 2) {
-              if (cell[q] === cell[q]) put(o, cell[q] * scale, cell[q + 1] * scale);
-            }
-          }
-        }
-      }
-    }
-
-    ctx.putImageData(img, 0, 0);
-    sat.drawnAt = plan.t;
-    satFollowTransform();
-
-    if (interim) return;
-    satSetLoading(false);
-    // Forget failed tiles so a later redraw retries them
-    plan.tiles.forEach(([tz, tx, ty]) => {
-      const key = tz + '/' + tx + '/' + ty;
-      const e = sat.tiles.get(key);
-      if (e && e.status === 'error') sat.tiles.delete(key);
-    });
-    // No imagery at all: fall back to parchment (Uncharted keeps its
-    // borderless silhouette) until a later redraw succeeds
-    const failed = found === 0;
-    if (failed !== sat.failed) {
-      sat.failed = failed;
-      applyMapStyle();
-      if (failed) showToast('wrong', 'Satellite imagery couldn’t load — showing the parchment map');
-    }
   }
 
 /* =========================================================
@@ -12604,7 +11832,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   // name keeps its offset from its anchor as the globe turns.
   function placeLearnLabels() {
     const run = state.learn;
-    if (!run || run.phase !== 'study' || !state.onGlobe) return;
+    if (!run || run.phase !== 'study') return;
     const g = map.globe;
     const host = document.getElementById('globe-host');
     // The part of the host that is on screen (it reaches past the stage's edge)
@@ -13464,7 +12692,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     if (view) playEntrance(target);
     // The globe draws and listens only while it is on show
     if (map.globe) {
-      if (name === 'game' && state.onGlobe) map.globe.resume();
+      if (name === 'game') map.globe.resume();
       else map.globe.pause();
     }
   }
@@ -13578,14 +12806,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
 
   // Zoom controls
   function zoomBy(factor) {
-    if (state.onGlobe) { map.globe.zoomBy(factor, { animate: !reducedMotion() }); return; }
-    if (!state.svg || !state.zoomBehavior) return;
-    state.svg.transition().duration(280).call(state.zoomBehavior.scaleBy, factor);
+    map.globe.zoomBy(factor, { animate: !reducedMotion() });
   }
   function zoomReset() {
-    if (state.onGlobe) { map.globe.resetView({ animate: !reducedMotion() }); return; }
-    if (!state.svg || !state.zoomBehavior) return;
-    state.svg.transition().duration(380).call(state.zoomBehavior.transform, d3.zoomIdentity);
+    map.globe.resetView({ animate: !reducedMotion() });
   }
   document.getElementById('zoom-in-btn').addEventListener('click', () => zoomBy(1.6));
   document.getElementById('zoom-out-btn').addEventListener('click', () => zoomBy(1 / 1.6));
@@ -13622,45 +12846,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     }
   });
 
-  // A new window size (a phone turned on its side) means a new map: it is
-  // rebuilt to fit, then given back its marks and the view the player had
+  // A new window size (a phone turned on its side): the globe keeps its
+  // picture and its marks; a view the player has not moved is fitted to
+  // the new shape
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      const gameActive = document.getElementById('game-screen').classList.contains('active');
-      if (state.onGlobe) {
-        // The globe keeps its picture; a view the player has not moved is fitted to the new shape
-        if (!gameActive) return;
-        if (mapAtHome()) frameMap();
-        else placeGlobeHost();
-        placeLearnLabels();
-        return;
-      }
-      if (!gameActive || !state.svg) return;
-
-      // The marks on the map live in the SVG alone: read them off before the rebuild
-      const svgEl = document.getElementById('world-map');
-      const kept = [];
-      ['completed-correct', 'completed-second', 'completed-wrong', 'prompt-highlight'].forEach(cls => {
-        svgEl.querySelectorAll('.country.' + cls).forEach(el => {
-          kept.push(['.country[data-fkey="' + CSS.escape(el.getAttribute('data-fkey')) + '"]', cls]);
-        });
-        svgEl.querySelectorAll('.city-dot.' + cls).forEach(el => {
-          kept.push(['.city-dot[data-city="' + CSS.escape(el.getAttribute('data-city')) + '"]', cls]);
-        });
-      });
-      const savedTransform = state.currentTransform || null;
-
-      renderMap();
-
-      kept.forEach(mark => state.mapG.selectAll(mark[0]).classed(mark[1], true));
-      if (state.learn && state.learn.phase === 'study') drawLearnStudy();
-
-      // Restore zoom/pan so the player keeps the framing they had
-      if (savedTransform && state.zoomBehavior) {
-        state.svg.call(state.zoomBehavior.transform, savedTransform);
-      }
+      if (!map.globe || !document.getElementById('game-screen').classList.contains('active')) return;
+      if (mapAtHome()) frameMap();
+      else placeGlobeHost();
+      placeLearnLabels();
     }, 200);
   });
 
