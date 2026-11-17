@@ -4252,6 +4252,9 @@
     uncharted: 'Satellite only, no borders'
   };
 
+  // Shown beside the map and difficulty controls where the globe is drawn without WebGL
+  const NO_IMAGERY_NOTE = 'Satellite and Uncharted need WebGL, which this browser isn’t providing.';
+
   // Difficulty picker. bests (optional): difficulty -> a line shown under its label.
   function renderDifficultySeg(extraClass, bests) {
     return '<div class="seg' + (extraClass ? ' ' + extraClass : '') + '" role="radiogroup" aria-label="Difficulty">' +
@@ -4270,21 +4273,28 @@
     '</div>';
   }
 
-  // Bring every difficulty and map control on the page (Home's and the
-  // level sheet's) in line with the settings. Uncharted is satellite only,
-  // so the map control locks there.
+  // Bring every difficulty and map control on the page (Home's, the level
+  // sheet's and Settings') in line with the settings. Uncharted is satellite
+  // only, so the map control locks there; where the globe can show no
+  // imagery, Satellite and Uncharted are locked and a note says why.
   function syncPlayControls() {
     const uncharted = state.difficulty === 'uncharted';
-    const satellite = uncharted || state.mapStyle === 'satellite';
+    const imagery = imageryAvailable();
+    const satellite = satEnabled();
     const mark = (btn, on) => {
       btn.setAttribute('aria-checked', String(on));
       btn.tabIndex = on ? 0 : -1;
     };
-    document.querySelectorAll('[data-action="set-difficulty"]').forEach(btn => mark(btn, btn.dataset.value === state.difficulty));
-    document.querySelectorAll('[data-action="set-map"]').forEach(btn => {
-      mark(btn, (btn.dataset.value === 'satellite') === satellite);
-      btn.disabled = uncharted && btn.dataset.value !== 'satellite';
+    document.querySelectorAll('[data-action="set-difficulty"]').forEach(btn => {
+      mark(btn, btn.dataset.value === state.difficulty);
+      btn.disabled = !imagery && btn.dataset.value === 'uncharted';
     });
+    document.querySelectorAll('[data-action="set-map"]').forEach(btn => {
+      const sat = btn.dataset.value === 'satellite';
+      mark(btn, sat === satellite);
+      btn.disabled = sat ? !imagery : uncharted;
+    });
+    document.querySelectorAll('[data-imagery-note]').forEach(el => { el.hidden = imagery; });
     document.querySelectorAll('[data-difficulty-note]').forEach(el => {
       const descs = el.dataset.difficultyNote === 'pin' ? PIN_DIFFICULTY_DESCS : null;
       el.innerHTML = '<b>' + DIFFICULTY_INFO[state.difficulty].label + '</b> · ' +
@@ -4294,7 +4304,7 @@
   }
 
   function chooseDifficulty(difficulty) {
-    if (difficulty === state.difficulty) return;
+    if (difficulty === state.difficulty || (difficulty === 'uncharted' && !imageryAvailable())) return;
     setDifficulty(difficulty);
     saveDifficulty(state.difficulty);
     syncPlayControls();
@@ -4303,7 +4313,7 @@
   }
 
   function chooseMapStyle(style) {
-    if (state.difficulty === 'uncharted' || style === state.mapStyle) return;
+    if (state.difficulty === 'uncharted' || style === state.mapStyle || (style === 'satellite' && !imageryAvailable())) return;
     state.mapStyle = style;
     saveMapStyle(state.mapStyle);
     syncPlayControls();
@@ -4325,6 +4335,7 @@
             '<div class="field"><span class="eyebrow">Map</span>' + renderMapSeg() + '</div>' +
           '</div>' +
           '<p class="playbar-note" data-difficulty-note></p>' +
+          '<p class="playbar-note" data-imagery-note hidden>' + NO_IMAGERY_NOTE + '</p>' +
         '</div>' +
       '</div>' +
       '<nav class="chips jump" aria-label="Collections">' +
@@ -4739,6 +4750,7 @@
           '<p class="eyebrow">Map</p>' +
           renderMapSeg('seg--block') +
           '<p class="option-note" data-map-note hidden>Always on in Uncharted</p>' +
+          '<p class="option-note" data-imagery-note hidden>' + NO_IMAGERY_NOTE + '</p>' +
         '</div>' +
       '</div>';
     syncPlayControls();
@@ -5466,6 +5478,7 @@
     if (playedOnGlobe(mode)) await syncMapLayers();
     hideLoadingOverlay();
     if (state.roundId !== round) return;
+    applyImagerySupport();
 
     state.correct = 0;
     state.wrong = 0;
@@ -6946,6 +6959,9 @@
     g.on('move', onMapMove);
     // More room between provinces once a zoom has settled: lay the names out again
     g.on('settle', placeLearnLabels);
+    // A lost WebGL context that does not come back leaves the Canvas 2D renderer: no imagery from then on
+    g.on('renderer', applyImagerySupport);
+    applyImagerySupport();
     if (!document.getElementById('game-screen').classList.contains('active')) g.pause();
   }
 
@@ -7401,9 +7417,27 @@
     scratch: null      // 256×256 canvas for decoding tiles to pixels
   };
 
-  // Satellite is on for this game: the player's choice, or forced by Uncharted
+  // False where the globe can draw no imagery (its Canvas 2D renderer, without WebGL)
+  function imageryAvailable() {
+    return !map.globe || map.globe.supportsImagery();
+  }
+
+  // Satellite is on: the player's choice, or forced by Uncharted
   function satEnabled() {
-    return state.difficulty === 'uncharted' || state.mapStyle === 'satellite';
+    return imageryAvailable() && (state.difficulty === 'uncharted' || state.mapStyle === 'satellite');
+  }
+
+  // Brings the settings in line with what the globe can draw. Uncharted is
+  // played on imagery; without any, Hard is the nearest thing (the saved
+  // preference is left alone, for a visit where imagery is back).
+  function applyImagerySupport() {
+    if (!imageryAvailable() && state.difficulty === 'uncharted' && !document.getElementById('game-screen').classList.contains('active')) {
+      setDifficulty('hard');
+      renderCollections();
+      if (sheet.level) renderSheetInfo();
+    }
+    syncPlayControls();
+    document.getElementById('map-style-btn').hidden = !imageryAvailable();
   }
 
   // Sync the map's CSS classes and the in-game button with the settings
@@ -7441,7 +7475,7 @@
 
   // In-game Parchment ⇄ Satellite flip (Uncharted is always satellite)
   function toggleMapStyle() {
-    if (state.difficulty === 'uncharted') return;
+    if (state.difficulty === 'uncharted' || !imageryAvailable()) return;
     state.mapStyle = state.mapStyle === 'satellite' ? 'parchment' : 'satellite';
     saveMapStyle(state.mapStyle);
     sat.failed = false;
@@ -13145,7 +13179,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
           '</div>' +
           '<div class="setting setting--wrap">' +
             '<div class="setting-text"><strong>Map style</strong><span>Satellite needs a connection. Imagery © Esri.</span>' +
-              '<span data-map-note hidden>Uncharted is always played on satellite imagery.</span></div>' + renderMapSeg() +
+              '<span data-map-note hidden>Uncharted is always played on satellite imagery.</span>' +
+              '<span data-imagery-note hidden>' + NO_IMAGERY_NOTE + '</span></div>' + renderMapSeg() +
           '</div>') +
         group('sync', 'Sync', 'Your progress lives on this device. Sync keeps a copy so your other devices match.',
           '<div id="settings-sync"></div>') +
