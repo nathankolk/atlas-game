@@ -1782,6 +1782,93 @@
   .credits dd { color: var(--text); }
   .about .btn { justify-self: start; }
 
+  /* ===== Explore: the globe to look around on ===== */
+  /* Built like the game screen: the globe fills it and everything else
+     floats over the globe, near-opaque and never blurred */
+  #explore-stage .sat-credit { left: auto; right: 24px; }
+  /* Search above, the selected country's card under it. The column itself
+     is only a place to stand: the globe in its gaps stays in reach. */
+  .explore-side {
+    position: absolute;
+    left: 24px;
+    top: 20px;
+    bottom: 20px;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 360px;
+    pointer-events: none;
+  }
+  .explore-side > * { pointer-events: auto; }
+  .explore-search {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 48px;
+    padding: 0 2px 0 16px;
+    border-radius: var(--r-md);
+  }
+  .explore-search > .icon { color: var(--text-3); }
+  .explore-search:focus-within { border-color: var(--accent); }
+  .explore-field { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: none; font: inherit; color: var(--text); }
+  .explore-field::placeholder { color: var(--text-3); opacity: 1; }
+  .explore-field:focus { outline: none; box-shadow: none; }
+  .explore-results {
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    top: calc(100% + 6px);
+    z-index: 2;
+    padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    box-shadow: var(--shadow-2);
+  }
+  .explore-results li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 10px; border-radius: var(--r-xs); font-size: 14.5px; font-weight: 500; cursor: pointer; }
+  .explore-results li small { font-size: 12px; font-weight: 400; color: var(--text-3); white-space: nowrap; }
+  .explore-results li[aria-selected="true"] { background: var(--surface-sunk); }
+  .explore-results li.explore-none { font-weight: 400; color: var(--text-3); cursor: default; }
+
+  /* The place card: what the atlas knows about a country, and how the player stands with it */
+  .place { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 22px 22px; border-radius: var(--r-lg); }
+  /* Focus is sent here by the script after a search; the card needs no ring for it */
+  .place:focus-visible { border-radius: var(--r-lg); box-shadow: var(--shadow-2); }
+  .place-head { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+  .place-flag { flex: none; font-size: 38px; line-height: 1; }
+  .place-flag.is-waiting { visibility: hidden; }
+  .place-head .eyebrow { flex: 1; }
+  .place-close { flex: none; margin-right: -10px; }
+  .place-name { margin-top: 6px; overflow-wrap: break-word; }
+  .place-facts { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); }
+  .place-facts > div { display: flex; align-items: baseline; gap: 12px; }
+  .place-facts dt { flex: none; width: 64px; font-size: 12.5px; color: var(--text-3); }
+  .place-facts dd { font-size: 15px; font-weight: 600; }
+  .place-facts small { display: block; font-size: 12.5px; font-weight: 400; color: var(--text-2); }
+  .place-block { margin-top: 20px; }
+  .place-block > .eyebrow { display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .place-note { margin-top: 10px; font-size: 12.5px; color: var(--text-3); }
+  .place-block > .place-note:first-of-type { margin-top: 0; font-size: 13.5px; color: var(--text-2); }
+  .place-skills li { display: flex; align-items: baseline; gap: 8px; padding: 8px 0; border-top: 1px solid var(--rule); font-size: 13.5px; }
+  .place-skills li:first-child { padding-top: 0; border-top: 0; }
+  .place-skills li:last-child { padding-bottom: 0; }
+  .place-skills span:first-child { flex: 1; color: var(--text-2); }
+  .place-skills b { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+  .place-skills small { font-size: 12.5px; color: var(--text-3); white-space: nowrap; }
+  .place > .btn { margin-top: 20px; }
+
+  /* Colour by, and what the colours count */
+  .explore-tools { position: absolute; right: 24px; top: 20px; z-index: 5; padding: 12px 14px 14px; border-radius: var(--r-md); }
+  .explore-tools > .eyebrow { margin-bottom: 8px; }
+  .explore-legend { margin-top: 12px; gap: 6px 14px; }
+  .explore-legend > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .explore-legend b { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  /* While the map is on its way, or when it could not be had */
+  .explore-status { position: absolute; left: 50%; top: 50%; z-index: 6; width: max-content; max-width: calc(100% - 48px); margin: 0; transform: translate(-50%, -50%); }
+
   /* ===== Dialog: the one modal, for questions, short forms and text to copy ===== */
   .scrim { position: fixed; inset: 0; z-index: 60; background: var(--scrim); animation: scrimIn 0.2s ease both; }
   .dialog {
@@ -1839,6 +1926,7 @@
     .panels > .panel, .panels > .panel--7, .panels > .panel--5 { grid-column: 1 / -1; grid-row: auto; }
     .settings-group { grid-template-columns: 1fr; gap: 16px; }
     .results { grid-template-columns: minmax(0, 1fr); gap: 40px; max-width: 680px; }
+    .explore-side { width: 320px; }
   }
 
   @media (min-width: 761px) and (max-width: 880px) {
@@ -2135,6 +2223,31 @@
     #game-screen.pin-mode .map-hint, #game-screen.learn-mode .map-hint { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
     .sat-credit { left: 50%; bottom: calc(3px + env(safe-area-inset-bottom, 0px)); padding: 1px 8px; font-size: 9.5px; transform: translateX(-50%); }
 
+    /* Explore: search and Colour by across the top; the place card is a
+       sheet over the bottom of the screen, and what sits at the bottom
+       stands on top of it (--place-h is the sheet's height, 0 when shut) */
+    .explore-side { position: static; display: block; width: auto; }
+    .explore-search { position: absolute; left: 12px; right: 12px; top: 12px; z-index: 6; }
+    .explore-field { font-size: 16px; }
+    .explore-tools { left: 12px; right: 12px; top: 68px; padding: 10px 12px 12px; }
+    .explore-legend { justify-content: space-between; gap: 4px 8px; margin-top: 10px; font-size: 11.5px; }
+    .explore-legend > span { gap: 4px; }
+    .place {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 6;
+      max-height: 46%;
+      padding: 12px 20px 20px;
+      border-width: 1px 0 0;
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      box-shadow: var(--shadow-3);
+    }
+    .place:focus-visible { border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--shadow-3); }
+    #explore-screen .mapctl { bottom: calc(var(--place-h, 0px) + 16px); }
+    #explore-stage .sat-credit { left: 50%; right: auto; bottom: calc(var(--place-h, 0px) + 3px); }
+
     /* Results: the next step stays in reach at the bottom */
     .results-bar { min-height: 52px; padding: env(safe-area-inset-top, 0px) 8px 0; }
     .results-date { display: none; }
@@ -2312,6 +2425,35 @@
   <!-- SETTINGS -->
   <div id="settings-screen" class="screen view">
     <div class="page page--narrow" id="settings-content"></div>
+  </div>
+
+  <!-- EXPLORE: the globe to look around on; everything else floats over it.
+       The globe itself is the game's, moved into #explore-globe while this
+       screen shows; the tools and the place card are drawn by the script. -->
+  <div id="explore-screen" class="screen">
+    <div class="stage" id="explore-stage">
+      <div class="globe-host" id="explore-globe" role="img" aria-label="Globe of the world’s countries"></div>
+      <div class="sat-credit" id="explore-credit">Imagery © Esri, Maxar, Earthstar Geographics</div>
+    </div>
+    <div class="explore-side">
+      <div class="explore-search float" role="search">
+        <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="text" class="explore-field" id="explore-search" maxlength="60" placeholder="Find a country" aria-label="Find a country" role="combobox" aria-expanded="false" aria-controls="explore-results" aria-autocomplete="list" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="search" />
+        <button type="button" class="icon-btn" id="explore-search-clear" data-action="explore-search-clear" aria-label="Clear the search" hidden><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+        <ul class="explore-results" id="explore-results" role="listbox" aria-label="Countries" hidden></ul>
+      </div>
+      <section class="place float" id="place-card" aria-live="polite" aria-labelledby="place-name" tabindex="-1" hidden></section>
+    </div>
+    <div class="explore-tools float" id="explore-tools"></div>
+    <div class="mapctl" role="group" aria-label="Map">
+      <div class="mapctl-group float">
+        <button type="button" data-action="explore-zoom" data-value="in" aria-label="Zoom in"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+        <button type="button" data-action="explore-zoom" data-value="out" aria-label="Zoom out"><svg class="icon" aria-hidden="true"><use href="#i-minus"/></svg></button>
+        <button type="button" data-action="explore-zoom" data-value="reset" aria-label="Reset view"><svg class="icon" aria-hidden="true"><use href="#i-target"/></svg></button>
+      </div>
+      <button type="button" class="mapctl-solo float" id="explore-style-btn" data-action="explore-map-style" aria-label="Satellite map" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg></button>
+    </div>
+    <div class="explore-status loading-state" id="explore-status">Unfurling the world map</div>
   </div>
 
   <!-- GAME SCREEN: the map is the stage; everything else floats over it -->
@@ -3645,6 +3787,7 @@
     worldLoading: null,      // promise for the world map load, set once at startup
     worldFailed: false,      // true once that load has given up
     canonicalByFeature: new Map(), // feature key -> canonical name
+    neighbours: new Map(),   // canonical name -> the countries it borders (see worldNeighbours)
     continentByFeature: new Map(), // feature key -> continent
     featureByCanonical: new Map(), // canonical name -> feature
 
@@ -3849,6 +3992,7 @@
 
     state.allFeatures = geojson.features.filter(f => featureName(f));
     state.worldBorders = topojson.mesh(topology, topology.objects[countriesKey]);
+    state.neighbours = worldNeighbours(topology.objects[countriesKey].geometries);
 
     state.allFeatures.forEach(f => {
       const raw = featureName(f);
@@ -3874,6 +4018,8 @@
 
       refreshView();
       initGlobe();
+      // Explore has been waiting for the globe
+      if (state.view === 'explore') refreshView();
       openLinkedLevel(link);
 
       // Fire-and-forget: pull latest records from server if a sync token is set.
@@ -5443,6 +5589,12 @@
           '<th scope="col" class="mtable-total"><span class="vh">Places</span></th></tr></thead>' +
         groups +
       '</table>' +
+      // The same mastery, country by country, on the globe
+      '<div class="panel-foot globe-links"><span>See it on the globe</span>' +
+        '<div class="chips">' + EXPLORE_SKILLS.map(skill =>
+          '<button type="button" class="chip" data-action="see-on-globe" data-value="' + skill.key + '">' + icon('globe', 'icon--sm') + skill.plural + '</button>').join('') +
+        '</div>' +
+      '</div>' +
     '</section>';
   }
 
@@ -5900,6 +6052,9 @@
     await syncMapLayers();
     hideLoadingOverlay();
     if (state.roundId !== round) return;
+    // A level opened from Explore: the globe goes back to the game's stage
+    // before the round is laid out on it
+    leaveExplore();
     applyImagerySupport();
 
     state.correct = 0;
@@ -7340,6 +7495,10 @@
     g.addOverlay(drawMapOverlay);
     g.on('click', onMapClick);
     g.on('hover', hit => {
+      if (explore.on) {
+        document.getElementById('explore-globe').style.setProperty('--globe-cursor', hit && isCountryKey(hit.key) ? 'pointer' : '');
+        return;
+      }
       if (state.gameMode === 'us-city') return;     // the dots have the cursor there (see onMapMove)
       // A hand over what can be picked; in Uncharted that would give the shapes away
       const pick = !!hit && hit.layerId === map.layer && state.difficulty !== 'uncharted' && canPick(hit.key);
@@ -7351,10 +7510,10 @@
     // A lost WebGL context that does not come back leaves the Canvas 2D
     // renderer, which has no imagery: a round on satellite goes on on the chart
     g.on('renderer', () => {
-      const shown = document.getElementById('map-wrap').classList.contains('sat-on');
+      const shown = mapStage().classList.contains('sat-on');
       applyImagerySupport();
       applyMapStyle();
-      if (shown && !satEnabled()) showToast('wrong', 'Satellite imagery couldn’t load — showing the parchment map');
+      if (shown && !satEnabled()) imageryFailedNotice();
     });
     applyImagerySupport();
     if (!document.getElementById('game-screen').classList.contains('active')) g.pause();
@@ -7386,18 +7545,26 @@
     return map.drawing;
   }
 
+  // The stage the globe is on: the game's, or Explore's while that view shows
+  function mapStage() {
+    return document.getElementById(explore.on ? 'explore-stage' : 'map-wrap');
+  }
+
   // Reads the map's colour tokens as they stand (theme, imagery, Uncharted)
   // and hands them to the globe: fill styles, borders, sea and sky
   function applyMapLook() {
     const g = map.globe;
     if (!g) return;
-    const stage = document.getElementById('map-wrap');
+    const stage = mapStage();
     const cs = getComputedStyle(stage);
     const token = name => cssRgba(cs.getPropertyValue(name).trim());
     const imagery = stage.classList.contains('sat-on');
     const land = token('--g-land'), select = token('--g-select');
     // Over imagery a flash or a tint lets the ground show through
     const veil = c => imagery ? [c[0], c[1], c[2], c[3] * 0.55] : c;
+    // A mastery colour has to be told from its three neighbours on the ramp
+    // whatever ground lies under it, so over imagery it stays nearly solid
+    const step = name => { const c = token(name); return imagery ? [c[0], c[1], c[2], 0.82] : c; };
     const styles = {
       land: land,
       dim: imagery ? token('--g-shade') : mixRgba(land, token('--g-ocean-2'), 0.42),
@@ -7405,6 +7572,7 @@
       found: token('--g-found'), second: token('--g-second'), missed: token('--g-missed'),
       good: veil(token('--m2')), bad: veil(token('--g-wrong')), reveal: veil(select),
       prompt: mixRgba(select, land, 0.38), learnKnown: mixRgba(select, land, 0.3), learnNew: veil(select),
+      step0: step('--m0'), step1: step('--m1'), step2: step('--m2'), step3: step('--m3'),
       hidden: [0, 0, 0, 0]
     };
     Object.keys(styles).forEach(name => { styles[name] = rgbaCss(styles[name]); });
@@ -7417,7 +7585,7 @@
     MAP_LAYERS.forEach(id => g.updateLayer(id, {
       borderColor: rgbaCss(token('--g-border')),
       borderWidth: parseFloat(cs.getPropertyValue('--g-line')) || 0.6,
-      bordersVisible: state.difficulty !== 'uncharted' && !(state.pin && state.difficulty === 'hard')
+      bordersVisible: explore.on || (state.difficulty !== 'uncharted' && !(state.pin && state.difficulty === 'hard'))
     }));
     map.ink = {
       label: rgbaCss(token('--g-label')), halo: rgbaCss(token('--g-halo')),
@@ -7427,7 +7595,7 @@
       font: cs.getPropertyValue('--font-display').trim()
     };
     // What lies under see-through land depends on the imagery
-    if (map.round) paintContext();
+    if (map.round && !explore.on) paintContext();
   }
 
   // The style a feature of the round's layer should be showing now
@@ -7627,6 +7795,7 @@
 
   // A tap or click on the globe that was not a drag
   function onMapClick(e) {
+    if (explore.on) { onExploreClick(e); return; }
     const screen = document.getElementById('game-screen');
     if (!screen.classList.contains('active') || screen.classList.contains('review-mode')) return;
     if (state.pin) {
@@ -7671,7 +7840,7 @@
 
   // The mouse moved over the globe without a button down: the dot under it, if any
   function onMapMove(e) {
-    if (state.gameMode !== 'us-city') return;
+    if (explore.on || state.gameMode !== 'us-city') return;
     const dot = dotNear(e.x, e.y, CITY_DOT_RADIUS + 2);
     const name = dot && !map.dotMarks.has(dot.name) && !state.interactionLocked ? dot.name : null;
     if (name === map.dotHover) return;
@@ -7734,6 +7903,7 @@
   // Everything drawn over the globe, bottom to top
   function drawMapOverlay(ctx, o) {
     const g = map.globe;
+    if (explore.on) { drawExploreOverlay(ctx); return; }
     const still = reducedMotion();
     map.outlines = map.outlines.filter(line => line.until > o.time);
     map.outlines.forEach(line => {
@@ -7851,9 +8021,10 @@
     return !map.globe || map.globe.supportsImagery();
   }
 
-  // Satellite is on: the player's choice, or forced by Uncharted
+  // Satellite is on: the player's choice, or forced by Uncharted (a way to
+  // play a round, which Explore is not)
   function satEnabled() {
-    return imageryAvailable() && (state.difficulty === 'uncharted' || state.mapStyle === 'satellite');
+    return imageryAvailable() && ((state.difficulty === 'uncharted' && !explore.on) || state.mapStyle === 'satellite');
   }
 
   // Brings the settings in line with what the globe can draw. Uncharted is
@@ -7866,27 +8037,32 @@
       if (sheet.level) renderSheetInfo();
     }
     syncPlayControls();
-    document.getElementById('map-style-btn').hidden = !imageryAvailable();
+    mapStyleButtons().forEach(btn => { btn.hidden = !imageryAvailable(); });
+  }
+
+  // The layers buttons that float over the map: the game's and Explore's
+  function mapStyleButtons() {
+    return [document.getElementById('map-style-btn'), document.getElementById('explore-style-btn')];
   }
 
   // Sync the map's CSS classes and the in-game button with the settings
   function applyMapStyle() {
     const on = satEnabled();
     applyMapClasses();
-    const btn = document.getElementById('map-style-btn');
-    btn.classList.toggle('is-active', on);
-    btn.setAttribute('aria-pressed', String(on));
+    mapStyleButtons().forEach(btn => {
+      btn.classList.toggle('is-active', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
     if (!map.globe) return;
     applyMapLook();
     if (on) map.globe.setImagery({ enabled: true, tileUrl: SAT_TILE_URL, maxZoom: SAT_MAX_ZOOM, onStatus: onImageryStatus });
     else map.globe.setImagery({ enabled: false });
   }
 
-  // The stage's classes for imagery showing and for Uncharted's missing borders
+  // The stage's classes for imagery showing and, in the game, for Uncharted's missing borders
   function applyMapClasses() {
-    const wrap = document.getElementById('map-wrap');
-    wrap.classList.toggle('sat-on', satEnabled() && !sat.failed);
-    wrap.classList.toggle('no-borders', state.difficulty === 'uncharted');
+    mapStage().classList.toggle('sat-on', satEnabled() && !sat.failed);
+    document.getElementById('map-wrap').classList.toggle('no-borders', state.difficulty === 'uncharted');
   }
 
   // The globe's word on its imagery: tiles on their way, something to show, or nothing at all
@@ -7899,12 +8075,20 @@
     sat.failed = failed;
     applyMapClasses();
     applyMapLook();
-    if (failed) showToast('wrong', 'Satellite imagery couldn’t load — showing the parchment map');
+    if (failed) imageryFailedNotice();
   }
 
-  // In-game Parchment ⇄ Satellite flip (Uncharted is always satellite)
+  // Says that the chart is showing because the imagery is not to be had
+  function imageryFailedNotice() {
+    const text = 'Satellite imagery couldn’t load — showing the parchment map';
+    if (explore.on) showNotice(text);
+    else showToast('wrong', text);
+  }
+
+  // The layers button over the map, in a round or in Explore: chart ⇄
+  // satellite (a round on Uncharted is always satellite)
   function toggleMapStyle() {
-    if (state.difficulty === 'uncharted' || !imageryAvailable()) return;
+    if ((state.difficulty === 'uncharted' && !explore.on) || !imageryAvailable()) return;
     state.mapStyle = state.mapStyle === 'satellite' ? 'parchment' : 'satellite';
     saveMapStyle(state.mapStyle);
     sat.failed = false;
@@ -7912,8 +8096,637 @@
   }
 
   function satSetLoading(on) {
-    document.getElementById('sat-credit').textContent = (on ? 'Loading imagery… · ' : '') + SAT_CREDIT;
+    const text = (on ? 'Loading imagery… · ' : '') + SAT_CREDIT;
+    document.getElementById('sat-credit').textContent = text;
+    document.getElementById('explore-credit').textContent = text;
   }
+
+  /* =========================================================
+   * EXPLORE (the globe to look around on)
+   *
+   * A view, not a round. There is one globe: while this view shows, its
+   * canvases are attached to #explore-globe (the engine's attachTo), and
+   * they go back to the game's #globe-host on leaving, so there is never
+   * a second WebGL context. Explore paints the world layer itself; a
+   * round that starts afterwards sets its own map up from scratch
+   * (setupMap), so nothing here needs undoing.
+   *
+   * A tap or a search selects a country and opens its place card. What
+   * the card says comes from the files the quizzes are built on:
+   * WORLD_FACTS, the continent lists, the world map's own topology for the
+   * neighbours, and the mastery store. '#explore=<country>' in the address
+   * selects one (the slug is Quiz.slug of its name: 'ivory-coast').
+   * ========================================================= */
+
+  // What "Colour by" offers besides Plain: one mastery skill each, with the
+  // countries that have a question in it
+  const EXPLORE_SKILLS = [
+    { key: 'country', label: 'Find', line: 'Find on the globe', plural: 'Countries', names: () => countryNames('World') },
+    { key: 'country-name', label: 'Name', line: 'Name it', plural: 'Names', names: () => quizNames('name-it', 'World') },
+    { key: 'capital', label: 'Capital', line: 'Capital', plural: 'Capitals', names: () => quizNames('capital-pick', 'World') },
+    { key: 'flag', label: 'Flag', line: 'Flag', plural: 'Flags', names: () => quizNames('flag', 'World') }
+  ];
+  // The mastery levels, best first: the word for each, its swatch class and its style on the globe
+  const MASTERY_STEPS = [
+    { level: 'mastered', label: 'Mastered', swatch: ' m3', style: 'step3' },
+    { level: 'familiar', label: 'Familiar', swatch: ' m2', style: 'step2' },
+    { level: 'learning', label: 'Learning', swatch: ' m1', style: 'step1' },
+    { level: 'new', label: 'New', swatch: '', style: 'step0' }
+  ];
+  const EXPLORE_CLOSE = 10;      // how far a search zooms in on a small country: its surroundings stay in view
+  const EXPLORE_MIN_PX = 20;     // unless that leaves it narrower than this
+  const EXPLORE_SHIFT = 25;      // degrees: the most the globe is turned to move a country out from under the card
+  const EXPLORE_RESULTS = 6;     // how many countries a search lists
+
+  // Land borders the 1:50m shapes are too coarse to draw: Spain's two cities
+  // on the coast of Morocco, and the 150 m of river bank where Botswana
+  // meets Zambia
+  const EXTRA_BORDERS = [['Morocco', 'Spain'], ['Botswana', 'Zambia']];
+  // Countries the map has but this atlas asks nothing about, which a
+  // neighbour's list of borders would be wrong without: map name -> name to show
+  const BORDER_ONLY = {
+    'Andorra': 'Andorra', 'Liechtenstein': 'Liechtenstein', 'Monaco': 'Monaco',
+    'San Marino': 'San Marino', 'Vatican': 'Vatican City'
+  };
+
+  const explore = {
+    on: false,            // the view is showing, and the globe is in it
+    selected: null,       // canonical name of the country whose card is open
+    colour: 'plain',      // 'plain', or the key of one of EXPLORE_SKILLS
+    view: null,           // where the globe was left, for coming back to
+    home: null,           // the whole globe, fitted to the screen
+    countries: null,      // canonical name -> keys of its shapes on the world layer (see exploreCountries)
+    focus: new Map(),     // canonical name -> its main piece (see countryFocus)
+    results: [],          // the search results on show: [{ name, note }]
+    active: -1,           // which of them the arrow keys have reached
+    flags: false          // true once flags are known to draw here (see renderPlace)
+  };
+
+  // Which countries border which, read off the world map's topology: two
+  // countries are neighbours when their shapes share a stretch of border
+  // (France and Brazil do, through French Guiana, which the map draws as
+  // part of France). Returns canonical name -> { countries, others }: the
+  // neighbours this atlas knows, and the names of the BORDER_ONLY ones.
+  function worldNeighbours(geometries) {
+    const adjacent = topojson.neighbors(geometries);
+    const found = new Map();
+    geometries.forEach((geometry, i) => {
+      const name = canonicalize(featureName(geometry));
+      if (!getContinent(name)) return;
+      const entry = found.get(name) || { countries: new Set(), others: new Set() };
+      found.set(name, entry);
+      adjacent[i].forEach(j => {
+        const raw = featureName(geometries[j]);
+        const other = canonicalize(raw);
+        if (getContinent(other)) {
+          if (other !== name) entry.countries.add(other);
+        } else if (Object.prototype.hasOwnProperty.call(BORDER_ONLY, raw)) {
+          entry.others.add(BORDER_ONLY[raw]);
+        }
+      });
+    });
+    EXTRA_BORDERS.forEach(pair => {
+      if (!found.has(pair[0]) || !found.has(pair[1])) return;
+      found.get(pair[0]).countries.add(pair[1]);
+      found.get(pair[1]).countries.add(pair[0]);
+    });
+    const out = new Map();
+    found.forEach((entry, name) => {
+      out.set(name, { countries: Array.from(entry.countries).sort(), others: Array.from(entry.others).sort() });
+    });
+    return out;
+  }
+
+  // The countries Explore knows, once the world map is in: canonical name
+  // -> the keys of its shapes on the world layer
+  function exploreCountries() {
+    if (!explore.countries && state.allFeatures.length) {
+      explore.countries = new Map();
+      state.allFeatures.forEach(f => {
+        const key = featureKey(f);
+        if (!isCountryKey(key)) return;
+        const name = state.canonicalByFeature.get(key);
+        if (!explore.countries.has(name)) explore.countries.set(name, []);
+        explore.countries.get(name).push(key);
+      });
+    }
+    return explore.countries || new Map();
+  }
+
+  // True for a shape of the world layer that is one of the atlas's countries
+  // (the map also draws territories and Antarctica, which have no card)
+  function isCountryKey(key) {
+    return !!state.continentByFeature.get(key);
+  }
+
+  function exploreSkill() {
+    return EXPLORE_SKILLS.find(skill => skill.key === explore.colour) || null;
+  }
+
+  // The country a '#explore=<slug>' address names, or null
+  function countryFromHash() {
+    const parts = window.location.hash.replace(/^#/, '').split('=');
+    if (parts[0] !== 'explore' || !parts[1]) return null;
+    let wanted = parts[1];
+    try { wanted = decodeURIComponent(wanted); } catch (e) { /* as typed */ }
+    wanted = Quiz.slug(wanted.replace(/-/g, ' '));
+    return Array.from(exploreCountries().keys()).find(name => Quiz.slug(name) === wanted) || null;
+  }
+
+  /* ----- Coming and going ----- */
+
+  // Draws the Explore view: when it comes on screen, and whenever what it
+  // shows may have changed under it (a sync pull, a reset, the flag font)
+  function renderExplore() {
+    const status = document.getElementById('explore-status');
+    if (!state.allFeatures.length || !map.globe) {
+      if (state.worldFailed) {
+        status.className = 'explore-status error-state';
+        status.textContent = 'The map could not be unfurled. Check your connection and refresh the page.';
+      }
+      return;
+    }
+    status.hidden = true;
+    const arriving = !explore.on;
+    enterExplore();
+    renderExploreTools();
+    renderPlace();
+    paintExplore();
+    const linked = countryFromHash();
+    if (linked && linked !== explore.selected) selectCountry(linked, { instant: arriving });
+  }
+
+  // Moves the globe into the Explore screen and sets it up for looking around
+  function enterExplore() {
+    if (explore.on) return;
+    const g = map.globe;
+    explore.on = true;
+    g.attachTo(document.getElementById('explore-globe'));
+    document.getElementById('explore-globe').style.setProperty('--globe-cursor', '');
+    sat.failed = false;
+    applyImagerySupport();
+    applyMapStyle();
+    g.resume();
+    frameExplore();
+    g.setView(explore.view || explore.home);
+    setExploreLayers();
+    // Straight after the page has loaded the map may still be on its way
+    // to the globe: what was set on it is set again once it is there
+    if (!map.drawn) {
+      map.drawing.then(() => {
+        if (!explore.on) return;
+        setExploreLayers();
+        paintExplore();
+        if (explore.selected) showCountry(explore.selected, { instant: true });
+      });
+    }
+  }
+
+  // Only the world shows, and every country of it can be picked
+  function setExploreLayers() {
+    const g = map.globe;
+    MAP_LAYERS.forEach(id => g.updateLayer(id, { visible: id === 'world', interactive: id === 'world' }));
+    MAP_LAYERS.forEach(id => g.setHoverStyle(id, id === 'world' ? 'hover' : null, isCountryKey));
+  }
+
+  // Hands the globe back to the game's stage
+  function leaveExplore() {
+    if (!explore.on) return;
+    explore.view = map.globe.getView();
+    explore.on = false;
+    closeExploreResults();
+    map.globe.attachTo(document.getElementById('globe-host'));
+  }
+
+  // Works out the whole-globe view for the screen as it is now: what Reset
+  // view returns to, and as far out as Explore zooms
+  function frameExplore() {
+    const g = map.globe;
+    const host = document.getElementById('explore-globe');
+    g.resize();
+    const base = g.radiusPx() / g.getView().k;      // the globe's radius at zoom 1
+    const across = Math.min(host.clientWidth, host.clientHeight);
+    const whole = (across / 2 - Math.max(8, across * 0.04)) / base;
+    const wasHome = explore.home && exploreAtHome();
+    explore.home = { lon: WORLD_VIEW.lon, lat: WORLD_VIEW.lat, k: whole };
+    g.setOptions({ minZoom: Math.min(1, whole), maxZoom: 80 });
+    g.setHome(explore.home);
+    if (wasHome) g.setView(explore.home);
+  }
+
+  // True while the globe shows Explore's whole-globe view
+  function exploreAtHome() {
+    const v = map.globe.getView(), h = explore.home;
+    return Math.abs(v.lon - h.lon) < 1e-6 && Math.abs(v.lat - h.lat) < 1e-6 && Math.abs(v.k - h.k) < 1e-6;
+  }
+
+  window.addEventListener('resize', () => {
+    if (!explore.on) return;
+    frameExplore();
+    setPlaceHeight();
+  });
+
+  /* ----- The globe ----- */
+
+  // Paints the world for Explore. Plain: the atlas's countries as land, the
+  // selected one tinted. Coloured by a skill: each country in the step of
+  // the moss ramp its mastery has reached. Land that is no country of the
+  // atlas, or has no question in the skill, is dimmed.
+  function paintExplore() {
+    if (!explore.on) return;
+    const skill = exploreSkill();
+    const levels = skill ? mastery.levels(skill.key, skill.names()) : null;
+    const styles = {};
+    state.allFeatures.forEach(f => {
+      const key = featureKey(f);
+      const name = state.canonicalByFeature.get(key);
+      if (!isCountryKey(key)) {
+        styles[key] = 'dim';
+      } else if (!levels) {
+        styles[key] = name === explore.selected ? 'prompt' : 'land';
+      } else {
+        const step = Object.prototype.hasOwnProperty.call(levels, name) ? MASTERY_STEPS.find(s => s.level === levels[name]) : null;
+        styles[key] = step ? step.style : 'dim';
+      }
+    });
+    map.globe.setStyles('world', styles);
+    map.globe.invalidate();
+  }
+
+  // Over the globe in Explore: the selected country's outline
+  function drawExploreOverlay(ctx) {
+    (exploreCountries().get(explore.selected) || []).forEach(key => {
+      const info = map.globe.featureInfo('world', key);
+      if (info) map.globe.draw.outline(ctx, info.feature, { stroke: map.ink.label, width: 2 });
+    });
+  }
+
+  // A tap on the globe: the country under it is selected; a tap on the sea
+  // or on land that is no country of the atlas puts the card away
+  function onExploreClick(e) {
+    const touch = !!e.originalEvent && e.originalEvent.pointerType !== 'mouse';
+    const hit = map.globe.featureAt(e.x, e.y, {
+      tolerance: touch ? 20 : 12,
+      eligible: (layerId, key) => layerId === 'world' && isCountryKey(key)
+    });
+    const name = hit && isCountryKey(hit.key) ? state.canonicalByFeature.get(hit.key) : null;
+    if (name !== explore.selected) selectCountry(name, { gentle: true });
+  }
+
+  // The main piece of a country: the middle of its largest polygon and how
+  // far that polygon reaches from there, in radians. Outlying parts (French
+  // Guiana, Alaska, Svalbard) are a turn of the globe away, as on the map.
+  function countryFocus(name) {
+    if (explore.focus.has(name)) return explore.focus.get(name);
+    const keys = exploreCountries().get(name);
+    const info = keys ? map.globe.featureInfo('world', keys[0]) : null;
+    if (!info) return null;
+    const lonlat = map.globe.anchor('world', keys[0]) || info.centroid;
+    const geometry = info.feature.geometry;
+    const polygons = geometry.type === 'MultiPolygon' ? geometry.coordinates : [geometry.coordinates];
+    // The anchor lies inside the largest piece, so the nearest border point of all is on that piece
+    let main = polygons[0][0], nearest = Infinity;
+    polygons.forEach(polygon => {
+      polygon[0].forEach(point => {
+        const d = d3.geoDistance(lonlat, point);
+        if (d < nearest) { nearest = d; main = polygon[0]; }
+      });
+    });
+    const focus = { lonlat: lonlat, radius: main.reduce((r, point) => Math.max(r, d3.geoDistance(lonlat, point)), 0) };
+    explore.focus.set(name, focus);
+    return focus;
+  }
+
+  // The part of the Explore stage its floating parts leave free, in px
+  // from the stage's corner: where a selected country is shown
+  function exploreClear() {
+    const stage = document.getElementById('explore-stage').getBoundingClientRect();
+    const box = id => {
+      const el = document.getElementById(id);
+      const r = el && !el.hidden ? el.getBoundingClientRect() : null;
+      return r && r.width > 0 ? r : null;
+    };
+    const gap = 16;
+    const card = box('place-card'), tools = box('explore-tools');
+    const search = document.querySelector('.explore-search').getBoundingClientRect();
+    const clear = { left: gap, right: stage.width - gap, top: gap, bottom: stage.height - gap };
+    if (card && card.width > stage.width * 0.7) {
+      // A phone: the search and the tools above, the card's sheet below
+      clear.top = (tools || search).bottom - stage.top + gap;
+      clear.bottom = card.top - stage.top - gap;
+    } else {
+      // The side column on the left, the map controls on the right, the tools in the top corner
+      clear.left = search.right - stage.left + gap;
+      clear.right = document.querySelector('#explore-screen .mapctl').getBoundingClientRect().left - stage.left - gap;
+      if (tools && stage.height - (tools.bottom - stage.top) > 360) clear.top = tools.bottom - stage.top + gap;
+    }
+    return clear;
+  }
+
+  // The view centre that puts a place dx px right of and dy px below the
+  // middle of a globe drawn with a radius of `radius` px (the orthographic
+  // projection, solved for its centre). On a globe seen whole a sideways
+  // shift is a long turn, which would show the place edge-on and askew, so
+  // the turn stops at EXPLORE_SHIFT degrees and the place gets part-way.
+  function viewCentreFor(lonlat, radius, dx, dy) {
+    const rad = Math.PI / 180, most = EXPLORE_SHIFT * rad;
+    const within = v => Math.max(-most, Math.min(most, v));
+    const lat = lonlat[1] * rad;
+    const dLon = within(Math.asin(Math.max(-1, Math.min(1, dx / (radius * Math.max(Math.cos(lat), 0.05))))));
+    const a = Math.sin(lat), b = Math.cos(lat) * Math.cos(dLon);
+    const lat0 = Math.acos(Math.max(-1, Math.min(1, -dy / (radius * Math.hypot(a, b))))) - Math.atan2(b, a);
+    return [lonlat[0] - dLon / rad, (lat + within(lat0 - lat)) / rad];
+  }
+
+  // Turns the globe so that a country sits in the middle of what the
+  // floating parts leave free, at a size that shows its main piece whole.
+  // opts.gentle (it was tapped, so it is in view): the globe moves only if
+  // the card has covered the country, or it is too small or too large to
+  // take in. opts.instant: no flight.
+  function showCountry(name, opts) {
+    const g = map.globe;
+    const focus = countryFocus(name);
+    if (!focus) return;
+    const clear = exploreClear();
+    const host = document.getElementById('explore-globe');
+    const view = g.getView();
+    const base = g.radiusPx() / view.k;
+    const room = Math.min(clear.right - clear.left, clear.bottom - clear.top) / 2;
+    const sine = Math.max(Math.sin(Math.min(focus.radius, Math.PI / 2)), 1e-6);
+    // Whole, with air around it; a speck of an island comes up to a size that can be made out
+    let k = Math.min(room * 0.62 / (base * sine), Math.max(EXPLORE_CLOSE, EXPLORE_MIN_PX / (2 * base * sine)));
+    k = Math.max(k, explore.home.k);
+    if (opts && opts.gentle) {
+      const across = 2 * base * view.k * sine;
+      const p = g.project(focus.lonlat);
+      const fits = across >= EXPLORE_MIN_PX && across <= 2 * room;
+      const inSight = p.z > 0.35 && p.x >= clear.left + 24 && p.x <= clear.right - 24 && p.y >= clear.top + 24 && p.y <= clear.bottom - 24;
+      if (fits && inSight) return;
+      if (fits) k = view.k;
+    }
+    const centre = viewCentreFor(focus.lonlat, base * k,
+      (clear.left + clear.right) / 2 - host.clientWidth / 2, (clear.top + clear.bottom) / 2 - host.clientHeight / 2);
+    g.flyTo({ lon: centre[0], lat: centre[1], k: k }, { duration: (opts && opts.instant) || reducedMotion() ? 0 : 700 });
+  }
+
+  // Selects a country, or none (null): its card, its mark on the globe and
+  // the address bar follow. opts are showCountry's.
+  function selectCountry(name, opts) {
+    explore.selected = name && exploreCountries().has(name) ? name : null;
+    renderPlace();
+    paintExplore();
+    if (document.body.dataset.screen === 'explore') setAddressBar(viewUrl('explore'));
+    if (explore.selected && explore.on) showCountry(explore.selected, opts);
+  }
+
+  /* ----- Colour by ----- */
+
+  // The Colour by control and, under it, what the colours count. Drawn
+  // once; after that only its state and the legend's counts change.
+  function renderExploreTools() {
+    const tools = document.getElementById('explore-tools');
+    if (!tools.firstChild) {
+      tools.innerHTML =
+        '<p class="eyebrow" id="explore-colour-label">Colour by</p>' +
+        '<div class="seg seg--block" role="radiogroup" aria-labelledby="explore-colour-label">' +
+          [{ key: 'plain', label: 'Plain' }].concat(EXPLORE_SKILLS).map(option =>
+            '<button type="button" role="radio" data-action="explore-colour" data-value="' + option.key + '">' + option.label + '</button>').join('') +
+        '</div>' +
+        '<div class="legend explore-legend" id="explore-legend"></div>';
+    }
+    tools.querySelectorAll('[data-action="explore-colour"]').forEach(btn => {
+      const on = btn.dataset.value === explore.colour;
+      btn.setAttribute('aria-checked', String(on));
+      btn.tabIndex = on ? 0 : -1;
+    });
+    const skill = exploreSkill();
+    const legend = document.getElementById('explore-legend');
+    legend.hidden = !skill;
+    if (!skill) return;
+    const summary = mastery.summary(skill.key, skill.names());
+    legend.setAttribute('role', 'group');
+    legend.setAttribute('aria-label', skill.line + ', your mastery of ' + summary.total + ' countries');
+    legend.innerHTML = MASTERY_STEPS.map(step =>
+      '<span><i class="swatch' + step.swatch + '"></i>' + step.label + ' <b>' + summary[step.level] + '</b></span>').join('');
+  }
+
+  function chooseExploreColour(colour) {
+    explore.colour = colour;
+    renderExploreTools();
+    paintExplore();
+  }
+
+  /* ----- The place card ----- */
+
+  // "today", "yesterday", "5 days ago", then the date
+  function daysAgoText(day) {
+    const ago = mastery.today() - day;
+    if (ago <= 0) return 'today';
+    if (ago === 1) return 'yesterday';
+    if (ago <= 30) return ago + ' days ago';
+    const date = new Date(Mastery.dayToDate(day) + 'T12:00:00');
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  // The card of the selected country: its flag, name, capital and
+  // continent, the countries it borders, and where the player stands with
+  // it in each skill. Hidden when nothing is selected.
+  function renderPlace() {
+    const card = document.getElementById('place-card');
+    const name = explore.selected;
+    card.hidden = !name;
+    if (!name) {
+      card.innerHTML = '';
+      setPlaceHeight();
+      return;
+    }
+    const continent = getContinent(name);
+    const capital = Quiz.capitalOf(WORLD_FACTS, name);
+    const near = state.neighbours.get(name) || { countries: [], others: [] };
+    const flag = !state.flagsOff && Quiz.flagPrompt(WORLD_FACTS, name);
+    const bordered = near.countries.length + near.others.length;
+    const list = names => names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0];
+
+    const skills = EXPLORE_SKILLS.map(skill => {
+      let standing = '<small>No question for it</small>';
+      if (skill.names().indexOf(name) !== -1) {
+        const item = mastery.get(skill.key, name);
+        const step = MASTERY_STEPS.find(s => s.level === item.level);
+        standing = item.seen
+          ? '<b><i class="swatch' + step.swatch + '"></i>' + step.label + '</b><small>' + daysAgoText(item.last) + '</small>'
+          : '<small>Not seen yet</small>';
+      }
+      return '<li><span>' + skill.line + '</span>' + standing + '</li>';
+    }).join('');
+
+    card.innerHTML =
+      '<div class="place-head">' +
+        (flag ? '<span class="flag place-flag' + (explore.flags ? '' : ' is-waiting') + '" aria-hidden="true">' + flag.flag + '</span>' : '') +
+        '<p class="eyebrow">' + escapeHtml(continent) + '</p>' +
+        '<button type="button" class="icon-btn place-close" data-action="explore-close" aria-label="Close">' + icon('close') + '</button>' +
+      '</div>' +
+      '<h2 class="display-m place-name" id="place-name">' + escapeHtml(name) + '</h2>' +
+      (capital
+        ? '<dl class="place-facts"><div><dt>Capital</dt><dd>' + escapeHtml(capital.capital) +
+            (capital.alternates.length ? '<small>also ' + escapeHtml(list(capital.alternates)) + '</small>' : '') +
+          '</dd></div></dl>'
+        : '') +
+      '<div class="place-block">' +
+        '<p class="eyebrow"><span>Borders</span>' + (bordered ? '<span>' + bordered + '</span>' : '') + '</p>' +
+        (bordered ? '' : '<p class="place-note">No land borders.</p>') +
+        (near.countries.length
+          ? '<div class="chips">' + near.countries.map(other =>
+              '<button type="button" class="chip" data-action="explore-pick" data-name="' + escapeHtml(other) + '">' + escapeHtml(other) + '</button>').join('') +
+            '</div>'
+          : '') +
+        (near.others.length
+          ? '<p class="place-note">' + (near.countries.length ? 'Also ' : '') + escapeHtml(list(near.others)) +
+            ', which ' + (near.others.length > 1 ? 'are' : 'is') + ' on the map but not in this atlas’s levels.</p>'
+          : '') +
+      '</div>' +
+      '<div class="place-block">' +
+        '<p class="eyebrow">Where you stand</p>' +
+        '<ul class="place-skills">' + skills + '</ul>' +
+      '</div>' +
+      '<button type="button" class="btn btn--secondary btn--block" data-action="open-level" data-level="' +
+        continent.toLowerCase().replace(/ /g, '-') + '">' + escapeHtml(continent) + ' level' + icon('arrow') + '</button>';
+    card.scrollTop = 0;
+    setPlaceHeight();
+    // The flag's font is fetched the first time a card wants one
+    if (flag && !explore.flags) {
+      flagsReady().then(ok => {
+        if (!ok || explore.flags) return;
+        explore.flags = true;
+        if (explore.selected) renderPlace();
+      });
+    }
+  }
+
+  // Tells the stylesheet how much of the screen's foot the card's sheet
+  // covers on a phone (0 on a wide screen, where it stands at the side), so
+  // that the map controls and the imagery credit stand clear of it
+  function setPlaceHeight() {
+    const screen = document.getElementById('explore-screen');
+    const card = document.getElementById('place-card');
+    const sheet = !card.hidden && card.offsetWidth > screen.clientWidth * 0.7;
+    screen.style.setProperty('--place-h', (sheet ? card.offsetHeight : 0) + 'px');
+  }
+
+  /* ----- Search ----- */
+
+  // Countries for what has been typed, best first: a name that starts with
+  // it, a name with a word that does, another spelling the typed-name quiz
+  // accepts, a capital, then the text anywhere in the name. Accents, case
+  // and punctuation make no difference (Quiz.fold). Each is { name, note }.
+  function searchCountries(text) {
+    const q = Quiz.fold(text);
+    if (!q) return [];
+    const starts = spelling => { const f = Quiz.fold(spelling); return f.indexOf(q) === 0 || f.indexOf(' ' + q) !== -1; };
+    const ranked = [];
+    exploreCountries().forEach((keys, name) => {
+      const folded = Quiz.fold(name);
+      const capital = Quiz.capitalOf(WORLD_FACTS, name);
+      const alias = (COUNTRY_TYPED_ALIASES[name] || []).find(starts);
+      const city = capital ? [capital.capital].concat(capital.alternates).find(starts) : null;
+      let rank = -1, note = getContinent(name);
+      if (folded.indexOf(q) === 0) rank = 0;
+      else if (folded.indexOf(' ' + q) !== -1) rank = 1;
+      else if (alias) { rank = 2; note = 'also “' + alias + '”'; }
+      else if (city) { rank = 3; note = 'capital ' + city; }
+      else if (folded.indexOf(q) !== -1) rank = 4;
+      if (rank >= 0) ranked.push({ name: name, note: note, rank: rank });
+    });
+    ranked.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+    return ranked.slice(0, EXPLORE_RESULTS);
+  }
+
+  // The field changed: list the countries that match
+  function onExploreSearch() {
+    const input = document.getElementById('explore-search');
+    explore.results = searchCountries(input.value);
+    explore.active = explore.results.length ? 0 : -1;
+    renderExploreResults();
+  }
+
+  // The list under the search field, as the search and the arrow keys have left it
+  function renderExploreResults() {
+    const input = document.getElementById('explore-search');
+    const list = document.getElementById('explore-results');
+    const typed = Quiz.fold(input.value) !== '';
+    document.getElementById('explore-search-clear').hidden = input.value === '';
+    list.hidden = !typed;
+    input.setAttribute('aria-expanded', String(typed && explore.results.length > 0));
+    if (explore.active >= 0) input.setAttribute('aria-activedescendant', 'explore-result-' + explore.active);
+    else input.removeAttribute('aria-activedescendant');
+    list.innerHTML = explore.results.length
+      ? explore.results.map((result, i) =>
+          '<li role="option" id="explore-result-' + i + '" data-action="explore-pick" data-name="' + escapeHtml(result.name) +
+            '" aria-selected="' + (i === explore.active) + '">' + escapeHtml(result.name) + '<small>' + escapeHtml(result.note) + '</small></li>').join('')
+      : (typed ? '<li class="explore-none" role="presentation">No country by that name in this atlas</li>' : '');
+  }
+
+  function closeExploreResults() {
+    const input = document.getElementById('explore-search');
+    input.value = '';
+    explore.results = [];
+    explore.active = -1;
+    renderExploreResults();
+  }
+
+  // A search result or a neighbour's chip was chosen: the globe flies there.
+  // After a search the focus moves to the card, so that a phone's keyboard
+  // closes and the arrow keys are the globe's again.
+  function pickCountry(name, fromSearch) {
+    closeExploreResults();
+    selectCountry(name);
+    if (fromSearch) document.getElementById('place-card').focus({ preventScroll: true });
+  }
+
+  document.getElementById('explore-search').addEventListener('input', onExploreSearch);
+  document.getElementById('explore-search').addEventListener('focus', onExploreSearch);
+  // A click anywhere else puts the list away (what was typed stays in the field)
+  document.addEventListener('click', (e) => {
+    if (!explore.on || !e.target.closest || e.target.closest('.explore-search')) return;
+    document.getElementById('explore-results').hidden = true;
+    document.getElementById('explore-search').setAttribute('aria-expanded', 'false');
+  });
+
+  /* ----- Keys ----- */
+
+  // In the search field: the arrows walk the list, Enter goes to the
+  // country, Escape clears the field. Anywhere else in Explore: Escape
+  // closes the card, / goes to the search, and the globe's own keys work
+  // as they do in a round.
+  document.addEventListener('keydown', (e) => {
+    // A key the dialog, the level sheet or a radio group has taken is not Explore's as well
+    if (!explore.on || e.defaultPrevented || dialog.open || sheet.level) return;
+    const input = document.getElementById('explore-search');
+    if (e.target === input) {
+      const n = explore.results.length;
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && n) {
+        e.preventDefault();
+        explore.active = (explore.active + (e.key === 'ArrowDown' ? 1 : n - 1)) % n;
+        renderExploreResults();
+      } else if (e.key === 'Enter' && n) {
+        e.preventDefault();
+        pickCountry(explore.results[Math.max(0, explore.active)].name, true);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        if (input.value) closeExploreResults();
+        else selectCountry(null);
+      }
+      return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Escape') {
+      if (explore.selected) selectCountry(null);
+    } else if (e.key === '/') {
+      e.preventDefault();
+      input.focus();
+    } else if (globeKey(e)) {
+      e.preventDefault();
+    }
+  });
 
 /* =========================================================
  * GLOBE ENGINE
@@ -13365,7 +14178,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   // name keeps its offset from its anchor as the globe turns.
   function placeLearnLabels() {
     const run = state.learn;
-    if (!run || run.phase !== 'study') return;
+    if (!run || run.phase !== 'study' || explore.on) return;
     const g = map.globe;
     const host = document.getElementById('globe-host');
     // The part of the host that is on screen (it reaches past the stage's edge)
@@ -14157,6 +14970,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
 
   const VIEWS = [
     { key: 'home', screen: 'menu', label: 'Home', icon: 'home', render: renderHome },
+    { key: 'explore', screen: 'explore', label: 'Explore', icon: 'globe', render: renderExplore },
     { key: 'stats', screen: 'stats', label: 'Stats', icon: 'stats', render: renderStats },
     { key: 'settings', screen: 'settings', label: 'Settings', icon: 'settings', render: renderSettings }
   ];
@@ -14165,14 +14979,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     return VIEWS.find(view => view.key === key) || null;
   }
 
-  // The view the address bar names ('#stats'); anything else is Home
+  // The view the address bar names ('#stats', or '#explore=france' with a
+  // country for Explore to select); anything else is Home
   function viewFromHash() {
-    const key = window.location.hash.replace(/^#/, '');
+    const key = window.location.hash.replace(/^#/, '').split('=')[0];
     return viewByKey(key) ? key : 'home';
   }
 
   function viewUrl(key) {
-    return baseUrl() + (key === 'home' ? '' : '#' + key);
+    if (key === 'home') return baseUrl();
+    return baseUrl() + '#' + key + (key === 'explore' && explore.selected ? '=' + Quiz.slug(explore.selected) : '');
   }
 
   // One link per view, in the top bar and in the phone's tab bar
@@ -14223,6 +15039,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     const view = VIEWS.find(v => v.screen === name);
     closeLevelSheet({ keepFocus: true });
     closeDialog();
+    if (name !== 'explore') leaveExplore();
     if (view) {
       state.roundId++;   // whatever the round still had queued up no longer applies
       stopClock();
@@ -14246,7 +15063,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     followKeyboard();
     // The globe draws and listens only while it is on show
     if (map.globe) {
-      if (name === 'game') map.globe.resume();
+      if (name === 'game' || name === 'explore') map.globe.resume();
       else map.globe.pause();
     }
   }
@@ -14270,9 +15087,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   // listener serves them all, so redrawn markup needs no rewiring
   const ACTIONS = {
     'view': (el) => {
-      // The tab already showing scrolls back to its top
+      // The tab already showing scrolls back to its top; Explore's globe goes back to its opening view
       if (el.dataset.view === state.view && document.body.dataset.screen === viewByKey(state.view).screen) {
-        document.getElementById(viewByKey(state.view).screen + '-screen').scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' });
+        if (explore.on) zoomReset();
+        else document.getElementById(viewByKey(state.view).screen + '-screen').scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' });
       } else {
         showView(el.dataset.view);
       }
@@ -14315,7 +15133,23 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     'sheet-start': () => startFromSheet(),
     'sheet-learn-reset': () => startFromSheet({ learnFresh: true }),
     'share-results': (el) => shareResults(el),
-    'view-map': () => showRoundMap()
+    'view-map': () => showRoundMap(),
+    'see-on-globe': (el) => {
+      explore.colour = el.dataset.value;
+      showView('explore');
+    },
+    'explore-colour': (el) => chooseExploreColour(el.dataset.value),
+    'explore-pick': (el) => pickCountry(el.dataset.name, el.getAttribute('role') === 'option'),
+    'explore-close': () => selectCountry(null),
+    'explore-search-clear': () => {
+      closeExploreResults();
+      document.getElementById('explore-search').focus();
+    },
+    'explore-zoom': (el) => {
+      if (el.dataset.value === 'reset') zoomReset();
+      else zoomBy(el.dataset.value === 'in' ? 1.6 : 1 / 1.6);
+    },
+    'explore-map-style': () => toggleMapStyle()
   };
   document.addEventListener('click', (e) => {
     const el = e.target.closest ? e.target.closest('[data-action]') : null;
@@ -14382,6 +15216,25 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   function zoomReset() {
     map.globe.resetView({ animate: !reducedMotion() });
   }
+  // Turns the globe a step east (dx) or north (dy): a sixth of what is in view
+  function turnGlobe(dx, dy) {
+    const view = map.globe.getView();
+    const step = 30 / view.k;
+    map.globe.flyTo({ lon: view.lon + dx * step, lat: Math.max(-85, Math.min(85, view.lat + dy * step)) },
+      { duration: reducedMotion() ? 0 : 200 });
+  }
+  // The keys that drive the globe wherever it is on show: + and - zoom, 0
+  // goes back to the opening view, the arrows turn it. True when the key
+  // was one of them.
+  function globeKey(e) {
+    const turn = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+    if (turn) turnGlobe(turn[0], turn[1]);
+    else if (e.key === '+' || e.key === '=') zoomBy(1.6);
+    else if (e.key === '-' || e.key === '_') zoomBy(1 / 1.6);
+    else if (e.key === '0') zoomReset();
+    else return false;
+    return true;
+  }
   document.getElementById('zoom-in-btn').addEventListener('click', () => zoomBy(1.6));
   document.getElementById('zoom-out-btn').addEventListener('click', () => zoomBy(1 / 1.6));
   document.getElementById('zoom-reset-btn').addEventListener('click', zoomReset);
@@ -14411,15 +15264,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     } else if (e.key === 's' || e.key === 'S') {
       e.preventDefault();
       handleSkip();
-    } else if (e.key === '+' || e.key === '=') {
+    } else if (globeKey(e)) {
       e.preventDefault();
-      zoomBy(1.6);
-    } else if (e.key === '-' || e.key === '_') {
-      e.preventDefault();
-      zoomBy(1 / 1.6);
-    } else if (e.key === '0') {
-      e.preventDefault();
-      zoomReset();
     } else if (e.key === 'm' || e.key === 'M') {
       e.preventDefault();
       toggleMapStyle();
@@ -15079,6 +15925,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   window.__atlas = {
     state, mastery, LEVELS, COLLECTIONS, VIEWS, startGame, levelByKey, showView, exportProgress, resetProgress,
     map, get globe() { return map.globe; },
+    explore, selectCountry, searchCountries,
     Quiz, WORLD_FACTS, COUNTRY_TYPED_ALIASES,
     version: 2
   };
