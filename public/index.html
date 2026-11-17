@@ -12123,7 +12123,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   // when one view can hold both. The view it turned from is kept, to go
   // back to for the next city.
   function showPinMiss(guess, truth) {
-    const g = map.globe, view = g.getView(), c = map.clear, edge = 40;
+    const g = map.globe, pin = state.pin, view = g.getView(), c = map.clear, edge = 40;
     const inSight = lonlat => {
       const p = g.project(lonlat);
       return p.z > 0.35 && p.x >= c.left + edge && p.x <= c.right - edge && p.y >= c.top + edge && p.y <= c.bottom - edge;
@@ -12140,16 +12140,25 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       const k = room / (Math.max(Math.sin(apart / 2), 0.05) * g.radiusPx() / view.k);
       to = { lon: mid[0], lat: mid[1], k: Math.min(view.k, k) };
     }
-    state.pin.back = view;
-    g.flyTo(to, { duration: reducedMotion() ? 0 : 550 });
+    const back = pin.back = { view: view, shown: null };
+    g.flyTo(to, { duration: reducedMotion() ? 0 : 550 }).then(arrived => {
+      if (pin.back !== back) return;
+      // A player who takes hold of the globe on the way keeps the view they make
+      if (arrived) back.shown = g.getView();
+      else pin.back = null;
+    });
   }
 
-  // The view a reveal turned away from, given back when the next city comes up
+  // Gives back the view a reveal turned away from, for the next city,
+  // unless the player has moved the globe since
   function restorePinView() {
-    const back = state.pin.back;
+    const g = map.globe, back = state.pin.back;
     state.pin.back = null;
-    if (back) map.globe.flyTo(back, { duration: reducedMotion() ? 0 : 450 });
-    else map.globe.invalidate();
+    const now = g.getView();
+    const moved = !!back && !!back.shown &&
+      (Math.abs(now.lon - back.shown.lon) > 1e-6 || Math.abs(now.lat - back.shown.lat) > 1e-6 || Math.abs(now.k - back.shown.k) > 1e-6);
+    if (back && !moved) g.flyTo(back.view, { duration: reducedMotion() ? 0 : 450 });
+    else g.invalidate();
   }
 
   const PIN_SHAPE = new Path2D('M0,0 C-2,-6 -8,-10 -8,-16 A8,8 0 1 1 8,-16 C8,-10 2,-6 0,0 Z');   // tip at 0,0
