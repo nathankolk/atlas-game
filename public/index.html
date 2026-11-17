@@ -1581,8 +1581,8 @@
 
   /* Looking back at a finished map: the marks, the tally and the way back */
   #game-screen.review-mode .gamebar-return { display: inline-flex; }
+  #game-screen.review-mode .gamebar-progress { visibility: hidden; }
   #game-screen.review-mode #back-btn,
-  #game-screen.review-mode .gamebar-progress,
   #game-screen.review-mode .hud-top,
   #game-screen.review-mode .game-actions,
   #game-screen.review-mode .map-hint { display: none; }
@@ -1590,16 +1590,17 @@
   /* ===== Results ===== */
   #results-screen { display: block; overflow-y: auto; overscroll-behavior: contain; }
   .results-bar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     max-width: var(--page-max);
     min-height: var(--nav-h);
     margin: 0 auto;
     padding: env(safe-area-inset-top, 0px) 28px 0;
   }
-  .results-bar .btn { flex: none; }
+  .results-bar .btn { justify-self: start; }
+  .results-bar .btn:last-child { justify-self: end; }
   .results-bar .btn--ghost:first-child { padding-left: 8px; }
   .results-bar .eyebrow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
   .results-bar .btn.copied { color: var(--good); }
@@ -1640,7 +1641,7 @@
   .results-actions { display: grid; gap: 10px; width: 100%; max-width: 340px; margin-top: 28px; }
   .results-more { display: flex; justify-content: center; gap: 4px; margin-top: 10px; }
 
-  .outcomes { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--rule-strong); border-bottom: 1px solid var(--rule); }
+  .outcomes { display: grid; grid-template-columns: repeat(var(--cols, 4), 1fr); border-top: 1px solid var(--rule-strong); border-bottom: 1px solid var(--rule); }
   .outcomes > div { display: grid; align-content: start; gap: 6px; padding: 20px 0 18px 20px; border-left: 1px solid var(--rule); }
   .outcomes > div:first-child { padding-left: 0; border-left: 0; }
   .outcomes dd { font-size: 48px; line-height: 0.9; white-space: nowrap; }
@@ -1692,6 +1693,7 @@
   .revisit-tally { font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .level-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500; color: var(--text-3); white-space: nowrap; }
   .revisit-note { margin-top: 14px; font-size: 13px; color: var(--text-3); }
+  .results-note { max-width: 34em; padding: 22px 0; color: var(--text-2); }
 
   /* Loading overlay for lazy-loaded datasets */
   .loading-overlay {
@@ -2135,7 +2137,7 @@
     .credits > div { grid-template-columns: 1fr; gap: 2px; }
 
     /* Game: the prompt at the top (a tapping hand covers the bottom), the
-       actions bottom centre, map controls and tally in a row above them */
+       actions bottom centre, map controls and tally in the corners above them */
     .gamebar { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; height: calc(54px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 14px 0 4px; }
     .gamebar-title { flex-direction: column; align-items: flex-start; gap: 2px; }
     .gamebar-title strong { max-width: 100%; font-size: 21px; line-height: 1.1; }
@@ -2158,14 +2160,13 @@
     #game-screen.pin-mode .skip { flex: 1; min-width: 0; }
     #game-screen.pin-mode .game-go { flex: 1.5; min-width: 0; }
     .game-actions kbd { display: none; }
-    .mapctl { right: 12px; top: auto; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); grid-auto-flow: column; transform: none; }
-    .mapctl-group { grid-auto-flow: column; }
+    .mapctl { right: 12px; top: auto; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); gap: 8px; transform: none; }
     .mapctl button { width: 44px; height: 44px; }
-    .mapctl-group button + button { border-top: 0; border-left: 1px solid var(--rule); }
-    .game-legend { left: 12px; right: auto; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); flex-wrap: wrap; max-width: calc(100% - 222px); padding: 6px 10px; border-radius: var(--r-sm); font-size: 11px; }
-    .game-legend > span { gap: 5px; }
+    .game-legend { left: 12px; right: auto; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); flex-direction: column; gap: 3px; padding: 8px 12px; border-radius: var(--r-md); font-size: 11.5px; }
+    .game-legend b { margin-left: auto; padding-left: 10px; }
     .game-legend i { width: 8px; height: 8px; border-radius: 2px; }
-    .map-hint { bottom: calc(142px + env(safe-area-inset-bottom, 0px)); }
+    .map-hint { bottom: calc(180px + env(safe-area-inset-bottom, 0px)); }
+    #game-screen.pin-mode .map-hint, #game-screen.learn-mode .map-hint { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
     .sat-credit { left: 50%; bottom: calc(3px + env(safe-area-inset-bottom, 0px)); padding: 1px 8px; font-size: 9.5px; transform: translateX(-50%); }
 
     /* Results: the next step stays in reach at the bottom */
@@ -2409,7 +2410,7 @@
     <div class="results-bar">
       <button type="button" class="btn btn--ghost" id="home-btn"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Home</button>
       <p class="eyebrow"><span id="results-region">—</span><span class="results-date" id="results-date"></span></p>
-      <button type="button" class="btn btn--ghost" id="share-btn"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg><span>Share</span></button>
+      <button type="button" class="btn btn--ghost" id="share-btn" data-action="share-results"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg><span>Share</span></button>
     </div>
     <div class="results">
       <div class="results-hero">
@@ -2417,11 +2418,12 @@
         <div class="results-actions">
           <button type="button" class="btn btn--primary" id="review-next-btn" hidden></button>
           <button type="button" class="btn btn--secondary" id="practice-btn" hidden></button>
+          <button type="button" class="btn btn--secondary" id="full-btn" hidden></button>
           <button type="button" class="btn btn--secondary" id="replay-btn"></button>
           <button type="button" class="btn btn--secondary" id="daily-practice-btn" hidden>Practice replay</button>
         </div>
         <div class="results-more">
-          <button type="button" class="btn btn--ghost" id="view-map-btn" hidden><svg class="icon" aria-hidden="true"><use href="#i-map"/></svg>View on the map</button>
+          <button type="button" class="btn btn--ghost" id="view-map-btn" data-action="view-map" hidden><svg class="icon" aria-hidden="true"><use href="#i-map"/></svg>View on the map</button>
         </div>
       </div>
       <div class="results-detail" id="results-detail"></div>
@@ -4176,14 +4178,14 @@
     '</article>';
   }
 
-  // Keeps the Daily Five card's countdown to the next puzzle (UTC midnight)
-  // current: "5 h 12 m" on the card still to play, HH:MM:SS once played.
-  // Each redraw of Today restarts it; it stops when the card is gone.
+  // Keeps every countdown to the next Daily Five (UTC midnight) current:
+  // "5 h 12 m" on the card still to play, HH:MM:SS once played and on the
+  // results screen. Each redraw restarts it; it stops when none is left.
   function startDailyCountdown() {
     clearTimeout(startDailyCountdown._t);
     function tick() {
-      const el = document.querySelector('[data-countdown]');
-      if (!el) return;
+      const els = document.querySelectorAll('[data-countdown]');
+      if (!els.length) return;
       const next = new Date();
       next.setUTCHours(24, 0, 0, 0);
       const ms = next - new Date();
@@ -4192,9 +4194,11 @@
       const hrs = Math.floor(ms / 3600000);
       const mins = Math.floor((ms % 3600000) / 60000);
       const secs = Math.floor((ms % 60000) / 1000);
-      el.textContent = el.dataset.countdown === 'words'
-        ? (hrs ? hrs + ' h ' : '') + mins + ' m'
-        : String(hrs).padStart(2, '0') + ':' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      els.forEach(el => {
+        el.textContent = el.dataset.countdown === 'words'
+          ? (hrs ? hrs + ' h ' : '') + mins + ' m'
+          : String(hrs).padStart(2, '0') + ':' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      });
       startDailyCountdown._t = setTimeout(tick, 1000);
     }
     tick();
@@ -4534,15 +4538,6 @@
     const step = review && review.queue.shift();
     if (!step) return;
     startGame(step.level.arg, { practice: step.names, review: review });
-  }
-
-  // The results action that carries a review on: "Next: 6 states" while
-  // rounds are left, hidden otherwise
-  function showReviewNext() {
-    const step = state.review && state.review.queue[0];
-    const btn = document.getElementById('review-next-btn');
-    btn.style.display = step ? '' : 'none';
-    if (step) btn.textContent = 'Next: ' + countNoun(step.names.length, step.level.noun);
   }
 
   /* =========================================================
@@ -5764,8 +5759,9 @@
   }
 
   // The part of the stage the HUD leaves clear, in stage px: under the
-  // prompt card, over the actions and what sits beside them, and inside the
-  // map controls where they run down the side. The map is fitted to it.
+  // prompt card, over the actions, and on a wide stage inside the map
+  // controls and over the tally. On a narrow one those two sit over the
+  // map's lower corners instead, and the map keeps its width.
   function stageClearArea(width, height) {
     const stage = document.getElementById('map-wrap').getBoundingClientRect();
     const box = (sel) => {
@@ -5774,17 +5770,16 @@
       return r && r.width > 0 ? r : null;
     };
     const gap = 12;
+    const wide = width >= 720;
     const bar = box('.gamebar');
     const card = box('#prompt');
-    const controls = box('.mapctl');
+    const controls = wide ? box('.mapctl') : null;
+    const side = controls ? stage.right - controls.left + gap : gap;
     let top = bar ? bar.bottom - stage.top : 0;
     let bottom = height;
-    let side = 20;
-    [box('.game-actions'), box('#game-legend')].forEach(r => {
+    [box('.game-actions'), wide ? box('#game-legend') : null].forEach(r => {
       if (r) bottom = Math.min(bottom, r.top - stage.top);
     });
-    if (controls && controls.height > controls.width) side = stage.right - controls.left + gap;
-    else if (controls) bottom = Math.min(bottom, controls.top - stage.top);
     // A short window has no room to keep the map clear of the card as well
     if (card && bottom - (card.bottom - stage.top) > 200) top = card.bottom - stage.top;
     return { left: side, right: width - side, top: top + gap, bottom: bottom - gap };
@@ -5852,7 +5847,7 @@
     const clear = stageClearArea(width, height);
     const wholeWorld = state.activeDataset === 'world' &&
       (state.currentContinent === 'World' || state.gameMode === 'daily-five');
-    const airX = wholeWorld ? 0 : state.activeDataset === 'world' ? 40 : 20;
+    const airX = wholeWorld ? 0 : Math.min(state.activeDataset === 'world' ? 40 : 20, width * 0.03);
     const airY = wholeWorld ? 0 : 10;
     projection.fitExtent(
       [[clear.left + airX, clear.top + airY], [clear.right - airX, clear.bottom - airY]],
@@ -6292,9 +6287,10 @@
         }
         revealTargetFeature(targetFeature, revealMsg);
       } else {
-        const wrongName = clickedCanonical || 'That';
         setPromptTry(true);
-        showToast('wrong', '<em>' + wrongName + '</em> — try again');
+        showToast('wrong', clickedCanonical
+          ? 'Not quite — that’s <em>' + clickedCanonical + '</em>'
+          : 'Not quite — try again');
       }
     }
   }
@@ -6420,7 +6416,7 @@
         revealMissedCity(state.current);
       } else {
         setPromptTry(true);
-        showToast('wrong', '<em>' + clickedName + '</em> — try again');
+        showToast('wrong', 'Not quite — that’s <em>' + clickedName + '</em>');
       }
     }
   }
@@ -6913,9 +6909,9 @@
     const level = item ? item.level : Mastery.LEVELS[0];
     const swatch = { new: '', learning: ' m1', familiar: ' m2', mastered: ' m3' }[level];
     return '<li>' +
-      '<span class="revisit-mark' + (row.second ? ' is-second' : '') + '" aria-hidden="true">' + (row.second ? '2' : icon('close')) + '</span>' +
+      '<span class="revisit-mark' + (row.second ? ' is-second' : '') + '" aria-hidden="true">' + (row.second ? (row.glyph || '2') : icon('close')) + '</span>' +
       '<div><strong>' + escapeHtml(row.name) + '</strong><small>' + escapeHtml(row.story) + '</small></div>' +
-      '<span class="revisit-tally">' + (item && item.seen ? 'first try ' + item.first + ' of ' + item.seen : '') + '</span>' +
+      '<span class="revisit-tally">' + (item && item.seen ? (row.tally || 'first try') + ' ' + item.first + ' of ' + item.seen : '') + '</span>' +
       '<span class="level-pill"><i class="swatch' + swatch + '"></i>' + level.charAt(0).toUpperCase() + level.slice(1) + '</span>' +
     '</li>';
   }
@@ -6930,8 +6926,11 @@
   //   gain     true to show what the round did to the level's mastery
   //   daily    { sequence, share }: the Daily Five's answers, or null
   //   bests    { heading, items: [{ label, value, sub, record }] }, or null
-  //   revisit  { heading, rows: [{ second, name, story }], note }, or null
-  //   actions  { practice, replay, dailyReplay, viewMap, share }
+  //   revisit  { heading, rows: [{ second, name, story, glyph, tally }], note }, or null
+  //            (glyph: the mark of a second-kind row, "2" unless given;
+  //            tally: what a best outcome is called, "first try" unless given)
+  //   note     a paragraph for the detail column, or nothing
+  //   actions  { practice, full, replay, dailyReplay, viewMap, share }
   function renderResults(r) {
     document.getElementById('results-region').textContent = r.label;
     document.getElementById('results-date').textContent = ' · ' +
@@ -6967,7 +6966,7 @@
         r.bests.items.map(it =>
           '<div><dt class="eyebrow">' + it.label + '</dt>' +
           '<dd class="num' + (it.record ? ' is-record' : '') + '">' + it.value + (it.sub ? '<small>' + it.sub + '</small>' : '') +
-            (it.record ? icon('star') + '<span class="sr-only"> new record</span>' : '') + '</dd></div>').join('') +
+            (it.record ? icon('star') + '<span class="vh"> new record</span>' : '') + '</dd></div>').join('') +
         '</dl></section>';
     }
     if (r.revisit) {
@@ -6981,6 +6980,7 @@
         (r.revisit.note ? '<p class="revisit-note">' + escapeHtml(r.revisit.note) + '</p>' : '') +
       '</section>';
     }
+    if (r.note) detail += '<p class="results-note">' + escapeHtml(r.note) + '</p>';
     document.getElementById('results-detail').innerHTML = detail;
     if (r.daily) startDailyCountdown();
 
@@ -6992,10 +6992,12 @@
       'practice-btn': a.practice
         ? (a.practice === 1 ? 'Practice this one' : 'Practice these <span class="btn-count">' + a.practice + '</span>')
         : null,
+      'full-btn': a.full ? icon('play') + a.full : null,
       'replay-btn': a.replay ? icon('replay') + a.replay : null,
       'daily-practice-btn': a.dailyReplay ? 'Practice replay' : null
     };
-    let lead = true;
+    // After today's Daily Five the step to take is sharing it, from the recap
+    let lead = !(r.daily && r.daily.share);
     Object.keys(labels).forEach(id => {
       const btn = document.getElementById(id);
       btn.hidden = !labels[id];
@@ -8584,6 +8586,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
         heading: 'Farthest off',
         rows: worst.map(r => ({
           second: r.pts >= 40,
+          glyph: '≈',
+          tally: '80 or more',
           name: r.name,
           story: r.km == null ? 'Skipped' : formatKm(r.km) + ' off · +' + r.pts
         })),
@@ -8604,8 +8608,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     const a = g.slice(-5), b = g.slice(-10, -5);
     const avg = arr => arr.reduce((x, y) => x + y, 0) / arr.length;
     const ratio = avg(a) / Math.max(1, avg(b));
-    if (ratio >= 1.05) return ' <span class="trend up">↑<span class="sr-only"> rising</span></span>';
-    if (ratio <= 0.95) return ' <span class="trend down">↓<span class="sr-only"> falling</span></span>';
+    if (ratio >= 1.05) return ' <span class="trend up">↑<span class="vh"> rising</span></span>';
+    if (ratio <= 0.95) return ' <span class="trend down">↓<span class="vh"> falling</span></span>';
     return '';
   }
 
@@ -9134,7 +9138,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       daily: null,
       bests: null,
       revisit: null,
-      actions: { practice: 0, replay: 'Learn again', dailyReplay: false, viewMap: false, share: false }
+      note: 'Learn rounds are practice. A full round of the level is what goes on your record and starts each name’s mastery.',
+      actions: { practice: 0, full: 'Play the full round', replay: 'Learn again', dailyReplay: false, viewMap: false, share: false }
     });
     switchScreen('results');
   }
@@ -9311,8 +9316,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     ].join('\n');
   }
 
-  // Re-share today's result from the menu after the game has been completed.
-  async function shareDailyResultFromMenu() {
+  // Share today's finished Daily Five from its card on Home
+  async function shareDailyResultFromMenu(btn) {
     const dateKey = todayUtcKey();
     const attempt = getDailyAttempt(dateKey);
     if (!attempt) return;
@@ -9325,68 +9330,45 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       hardMode: attempt.hardMode,
       difficulty: attempt.difficulty
     });
-    await shareTextOrCopy(text, 'Atlas Daily');
+    await shareTextOrCopy(text, 'Atlas Daily', btn);
   }
 
-  // Common share-or-clipboard logic, factored out so both the in-game
-  // share button and the menu share button can use it.
-  async function shareTextOrCopy(text, title) {
+  // Hands text to the device's share sheet; where there is none, copies it
+  // and says so on the button that was pressed
+  async function shareTextOrCopy(text, title, btn) {
     if (navigator.share) {
       try {
         await navigator.share({ title: title, text: text });
         return;
       } catch (err) {
+        // Closing the sheet is an answer; any other failure falls back to copying
         if (err && err.name === 'AbortError') return;
       }
     }
     try {
       await navigator.clipboard.writeText(text);
-      // Find the button that triggered this share if possible
-      const btn = document.querySelector('.daily-share-btn') || document.getElementById('share-btn');
-      if (btn) {
-        const original = btn.textContent;
-        btn.textContent = '✓ Copied to clipboard';
-        btn.classList.add('copied');
-        setTimeout(() => {
-          btn.textContent = original;
-          btn.classList.remove('copied');
-        }, 2200);
-      }
+      flashCopied(btn);
     } catch (err) {
       copyDialog('Copy your results', text);
     }
   }
 
-  async function shareResults() {
-    const btn = document.getElementById('share-btn');
-    const text = buildShareText();
-    const shareData = { title: "Cartographer's Atlas", text: text };
+  // "Copied" on a button for a moment, in place of its label
+  function flashCopied(btn) {
+    if (!btn || btn.classList.contains('copied')) return;
+    const label = btn.querySelector('span') || btn;
+    const original = label.textContent;
+    label.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      label.textContent = original;
+      btn.classList.remove('copied');
+    }, 2200);
+  }
 
-    // Try the native share sheet first (mobile, modern desktop)
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (err) {
-        // User cancelled — don't fall through to clipboard
-        if (err && err.name === 'AbortError') return;
-        // Other errors fall through to clipboard
-      }
-    }
-
-    // Clipboard fallback
-    try {
-      await navigator.clipboard.writeText(text);
-      const originalText = btn.textContent;
-      btn.textContent = '✓ Copied to clipboard';
-      btn.classList.add('copied');
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.classList.remove('copied');
-      }, 2200);
-    } catch (err) {
-      copyDialog('Copy your results', text);
-    }
+  // Share the round just finished
+  function shareResults(btn) {
+    return shareTextOrCopy(buildShareText(), "Cartographer's Atlas", btn);
   }
 
   /* =========================================================
@@ -9779,6 +9761,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     closeDialog();
     if (view) {
       state.roundId++;   // whatever the round still had queued up no longer applies
+      stopClock();
       state.review = null;
       state.view = view.key;
       // Drawn on the way in, so bests and the daily card reflect the round just played
@@ -9844,7 +9827,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       if (confirmed) confirmed();
     },
     'play-daily': () => startGame('daily-five'),
-    'share-daily': () => shareDailyResultFromMenu(),
+    'share-daily': (el) => shareDailyResultFromMenu(el),
     'replay-daily': () => startDailyReplay(todayUtcKey()),
     'start-review': () => startReview(),
     'practice-weak': () => startWeakPractice(),
@@ -9857,7 +9840,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     'sheet-close': () => closeLevelSheet(),
     'sheet-way': (el) => chooseSheetWay(el.dataset.value),
     'sheet-start': () => startFromSheet(),
-    'sheet-learn-reset': () => startFromSheet({ learnFresh: true })
+    'sheet-learn-reset': () => startFromSheet({ learnFresh: true }),
+    'share-results': (el) => shareResults(el),
+    'view-map': () => showRoundMap()
   };
   document.addEventListener('click', (e) => {
     const el = e.target.closest ? e.target.closest('[data-action]') : null;
@@ -9884,14 +9869,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   document.getElementById('practice-btn').addEventListener('click', () => {
     startGame(state.startArg, { practice: state.roundNeedsWork });
   });
+  document.getElementById('full-btn').addEventListener('click', () => startGame(state.startArg));
 
-  // View Map (results → game screen in review mode) + back out of review mode.
-  // Review mode hides the prompt panel, score readout, skip button, page hint,
-  // and the regular Atlas back button so the map can be screenshotted clean.
-  document.getElementById('view-map-btn').addEventListener('click', () => {
+  // "View on the map": the finished round's map with its marks and tally,
+  // and nothing to answer. The map is as the round left it.
+  function showRoundMap() {
     document.getElementById('game-screen').classList.add('review-mode');
     switchScreen('game');
-  });
+  }
   document.getElementById('review-back-btn').addEventListener('click', () => {
     document.getElementById('game-screen').classList.remove('review-mode');
     switchScreen('results');
@@ -9899,7 +9884,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   document.getElementById('daily-practice-btn').addEventListener('click', () => {
     startDailyReplay(state.dailyDateKey || todayUtcKey());
   });
-  document.getElementById('share-btn').addEventListener('click', shareResults);
   document.getElementById('skip-btn').addEventListener('click', handleSkip);
 
   // Zoom controls
@@ -9946,14 +9930,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     }
   });
 
-  // Re-render map on resize (e.g. mobile orientation change).
-  //
-  // renderMap() wipes the SVG and rebuilds the country paths from scratch,
-  // which drops the persistent .completed-correct / .completed-wrong classes
-  // that mark green/red answered countries. We snapshot the per-feature class
-  // state and the zoom transform first, then re-apply them after the rebuild
-  // so the board still looks identical to the player after rotating their
-  // phone landscape ↔ portrait mid-round.
+  // A new window size (a phone turned on its side) means a new map: it is
+  // rebuilt to fit, then given back its marks and the view the player had
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
@@ -9961,55 +9939,23 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       const gameActive = document.getElementById('game-screen').classList.contains('active');
       if (!gameActive || !state.svg) return;
 
-      // Snapshot persistent per-feature state by feature key (country paths)
+      // The marks on the map live in the SVG alone: read them off before the rebuild
       const svgEl = document.getElementById('world-map');
-      const correctKeys = Array.from(
-        svgEl.querySelectorAll('.country.completed-correct')
-      ).map(el => el.getAttribute('data-fkey'));
-      const wrongKeys = Array.from(
-        svgEl.querySelectorAll('.country.completed-wrong')
-      ).map(el => el.getAttribute('data-fkey'));
-      const promptKeys = Array.from(
-        svgEl.querySelectorAll('.country.prompt-highlight')
-      ).map(el => el.getAttribute('data-fkey'));
-
-      // Snapshot per-city state by data-city (us-city mode)
-      const correctCities = Array.from(
-        svgEl.querySelectorAll('.city-dot.completed-correct')
-      ).map(el => el.getAttribute('data-city'));
-      const wrongCities = Array.from(
-        svgEl.querySelectorAll('.city-dot.completed-wrong')
-      ).map(el => el.getAttribute('data-city'));
-
+      const kept = [];
+      ['completed-correct', 'completed-second', 'completed-wrong', 'prompt-highlight'].forEach(cls => {
+        svgEl.querySelectorAll('.country.' + cls).forEach(el => {
+          kept.push(['.country[data-fkey="' + CSS.escape(el.getAttribute('data-fkey')) + '"]', cls]);
+        });
+        svgEl.querySelectorAll('.city-dot.' + cls).forEach(el => {
+          kept.push(['.city-dot[data-city="' + CSS.escape(el.getAttribute('data-city')) + '"]', cls]);
+        });
+      });
       const savedTransform = state.currentTransform || null;
 
       renderMap();
 
-      // Re-apply classes to the newly-built paths/dots. Each feature has a
-      // unique data-fkey and each city has a unique data-city, so this is a
-      // simple lookup. We escape via CSS.escape since some keys contain
-      // characters that would break the selector.
-      const reapplyPath = (keys, cls) => {
-        keys.forEach(k => {
-          if (!k) return;
-          state.mapG.selectAll('.country[data-fkey="' + CSS.escape(k) + '"]')
-            .classed(cls, true);
-        });
-      };
-      reapplyPath(correctKeys, 'completed-correct');
-      reapplyPath(wrongKeys, 'completed-wrong');
-      reapplyPath(promptKeys, 'prompt-highlight');
+      kept.forEach(mark => state.mapG.selectAll(mark[0]).classed(mark[1], true));
       if (state.learn && state.learn.phase === 'study') drawLearnStudy();
-
-      const reapplyDot = (names, cls) => {
-        names.forEach(n => {
-          if (!n) return;
-          state.mapG.selectAll('.city-dot[data-city="' + CSS.escape(n) + '"]')
-            .classed(cls, true);
-        });
-      };
-      reapplyDot(correctCities, 'completed-correct');
-      reapplyDot(wrongCities, 'completed-wrong');
 
       // Restore zoom/pan so the player keeps the framing they had
       if (savedTransform && state.zoomBehavior) {
