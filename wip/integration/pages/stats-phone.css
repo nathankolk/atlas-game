@@ -1,0 +1,61 @@
+
+    /* Stats */
+    .kpis { grid-template-columns: 1fr 1fr; border-bottom: 0; }
+    .kpi { padding: 16px 0 16px 16px; border-bottom: 1px solid var(--rule); }
+    .kpi:first-child { grid-column: 1 / -1; padding-left: 0; }
+    .kpi:nth-child(2), .kpi:nth-child(4) { padding-left: 0; border-left: 0; }
+    .kpi dd { font-size: 44px; }
+    .kpi:first-child dd { font-size: 60px; }
+    .panels { grid-template-columns: 1fr; gap: 12px; margin-top: 24px; }
+    .panels > .panel, .panels > .panel--7, .panels > .panel--5 { grid-column: 1; padding: 20px 20px 22px; }
+    .panel-head { flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .panel-head .legend { flex-wrap: wrap; gap: 6px 14px; padding-top: 0; }
+    .panel-foot { flex-direction: column; align-items: stretch; gap: 12px; }
+    .panel-foot .btn { min-height: 48px; }
+
+    /* Each mastery row stacks: name and total, the bar, then the four counts with their names */
+    .mtable, .mtable tbody { display: block; }
+    .mtable thead { display: none; }
+    .mtable tr { display: flex; flex-wrap: wrap; align-items: center; padding: 8px 0 10px; }
+    .mtable th, .mtable td, .mtable-level:last-child th, .mtable-level:last-child td { height: auto; padding: 0; border: 0; }
+    .mtable th:first-child { flex: 1; }
+    .mtable .mtable-total { order: 1; width: auto; }
+    .mtable-bar { order: 2; flex: 0 0 100%; width: auto; padding: 6px 0; }
+    .mtable-bar .mbar { margin-left: 0; }
+    .mtable-n { order: 3; width: auto; font-size: 12px; }
+    .mtable-unit { display: inline; }
+    .mtable-n + .mtable-n::before { content: '·'; margin: 0 5px; font-weight: 400; color: var(--text-3); }
+    .mtable .mtable-group { padding-top: 6px; border-top: 1px solid var(--rule); }
+    .mtable tbody:first-of-type .mtable-group { border-top: 0; }
+    .mtable .mtable-level { padding-left: 18px; }
+    .mtable-level th:first-child { padding-left: 0; }
+    .mtable-toggle { min-height: 40px; }
+
+    .figs { grid-template-columns: 1fr 1fr; row-gap: 18px; }
+    .figs > div:nth-child(odd) { padding-left: 0; border-left: 0; }
+    .strip { grid-template-columns: repeat(10, 1fr); }
+    .cols-plot { padding: 0 2px; }
+    .cols-plot b { font-size: 10.5px; }
+
+    .records { display: none; }
+    .recs { display: block; }
+    .recs li { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 12px; padding: 12px 0; border-top: 1px solid var(--rule); }
+    .recs strong { font-family: var(--font-display); font-size: 20px; font-weight: 600; line-height: 1.15; }
+    .recs strong .tag { margin-left: 8px; vertical-align: 3px; font-family: var(--font-ui); }
+    .recs-score { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .recs small { grid-column: 1 / -1; font-size: 12.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+    .recs .recs-group { display: block; padding: 18px 0 8px; border-top-color: var(--rule-strong); }
+    .recs .recs-group:first-child { padding-top: 0; border-top: 0; }
+
+    .pin-grid { grid-template-columns: 1fr; gap: 8px; }
+    .pintable, .pintable tbody { display: block; }
+    .pintable thead, .pintable tfoot { display: none; }
+    .pintable tr { display: flex; flex-wrap: wrap; align-items: baseline; padding: 6px 0; }
+    .pintable th, .pintable td { height: auto; padding: 0; }
+    .pintable th:first-child { flex: 1; width: auto; }
+    .pintable td { font-size: 12px; color: var(--text-3); }
+    .pintable td + td::before { content: '·'; margin: 0 5px; }
+    .pintable .pin-bar { order: 3; flex: 0 0 100%; width: auto; padding: 0 64px 0 0; }
+    .pintable .pin-bar::before { content: none; }
+    .hbar { height: 28px; }
+    .pin-unit { display: inline; }

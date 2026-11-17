@@ -48,16 +48,27 @@ function makeServer() {
 const jsClick = (page, sel) => page.evaluate((q) => { const el = document.querySelector(q); if (!el) throw new Error('no element ' + q); el.click(); }, sel);
 const lsAll = (page) => page.evaluate((keys) => { const o = {}; keys.concat(['atlas-reset-at', 'atlas-sync-meta', 'atlas-hard-mode', 'atlas-difficulty']).forEach(k => { o[k] = localStorage.getItem(k); }); return o; }, PROGRESS);
 const waitPosts = async (srv, n) => { for (let i = 0; i < 100 && srv.posts.length < n; i++) await new Promise(res => setTimeout(res, 50)); return srv.posts.length >= n; };
+// Sync lives in Settings (a card plus dialogs): visit Settings, work the card, come back Home
+const toView = (page, view) => page.evaluate(v => window.__atlas.showView(v), view);
+const syncLight = (page) => page.evaluate(() => { const d = document.querySelector('[data-sync-dot]'); return [d.classList.contains('is-error'), d.hidden]; });
 const syncNow = async (page, srv) => {
   const before = srv.posts.length;
-  await page.evaluate(() => { document.getElementById('sync-entry-btn').click(); });
-  await page.waitForSelector('#sync-now-btn');
+  await toView(page, 'settings');
+  await page.waitForSelector('#sync-now-btn', { state: 'attached' });
   await jsClick(page, '#sync-now-btn');
-  await page.waitForFunction(() => document.getElementById('sync-now-btn') && document.getElementById('sync-now-btn').textContent === 'Sync Now' &&
-    /Synced|Couldn|Sync failed|too large/.test(document.getElementById('sync-status-line').textContent), null, { timeout: 10000 });
+  await page.waitForFunction(() => document.getElementById('sync-now-btn') && !document.getElementById('sync-now-btn').disabled && document.getElementById('sync-now-btn').textContent === 'Sync now' &&
+    /last synced|Couldn|too large/.test(document.getElementById('sync-status-line').textContent), null, { timeout: 10000 });
   const line = await page.evaluate(() => [document.getElementById('sync-status-line').textContent, document.getElementById('sync-status-line').className]);
-  await jsClick(page, '#sync-modal-close');
+  await toView(page, 'home');
   return { line: line, posted: srv.posts.length > before };
+};
+const linkDevice = async (page, code) => {
+  await toView(page, 'settings');
+  await jsClick(page, '[data-action="sync-link"]');
+  await page.fill('#sync-key-input', code);
+  await jsClick(page, '#sync-import-btn');
+  await page.waitForSelector('#sync-now-btn', { state: 'attached', timeout: 10000 });
+  await toView(page, 'home');
 };
 
 (async () => {
@@ -97,27 +108,18 @@ const syncNow = async (page, srv) => {
       r.eq('old stores are byte-identical after load', PROGRESS.slice(0, 5).map(k => after[k] === seed[k]), [true, true, true, true, true]);
       r.eq('no mastery store is invented on load', after['atlas-mastery'], null);
       // the menus read them
-      const main = await page.evaluate(() => ({ daily: !!document.querySelector('.daily-card.daily-done'), stats: (document.querySelector('.daily-result-stats') || {}).textContent,
-        pins: (document.querySelector('[data-folder="pins"] .r-best') || {}).textContent, us: (document.querySelector('[data-folder="us"] .r-best') || {}).textContent }));
-      r.eq('today\'s seeded daily shows as played', [main.daily, main.stats], [true, '4/5 found · 7 pts · 80%']);
-      r.check('pin folder reads atlas-pin', /^World/.test(main.pins || '') || main.pins === undefined, main.pins);
-      r.eq('US folder best', main.us, 'Best: States 96%');
-      await jsClick(page, '[data-folder="continents"]');
-      const oce = await page.evaluate(() => document.querySelector('[data-region="Oceania"] .r-best').textContent);
-      r.eq('Oceania card best from the old record', oce, 'Best: 5/6 · 9 pts');
-      await jsClick(page, '[data-region="Oceania"]');
-      const ch = await page.evaluate(() => [document.getElementById('focus-modal-overlay').classList.contains('show'), document.getElementById('focus-choice-focus-title').textContent]);
-      r.eq('seeded focus list opens the chooser', ch, [true, 'Focus on Those 2']);
-      await jsClick(page, '#focus-modal-close');
-      await jsClick(page, '[data-action="back-to"]');
-      await jsClick(page, '[data-folder="us"]');
-      const us = await page.evaluate(() => Array.from(document.querySelectorAll('.us-card[data-action="play"]')).map(c => (c.querySelector('.r-best') || {}).textContent));
-      r.eq('D3: capitals cards read their own records', us, ['Best: 48/50 · 90 pts', 'Best: 40/50 · 70 pts', 'Best: 35/50 · 60 pts']);
-      await jsClick(page, '[data-action="back-to"]');
-      await jsClick(page, '[data-folder="pins"]');
-      const pin = await page.evaluate(() => document.querySelector('[data-region="pin-oceania"] .r-best').textContent);
-      r.eq('pin card best', pin, 'Best 1,640 · avg 1,580');
-      await jsClick(page, '[data-action="back-to"]');
+      // Home's cards read the old stores (the menu tree is now Home; the chooser is the level sheet)
+      const main = await page.evaluate(() => ({ daily: (document.querySelector('.daily') || { dataset: {} }).dataset.daily, stats: (document.querySelector('.daily-score') || {}).textContent }));
+      r.eq('today\'s seeded daily shows as played', [main.daily, main.stats], ['played', '4/5 found · 7 pts · 80%']);
+      const card = (key, part) => page.evaluate(a => (document.querySelector('[data-level="' + a[0] + '"] .' + a[1]) || {}).textContent || null, [key, part]);
+      r.eq('Oceania card best from the old record', await card('oceania', 'level-best'), 'Best5 / 6');
+      await jsClick(page, '[data-level="oceania"]');
+      const ch = await page.evaluate(() => [!document.getElementById('level-sheet').hidden, (document.querySelector('.mode[data-value="focus"]') || {}).textContent || '']);
+      r.check('seeded focus list is offered in the level sheet', ch[0] && /Focus Practice/.test(ch[1]) && /2/.test(ch[1]), ch);
+      await jsClick(page, '#level-sheet [data-action="sheet-close"]');
+      const us = [await card('us-state', 'level-best'), await card('us-state-to-capital', 'level-best'), await card('us-capital-to-state', 'level-best')];
+      r.eq('D3: capitals cards read their own records', us.slice().sort(), ['Best35 / 50', 'Best40 / 50', 'Best48 / 50']);
+      r.eq('pin card best', await card('pin-oceania', 'level-best'), 'Best1,640 pts');
       // seeded ladder resumes
       await startLevel(page, 'canada-provinces', { learn: true });
       const s = await snap(page);
@@ -171,12 +173,7 @@ const syncNow = async (page, srv) => {
 
     // ---- device 2 links by pasting the key ----
     await p2.evaluate(() => { window.__atlas.mastery.record('country', 'France', 'first'); window.__atlas.mastery.record('country', 'Fiji', 'miss'); });
-    await jsClick(p2, '#sync-entry-btn');
-    await jsClick(p2, '[data-sync-tab="import"]');
-    await p2.fill('#sync-key-input', TOKEN.toUpperCase().replace(/(.{8})/g, '$1 '));
-    await jsClick(p2, '#sync-import-btn');
-    await p2.waitForSelector('#sync-now-btn', { timeout: 10000 });
-    await jsClick(p2, '#sync-modal-close');
+    await linkDevice(p2, TOKEN.toUpperCase().replace(/(.{8})/g, '$1 '));
     const l2 = await lsAll(p2);
     const m2 = JSON.parse(l2['atlas-mastery']);
     r.eq('linked device has the records, focus lists, pin history, daily attempts', ['atlas-records', 'atlas-pin'].map(k => l2[k] === (JSON.stringify(blob[k === 'atlas-records' ? 'records' : 'pin']) && JSON.stringify(srv.last()[k === 'atlas-records' ? 'records' : 'pin']))), [true, true]);
@@ -208,7 +205,7 @@ const syncNow = async (page, srv) => {
     };
     srv.blob = JSON.stringify(remote);
     const res = await syncNow(p1, srv);
-    r.check('Sync Now reports success', /^Synced /.test(res.line[0]) && /success/.test(res.line[1]), res.line);
+    r.check('Sync Now reports success', /last synced just now/.test(res.line[0]) && !/error/.test(res.line[1]), res.line);
     const a = await lsAll(p1);
     const recs = JSON.parse(a['atlas-records']);
     r.eq('records: per-field best wins', [recs['world-country|Oceania|normal'].bestScore.value, recs['world-country|Oceania|normal'].bestTime.value, recs['world-country|Oceania|normal'].gamesPlayed, !!recs['world-country|Asia|normal'], recs['world-country|Europe|hard'].gamesPlayed], [14, 33, 9, true, 7]);
@@ -234,15 +231,15 @@ const syncNow = async (page, srv) => {
     srv.postStatus = 413;
     let f = await syncNow(p1, srv);
     r.check('413: Sync Now says the progress is too large', /too large to sync/.test(f.line[0]) && /error/.test(f.line[1]), f.line);
-    let entry = await p1.evaluate(() => { const b = document.getElementById('sync-entry-btn'); return [b.className, b.getAttribute('aria-label')]; });
-    r.eq('413: the menu\'s sync button turns to its error state at once', entry, ['sync-entry-btn error', 'Sync: the last attempt failed']);
+    let entry = await syncLight(p1);
+    r.eq('413: the navigation\'s sync light turns to its error state at once', entry, [true, false]);
     await p1.screenshot({ path: SHOTS + 'sync-error-menu.png' });
-    await p1.evaluate(() => { document.getElementById('sync-entry-btn').click(); });
-    await p1.waitForSelector('#sync-status-line');
+    await toView(p1, 'settings');
+    await p1.waitForSelector('#sync-status-line', { state: 'attached' });
     const modalLine = await p1.evaluate(() => [document.getElementById('sync-status-line').textContent, document.getElementById('sync-status-line').className]);
     r.check('413: reopening the sync panel still explains it', /too large to sync/.test(modalLine[0]) && /error/.test(modalLine[1]), modalLine);
     await p1.screenshot({ path: SHOTS + 'sync-error-modal.png' });
-    await jsClick(p1, '#sync-modal-close');
+    await toView(p1, 'home');
     // a failed push at round end shows on the menu too
     srv.postStatus = 500;
     await startLevel(p1, 'Oceania');
@@ -251,8 +248,8 @@ const syncNow = async (page, srv) => {
     await waitPosts(srv, n0 + 1);
     await jsClick(p1, '#home-btn');
     await p1.waitForTimeout(200);
-    entry = await p1.evaluate(() => [document.getElementById('sync-entry-btn').className, JSON.parse(localStorage.getItem('atlas-sync-meta')).lastError]);
-    r.eq('a failed round-end push shows on the menu', entry, ['sync-entry-btn error', 'push_500']);
+    entry = [(await syncLight(p1))[0], await p1.evaluate(() => JSON.parse(localStorage.getItem('atlas-sync-meta')).lastError)];
+    r.eq('a failed round-end push shows on the navigation light', entry, [true, 'push_500']);
     srv.postStatus = 200; srv.offline = true;
     f = await syncNow(p1, srv);
     r.check('offline: says the server could not be reached', /Couldn’t reach the sync server/.test(f.line[0]), f.line);
@@ -261,8 +258,8 @@ const syncNow = async (page, srv) => {
     r.check('a failed pull is explained', /Couldn’t fetch your synced progress \(error 503\)/.test(f.line[0]), f.line);
     srv.getStatus = 200;
     f = await syncNow(p1, srv);
-    entry = await p1.evaluate(() => { const b = document.getElementById('sync-entry-btn'); return [b.className, b.getAttribute('aria-label')]; });
-    r.eq('recovering clears the error state', [/^Synced /.test(f.line[0]), entry], [true, ['sync-entry-btn ok', null]]);
+    entry = await syncLight(p1);
+    r.eq('recovering clears the error state', [/last synced/.test(f.line[0]), entry], [true, [false, false]]);
 
     // ---- F. storage event: another tab's mastery writes reach this tab ----
     const tab = await d1.context.newPage();
@@ -293,7 +290,7 @@ const syncNow = async (page, srv) => {
     r.eq('reset: the pushed blob is empty and carries resetAt', [blob.resetAt, blob.records, blob.dailyAttempts, blob.focusLists, blob.pin, blob.learn, blob.mastery.items, blob.mastery.days],
       [Number(z['atlas-reset-at']), {}, {}, {}, { games: [], cities: {} }, {}, {}, {}]);
     r.eq('reset: mastery reads empty in the page', await p1.evaluate(() => [window.__atlas.mastery.totals().itemsSeen, window.__atlas.mastery.skills()]), [0, []]);
-    const menuAfter = await p1.evaluate(() => [!!document.querySelector('.daily-card.daily-fresh'), document.querySelectorAll('.r-best').length]);
+    const menuAfter = await p1.evaluate(() => [(document.querySelector('.daily') || { dataset: {} }).dataset.daily === 'unplayed', document.querySelectorAll('.level-best').length]);
     r.eq('reset: the menu is redrawn without bests or a played daily', menuAfter, [true, 0]);
     await p1.screenshot({ path: SHOTS + 'menu-after-reset.png' });
 
@@ -349,11 +346,7 @@ const syncNow = async (page, srv) => {
     const d3 = await launchApp({ fast: true, noPaint: true, seedStorage: { 'atlas-records': seed['atlas-records'], 'atlas-reset-at': '5' }, beforeLoad: h => srv.attach(h.page) });
     const p3 = d3.page;
     await p3.evaluate(() => { window.__atlas.mastery.record('country', 'Kenya', 'second'); });
-    await jsClick(p3, '#sync-entry-btn');
-    await jsClick(p3, '[data-sync-tab="import"]');
-    await p3.fill('#sync-key-input', TOKEN);
-    await jsClick(p3, '#sync-import-btn');
-    await p3.waitForSelector('#sync-now-btn', { timeout: 10000 });
+    await linkDevice(p3, TOKEN);
     const z4 = await lsAll(p3);
     r.eq('joining a key that was reset: local progress is kept and merged, the key\'s reset time adopted',
       [z4['atlas-records'] === seed['atlas-records'], await p3.evaluate(() => window.__atlas.mastery.get('country', 'Kenya').seen), Number(z4['atlas-reset-at']), JSON.parse(srv.blob).resetAt, !!JSON.parse(srv.blob).records['world-country|Europe|hard']],

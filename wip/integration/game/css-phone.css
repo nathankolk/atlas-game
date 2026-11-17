@@ -1,0 +1,76 @@
+    /* Game: the prompt at the top (a tapping hand covers the bottom), the
+       actions bottom centre, map controls and tally in a row above them */
+    .gamebar { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; height: calc(54px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 14px 0 4px; }
+    .gamebar-title { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .gamebar-title strong { max-width: 100%; font-size: 21px; line-height: 1.1; }
+    .gamebar-title .tag, .gamebar-progress { display: none; }
+    .gamebar-sub { display: block; max-width: 100%; font-size: 11.5px; font-weight: 500; line-height: 1.1; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gamebar-stats { gap: 18px; }
+    .gamebar-stats > div { flex-direction: column; align-items: flex-end; gap: 3px; }
+    .gamebar-stats > .is-extra { display: none; }
+    .gamebar-stats dt { font-size: 9px; }
+    .gamebar-stats dd { font-size: 22px; }
+    .hud-top { top: calc(66px + env(safe-area-inset-top, 0px)); gap: 10px; padding: 0 12px; }
+    .prompt { width: 100%; min-width: 0; padding: 12px 16px 14px; gap: 5px; border-radius: 18px; }
+    .prompt-name { min-height: 42px; font-size: 38px; }
+    .prompt-name.is-long { font-size: 27px; }
+    .prompt-name.is-xlong { font-size: 19px; }
+    .choices { width: 100%; gap: 6px; min-height: 94px; margin-top: 6px; }
+    .choice-btn { min-height: 44px; padding: 0 8px; font-size: 14px; }
+    .game-actions { left: 12px; right: 12px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); justify-content: center; transform: none; }
+    .skip, .game-go { height: 52px; min-width: 168px; padding: 0 28px; font-size: 15px; }
+    #game-screen.pin-mode .skip { flex: 1; min-width: 0; }
+    #game-screen.pin-mode .game-go { flex: 1.5; min-width: 0; }
+    .game-actions kbd { display: none; }
+    .mapctl { right: 12px; top: auto; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); grid-auto-flow: column; transform: none; }
+    .mapctl-group { grid-auto-flow: column; }
+    .mapctl button { width: 44px; height: 44px; }
+    .mapctl-group button + button { border-top: 0; border-left: 1px solid var(--rule); }
+    .game-legend { left: 12px; right: auto; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); flex-wrap: wrap; max-width: calc(100% - 222px); padding: 6px 10px; border-radius: var(--r-sm); font-size: 11px; }
+    .game-legend > span { gap: 5px; }
+    .game-legend i { width: 8px; height: 8px; border-radius: 2px; }
+    .map-hint { bottom: calc(142px + env(safe-area-inset-bottom, 0px)); }
+    .sat-credit { left: 50%; bottom: calc(3px + env(safe-area-inset-bottom, 0px)); padding: 1px 8px; font-size: 9.5px; transform: translateX(-50%); }
+
+    /* Results: the next step stays in reach at the bottom */
+    .results-bar { min-height: 52px; padding: env(safe-area-inset-top, 0px) 8px 0; }
+    .results-date { display: none; }
+    .results { grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 4px 20px calc(150px + env(safe-area-inset-bottom, 0px)); }
+    .score-ring { width: 196px; height: 196px; margin-top: 18px; }
+    .score-ring-label .num { font-size: 88px; }
+    .score-ring-label .num.is-long { font-size: 50px; }
+    .score-ring-label span:last-child { margin-top: 8px; font-size: 12.5px; }
+    .results-title { margin-top: 20px; font-size: 36px; }
+    .results-line { font-size: 14.5px; }
+    .results-actions {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      max-width: none;
+      margin: 0;
+      padding: 12px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+      background: var(--bg);
+      border-top: 1px solid var(--rule);
+    }
+    .results-actions .btn { flex: 1 1 calc(50% - 5px); min-height: 50px; padding: 0 12px; }
+    .results-actions .btn--primary { flex-grow: 1.35; }
+    .outcomes > div { padding: 16px 0 14px 10px; }
+    .outcomes dd { font-size: 38px; }
+    .outcomes dd small { font-size: 11px; margin-left: 2px; }
+    .outcomes dt { gap: 5px; font-size: 11px; white-space: nowrap; }
+    .outcomes dt .odot { width: 7px; height: 7px; }
+    .outcomes dt .icon { width: 13px; height: 13px; }
+    .outcomes dt + small { font-size: 11px; }
+    .gain { gap: 8px 16px; padding: 18px 0; }
+    .gain-num { font-size: 46px; }
+    .gain-text { font-size: 13.5px; }
+    .results-bests .figs { grid-template-columns: 1fr 1fr; gap: 16px 0; }
+    .results-bests .figs > div:nth-child(odd) { padding-left: 0; border-left: 0; }
+    .results-bests .figs dd { font-size: 26px; }
+    .revisit li { grid-template-columns: auto minmax(0, 1fr) auto; min-height: 56px; }
+    .revisit .level-pill { display: none; }
+

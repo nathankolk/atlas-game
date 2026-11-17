@@ -1,0 +1,14 @@
+
+  /* Short windows (a phone on its side): the card shrinks to leave the map some room */
+  @media (max-height: 520px) {
+    .hud-top { top: calc(62px + env(safe-area-inset-top, 0px)); }
+    .prompt { min-width: 0; padding: 8px 20px 10px; gap: 2px; border-radius: var(--r-md); }
+    .prompt-name { min-height: 34px; font-size: 30px; }
+    .prompt-name.is-long { font-size: 24px; }
+    .prompt-name.is-xlong { font-size: 19px; }
+    .choices { min-height: 0; margin-top: 4px; grid-template-columns: repeat(4, 1fr); width: 640px; }
+    .choice-btn { min-height: 44px; font-size: 13px; }
+    .game-actions { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+    .game-legend { display: none; }
+    .map-hint { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+  }

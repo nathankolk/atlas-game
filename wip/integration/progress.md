@@ -94,6 +94,88 @@ Screenshots: `$S/shots/app/shell/`.
 - Seeds for screenshots: shell/seed-rich.json (played today), seed-rich-unplayed.json, seed-old.json (no mastery);
   regenerate with shell/gen-seed.js. Shot helpers: shell/shoot.js (views, --js to click), shell/shoot-game.js.
 
-### Still to do
-- interaction checks (keyboard, focus trap, start paths, review playlist, hash nav, lazy province data)
-- smoke --mobile; game/results shots both themes after the Home step; dead code/CSS sweep; final report
+### Closed out by the next stage (commit e7ed088, pushed)
+- Status of this stage: DONE. Commits 0adb5d5, 3f66458, e7ed088.
+- smoke.js 13/13 desktop and 13/13 --mobile.
+- shell/check-shell.js (interaction checks: new player, sheet keyboard + focus trap + start paths, returning
+  player, old stores only, views/hash/theme, daily + review playlist with Next, back button + lazy province
+  fill-in, layout tops) passes on desktop and --mobile. Two expectations in it were wrong and were corrected:
+  places skipped in a review are due again the same day (mastery SPEC), and the lazy-fill check now looks at the
+  Russia round the seed has history for (russia-west).
+- "Home twice" at phone width: a capture artifact (window grown to 12,000 device px at dpr 3). The DOM has one
+  masthead/library/27 cards and the view scrolls to its real end. Use pages/shoot.js --full (dpr 2) for tall shots.
+- Fixed: title= tooltips on the four map controls; phone level cards cut the best off with an ellipsis.
+- Looked at: shots/app/shell/co-*.png and shots/app/closeout/*.png (game, results, new and old-store players).
+  The phone Europe map (whole world, offset) is the old map's behaviour (same in shots/baseline/m-03-europe.png).
+- Dead-code sweep: pages/dead-css.js and pages/dead-js.js find nothing left over from the old menu.
+
+## Stage: Stats and Settings pages
+
+Status: DONE except the final smoke run and report (see "Last steps" below). Started from e7ed088.
+Commits (all pushed): e7ed088 close-out of the previous stage, 889d356 Stats, 4cbf4a8 Settings + dialog + sync in
+Settings, then a small follow-up (redraw on another tab's change).
+Working files: `$S/work/integration/pages/` — shoot.js (view screenshots, stand-in sync server, --pages for tall
+phone views, --syncfail=413), shoot-misc.js (toast, notice, loading card, banner, copy dialog), check-stats.js,
+check-settings.js, dead-css.js, dead-js.js, errs.js. Screenshots: `$S/shots/app/pages/`.
+Seed generator for later stages: `$S/harness/seed-rich.js` (`makeSeed()`; CLI writes harness/scratch/seed-rich.json
+and seed-rich-unplayed.json). It plays ten weeks through the real mastery module under a fake clock.
+
+### Done and verified
+- Stats (`renderStats`, STATS section before GAME): figures, mastery table by collection and level (toggle per
+  collection, remembered; folded on phones), 12-week calendar with weekly totals, Needs work + "Practice these"
+  (`startWeakPractice` -> `startReview(groups)`), Daily Five (streaks, 30-day strip, score distribution), Pin the City
+  (per-region bars, last 12 rounds), Personal records (table on desktop; `.recs` rows on phones, first 6 then
+  "Show all"). Empty states on every panel. check-stats.js: desktop 86+ assertions, --mobile 114, all pass.
+- Settings (`renderSettings`, SETTINGS section; drawn once, then only its controls are refreshed): theme tiles,
+  Reduce motion switch (`setMotionPref`, atlas-motion), difficulty + map (same controls as Home via
+  `renderDifficultySeg`/`renderMapSeg`/`syncPlayControls`), Sync card (`renderSettingsSync`, `syncRefreshEntry`
+  updates the status line + nav light in place), Data (`downloadProgress`, `confirmReset`), About (`shareApp`).
+- Dialog (DIALOG section): `openDialog(html)`, `closeDialog()`, `dialogContent(title, body, actions)`,
+  `confirmDialog({title, body, confirm, danger, onConfirm})`, `copyDialog(title, text)`, `copyText(text, done, title)`.
+  `#dialog` + `#dialog-scrim`. Used by the sync steps (`syncCreateDialog`, `syncCodeDialog`, `syncLinkDialog`),
+  unlink, reset, and the copy fallbacks. No native alert/confirm/prompt is left in the file.
+  The old sync modal (markup, `.sync-*` CSS, `syncOpenModal` and friends) is deleted.
+- check-settings.js: desktop 5 groups all pass, --mobile 90 assertions pass. It covers theme/motion/difficulty/map,
+  create/show/copy/username/errors (413, 503, offline)/unlink, linking a second device, a pull redrawing Stats,
+  export (download parsed), reset dialog, and the reset reaching a second device through the stand-in server.
+- Logic suites ($S/work/integration/logic-tests/run-all.sh): all green again (t1 37, t2 46, t3 39, t4 67, t5 4,
+  t6 7, t7). Their old-menu selectors (`data-folder`, `.daily-card`, the focus chooser) had been stale since the
+  Home commit; they and the sync adapters now speak Home / level sheet / Settings. Originals kept in
+  logic-tests/_out/*.before-settings.js.
+- shell/check-shell.js sync lines updated (sync is a Settings card + dialog now).
+
+### Notes for later stages
+- Sync UI ids kept for tests: #sync-now-btn, #sync-status-line (class `is-error` on failure), #sync-key-display,
+  #sync-key-show, #sync-key-copy, #sync-username-edit, #sync-disconnect-btn; in dialogs #sync-username-new,
+  #sync-create-btn, #sync-key-input, #sync-import-btn, #sync-import-status, #sync-code-full. The nav light is
+  `[data-sync-dot]` (hidden when sync is off, `.is-error` after a failed push or pull).
+- `state.worldFailed` is set when the world map can't load; renderHome shows the error, renderStats still draws.
+- `reviewGroups(pick)` / `buildReviewPlaylist(groups)` / `startReview(groups)`: any set of names can be run as
+  a practice playlist, not only what is due.
+- Charts: no hover layer by design (owner rule); every value is printed. Column chart = `.cols`, bar = `.hbar`,
+  calendar = `.cal`, figures = `.kpis` / `.figs`. Heat ramp `--h0..--h4`, mastery `--m0..--m3`.
+- Unused-but-kept design-system utilities: .display-m, .display-s, .tnum (from the shell stage).
+
+### Final state
+- Status: DONE. Commits, all pushed to claude/determined-hamilton-w2lcbm: e7ed088 (close-out of the previous
+  stage), 889d356 (Stats), 4cbf4a8 (Settings, dialog, sync in Settings), 231dffc (focus + redraw).
+- On the final file: smoke.js 13/13 desktop and 13/13 --mobile; shell/check-shell.js 183/183 desktop (its layout
+  check needed a longer key-press loop: seven reveals outlast 15 s) and 179/179 --mobile; pages/check-stats.js
+  112 desktop, 114 --mobile; pages/check-settings.js 93 desktop, 93 --mobile; logic-tests/run-all.sh all green; syntax check and
+  mastery paste check pass.
+- Not done: CLAUDE.md / atlas_handoff.md still describe the old menu, the sync modal and no Stats/Settings.
+  Game and results screens keep their old layout (only toast, hints, banner, loading card were restyled).
+
+## Stage: game screen chrome and results screen
+
+Status: IN PROGRESS (started from 231dffc, tree clean).
+Working files: `$S/work/integration/game/` (CSS/markup fragments, splice scripts, shot driver). Screenshots: `$S/shots/app/game/`.
+
+### Plan
+1. CSS: replace the legacy "GAME SCREEN" .. "US mode backdrop" block and the 720px block with new sections
+   (stage + SVG map on --g-* tokens, game bar, prompt card/choices/toast, actions/map controls/legend/hints, results).
+2. Markup: #game-screen = .stage#map-wrap under .gamebar / .hud-top (#prompt + #toast) / .mapctl / .game-legend /
+   .game-actions; #results-screen = .results-bar + .results (hero + #results-detail drawn by renderResults()).
+3. JS: updateStats (progress, clock, legend), setPrompt, showToast icon, completed-second mark, picks log,
+   mastery gain, stageInsets() for fitExtent, renderResults(r) fed by finishGame/finishPinGame/finishLearn.
+4. Sweep dead CSS/JS, screenshots, smoke + suites, commit + push after each coherent piece.

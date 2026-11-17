@@ -73,8 +73,8 @@ const EXPECTED_SLUGS = ['world', 'daily', 'africa', 'asia', 'europe', 'north-ame
     r.eq('no name is shared by two items of a skill', dup, {});
 
     // Menu still draws, with the new counts
-    const menu = await page.evaluate(() => document.querySelector('.region-card.featured .r-count').textContent);
-    r.check('main menu shows 184 countries', /184 countries/.test(menu), menu);
+    const menu = await page.evaluate(() => document.querySelector('[data-level="world"] .level-meta').textContent);
+    r.check('Home\'s World card shows 184 countries', /184 countries/.test(menu), menu);
 
     // ---- Oceania: one of each outcome, then first tries ----
     await startLevel(page, 'Oceania');

@@ -1,0 +1,207 @@
+
+  /* ===== Home: masthead ===== */
+  .masthead {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 64px;
+    padding: 64px 0 48px;
+  }
+  .masthead .display-xl { margin: 14px 0 18px; }
+  .lede { max-width: 25em; font-size: 18px; line-height: 1.5; color: var(--text-2); text-wrap: balance; }
+  .lede b { font-weight: 600; color: var(--text); }
+
+  .summary { display: flex; }
+  .summary > div { display: grid; gap: 6px; padding: 4px 36px; border-left: 1px solid var(--rule); }
+  .summary > div:last-child { padding-right: 0; }
+  .summary dd { font-size: 60px; line-height: 0.9; }
+  .summary dd small { font-size: 0.5em; font-weight: 600; margin-left: 2px; }
+  .summary dd.is-empty { color: var(--text-3); }
+  .summary dt { order: 2; }
+  .summary-sub { order: 3; font-size: 12.5px; color: var(--text-3); }
+
+  /* ===== Home: today ===== */
+  .today-grid { display: grid; grid-template-columns: 7fr 5fr; gap: 16px; }
+
+  .daily {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 264px;
+    padding: 28px 32px;
+    border-radius: var(--r-lg);
+    background: var(--inverse);
+    color: var(--on-inverse);
+    overflow: hidden;
+  }
+  .daily[data-daily="unplayed"] { cursor: pointer; }
+  .daily-art {
+    position: absolute;
+    right: -120px;
+    top: 50%;
+    width: 480px;
+    height: 480px;
+    transform: translateY(-50%);
+    fill: none;
+    stroke: var(--on-inverse);
+    stroke-width: 0.6;
+    opacity: 0.2;
+    -webkit-mask-image: linear-gradient(to left, #000 30%, transparent 88%);
+    mask-image: linear-gradient(to left, #000 30%, transparent 88%);
+    pointer-events: none;
+  }
+  .daily-top { position: relative; display: flex; align-items: center; gap: 20px; }
+  .daily-week { display: flex; align-items: flex-end; }
+  .daily .eyebrow { color: var(--on-inverse-2); }
+  .daily .eyebrow b { color: var(--gold-bright); }
+  .daily-count { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--on-inverse-2); font-variant-numeric: tabular-nums; }
+  .daily-body { position: relative; align-self: center; padding: 20px 0; }
+  .daily-title { font-family: var(--font-display); font-size: 46px; font-weight: 600; line-height: 1; letter-spacing: -0.015em; }
+  .daily-desc { max-width: 27em; margin-top: 10px; font-size: 15px; color: var(--on-inverse-2); }
+  .daily-foot { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+  .daily-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .daily .btn.copied { background: var(--good); color: var(--ink); }
+
+  /* Today's five answers, in order */
+  .daily-result { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 16px; }
+  .marks { display: flex; gap: 8px; }
+  .mark {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .mark .icon { width: 16px; height: 16px; stroke-width: 2.2; }
+  .mark--first { background: var(--good); }
+  .mark--second { background: var(--second); }
+  .mark--missed { background: var(--bad); }
+  .daily-score { font-size: 15px; color: var(--on-inverse-2); font-variant-numeric: tabular-nums; }
+  .daily-score b { font-weight: 600; color: var(--on-inverse); }
+
+  .week { display: flex; align-items: flex-end; gap: 6px; }
+  .week > li { display: grid; justify-items: center; gap: 6px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; color: var(--on-inverse-2); }
+  .week i {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--inverse-rule);
+    font-style: normal;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    color: var(--on-inverse);
+  }
+  .week .is-perfect i { background: var(--gold-bright); border-color: var(--gold-bright); color: var(--ink); }
+  .week .is-today { color: var(--on-inverse); }
+  .week .is-today:not(.is-played) i { border: 1.5px dashed var(--gold-bright); }
+  .week-label { margin-left: 10px; padding-bottom: 6px; font-size: 12.5px; color: var(--on-inverse-2); }
+  .week-label b { color: var(--on-inverse); font-weight: 600; }
+
+  .review {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 28px 32px;
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+  }
+  .review-body { display: flex; align-items: center; gap: 20px; padding: 16px 0; }
+  .review-num { font-size: 96px; line-height: 0.8; letter-spacing: -0.03em; }
+  .review-body strong { display: block; font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .review-body p { margin-top: 6px; font-size: 14px; color: var(--text-2); }
+  .review-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .review-foot .chips { flex-wrap: nowrap; min-width: 0; overflow: hidden; }
+  .review-foot .chip { overflow: hidden; text-overflow: ellipsis; display: inline-block; line-height: 28px; max-width: 11em; }
+  .review-foot .chip--more { flex: none; }
+  .review-icon { display: grid; place-items: center; flex: none; width: 56px; height: 56px; border-radius: 50%; background: var(--good-wash); color: var(--good); }
+  .review--empty .review-body { align-items: flex-start; }
+  .review--empty .review-body p { max-width: 24em; }
+
+  /* ===== Home: library ===== */
+  .library-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 80px;
+  }
+  .library-head p { margin-top: 8px; font-size: 15px; color: var(--text-2); }
+  .playbar { display: flex; align-items: center; gap: 24px; }
+  .playbar-note { margin-top: 10px; text-align: right; font-size: 12.5px; color: var(--text-3); }
+  .playbar-note b { font-weight: 600; color: var(--text-2); }
+
+  .jump { margin-top: 28px; padding-bottom: 4px; }
+  .jump .chip { min-height: 34px; padding: 0 14px; font-size: 13px; }
+
+  .collection { margin-top: 56px; scroll-margin-top: 24px; }
+  .jump + #library-collections > .collection:first-child { margin-top: 40px; }
+  .collection-head {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: center;
+    column-gap: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  .collection-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-sm); background: var(--surface-sunk); color: var(--accent); }
+  .collection-title { font-family: var(--font-display); font-size: 32px; font-weight: 600; line-height: 1.05; letter-spacing: -0.012em; }
+  .collection-desc { padding-top: 6px; font-size: 14px; color: var(--text-3); }
+  .collection-sum { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .collection-sum b { font-weight: 600; color: var(--text); }
+  .collection-sum .mbar { width: 96px; height: 6px; }
+
+  .levels { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 1fr; gap: 16px; margin-top: 20px; }
+
+  /* Level card. One element: a card on desktop, a list row on phones. */
+  .level {
+    grid-column: span 3;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas: "title ring" "meta ring" ". ." "foot foot";
+    column-gap: 12px;
+    min-height: 150px;
+    padding: 20px 20px 14px;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    text-align: left;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s, background-color 0.15s;
+  }
+  .level:focus-visible { border-radius: var(--r-md); }
+  .levels--three .level { grid-column: span 4; }
+  @media (hover: hover) {
+    a.level:hover { border-color: var(--rule-strong); background: var(--surface-hover); box-shadow: var(--shadow-2); transform: translateY(-1px); }
+  }
+  .level-title { grid-area: title; font-family: var(--font-display); font-size: 24px; font-weight: 600; line-height: 1.08; letter-spacing: -0.008em; }
+  .level-sub { display: contents; }
+  .level-meta { grid-area: meta; margin-top: 5px; font-size: 13px; color: var(--text-3); }
+  .level::after { content: ''; grid-row: 4; grid-column: 1 / -1; align-self: start; margin-top: 14px; border-top: 1px solid var(--rule); }
+  .level-best, .level-due { align-self: end; margin-top: 14px; padding-top: 12px; font-size: 12.5px; line-height: 18px; font-variant-numeric: tabular-nums; }
+  .level-best { grid-area: foot; justify-self: start; color: var(--text-2); white-space: nowrap; }
+  .level-best em { font-style: normal; font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-right: 6px; }
+  .level-best .sep { margin: 0 5px; color: var(--text-3); }
+  .level-due { grid-area: foot; justify-self: end; display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; font-weight: 500; color: var(--text-2); white-space: nowrap; }
+  .level-due.is-due::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .level > .ring { grid-area: ring; align-self: start; margin-top: -2px; }
+  .level.no-best .level-best { color: var(--text-3); }
+  .level-blurb { display: none; }
+  .level.is-soon { color: var(--text-3); }
+  .level.is-soon .level-title { color: var(--text-2); }
+
+  /* Lead card of a collection: wider, with a line about the level */
+  .level--feature {
+    grid-column: span 6;
+    grid-template-areas: "title ring" "meta ring" "blurb ring" "foot foot";
+  }
+  .level--feature .level-title { font-size: 32px; }
+  .level--feature .level-blurb { display: block; grid-area: blurb; margin-top: 8px; font-size: 13.5px; color: var(--text-2); max-width: 28em; }
+  .level--feature > .ring { --size: 56px; --w: 5px; }
+  .level--feature > .ring > b { font-size: 14px; }

@@ -280,7 +280,53 @@ results screens in both themes (to confirm they still work). Compare against ${S
 the gaps you see.
 `
 // Finished results handed in by the orchestrator, so a restart never runs a finished stage again.
-const PIN = (args && args.pinned) || {}
+// The Stats and Settings stage finished in run wf_9922d84a-76c; its result is copied here from that run's journal.
+const PAGES_DONE = {
+  "summary": "Both parts are done and pushed: the previous stage is closed out, and Stats and Settings are real pages with the sync flow moved into Settings and an in-app dialog replacing every native one.\n\n**Close-out of the shell/Home stage (e7ed088)**\n- Smoke passed 13/13 on desktop and with --mobile; the interaction checks passed on both sizes after three expectations in the suite were corrected (see checks).\n- Home is not drawn twice at phone width. The DOM has one masthead, one library and 27 cards, and the view scrolls to its real end. The doubled image came from the capture: a window grown past about 8,000 device pixels repeats itself.\n- Fixed two things the checks and screenshots turned up: the four map controls still had `title=` tooltips, and phone level cards cut the best off with an ellipsis (\"Best 1,5\u2026\").\n- A new player, an old-store player, and the game and results screens in both themes were looked at. The odd phone map for Europe (whole world, offset) is the old map's behaviour; the baseline screenshot shows the same.\n- A sweep for dead code after the menu removal found none.\n\n**Stats (889d356)**\n- Every panel in the plan draws from the stores: headline figures, mastery by collection and level, a 12-week calendar with weekly totals, Needs work with a working \"Practice these\", Daily Five, Pin the City, and personal records (table on desktop, rows on phones).\n- Every value is printed; there is no hover layer and no `title=`. Each panel has a real empty state.\n- Record titles come from LEVELS, looked up by the stored keys; an old-store seed lists all of its records.\n- It redraws when shown, after a sync pull, and when another tab changes mastery.\n\n**Settings, dialog, sync (4cbf4a8, 231dffc)**\n- Theme tiles, Reduce motion (follows the OS until set), default difficulty and map style.\n- Sync is a card in Settings covering the whole flow, with its steps in the dialog. A 413 is explained in the card and on the navigation light.\n- Data: export downloads a JSON file without the sync code; reset sits behind a dialog listing what is erased. The reset reached a second device through a simulated sync round-trip, and that device's old copy did not come back to the server.\n- About carries the credits and a share action.\n- The old sync modal is deleted, and no `alert`, `confirm` or `prompt` is left. The toast, notice, loading card, map hints and record banner took the new shapes.\n\n`harness/seed-rich.js` is in place for later stages. It plays ten weeks through the real mastery module under a fake clock, using level names read from the running app.\n\nOne thing you might trip over: the dataviz validator flags the empty step of the mastery and heat ramps (the track colour) as low-contrast and off-hue. I kept the tokens as the design fixes them; every count is printed, so nothing depends on telling track from surface.",
+  "commit": "231dffc",
+  "checks": "**On the final file (231dffc)**\n- Syntax check on both script blocks and the mastery paste check pass.\n- `smoke.js`: 13/13 desktop, 13/13 --mobile.\n- `pages/check-settings.js`: 93 assertions desktop, 93 --mobile. Covers theme, motion, difficulty and map; create, show, copy, username, errors (413, 503, offline) and unlink; linking a second device; a pull redrawing Stats; the export download parsed; the reset dialog; the reset reaching a second device; a failed map load giving a notice instead of an alert.\n- `pages/check-stats.js`: 112 assertions desktop. It compares the printed figures with the stores, and covers the toggles, \"Practice these\" (the playlist asks exactly the listed places and leaves records and focus lists alone), a new player and old stores.\n- `shell/check-shell.js`: 179/179 --mobile. Desktop was 182 passed and 1 failed; the failure was the layout check's key-press loop ending before seven reveals had played out. I lengthened the loop and re-ran that check alone: pass.\n\n**Run before the last small commit, not repeated after it**\n- `check-stats.js` --mobile: 114 passed, run before the Settings commit.\n- `logic-tests/run-all.sh`: all green after the Settings commit (t1 37, t2 46, t3 39, t4 67, t5 4, t6 7, t7).\n\n**Suite changes, all expectations out of date with intended behaviour**\n- check-shell: places skipped in a review are due again the same day (mastery spec); the sync lines now expect the Settings card and dialog; a back-button and lazy-province-data check was added.\n- logic-tests t1 to t4: old-menu selectors (`data-folder`, `.daily-card`, the focus chooser), stale since the Home commit, now target Home and the level sheet.\n- logic-tests t4 and t5: sync adapters now drive the Settings card.\n- logic-tests t6: one comparison depended on shuffle order.\n- Originals are in `logic-tests/_out/*.before-settings.js`. No check was weakened to hide a failure.\n\n**Dataviz validator**: run on the mastery and heat ramps in both themes. Lightness order and step gaps pass; the empty step fails contrast and single-hue, as noted in the summary.\n\n**Screenshots looked at** (`shots/app/pages/`, plus `shots/app/closeout/` and `shots/app/shell/co-*`)\n- Stats: rich and new player, desktop and phone, light and dark.\n- Settings: sync off and on, desktop and phone, both themes, and the sync error state.\n- Dialogs: create, code ready, link with an error, reset (synced and unsynced), copy fallback.\n- Transient pieces: toast (right and wrong), notice, loading card.\n- Taken but not looked at: the unlink and add-device dialogs (the same component as the ones above).\n- Not seen: the record banner on its own. That capture was mid-fade; the banner is visible only behind the copy dialog.",
+  "notDone": [
+    "CLAUDE.md and atlas_handoff.md were not updated. They still describe the old menu tree and the sync modal, and do not mention Stats, Settings or the dialog.",
+    "The game and results screens keep their old layout. Only the toast, map hints, imagery credit, loading card and record banner were restyled.",
+    "The record banner in the dark theme was not looked at, and its light-theme capture was mid-fade.",
+    "Real Cloudflare KV, the live site and real Esri tiles were not exercised. Sync ran against a stand-in server inside the test process.",
+    "The share sheet (navigator.share) was not exercised; only the copy-link path and its copy-by-hand fallback were.",
+    "The mastery ramp and heat ramp tokens fail two validator checks on their empty step (contrast against the surface, single hue). Left as the design fixes them.",
+    "There is no hover layer on any chart. This is deliberate (owner rule); the dataviz skill's default was not followed there.",
+    "check-stats.js --mobile and the logic suites were last run before the final small commit (focus handling and redraw on another tab's change), not after it.",
+    "The unlink and add-device dialog screenshots were taken but not looked at.",
+    "The Daily Five's best streak covers only the 30 days the store keeps.",
+    "The three design-system utilities .display-m, .display-s and .tnum are still unused; I left them for the game and results stages."
+  ],
+  "notesForNextStage": [
+    "Stats lives in the STATS section (before GAME): `renderStats()` draws into `#stats-content`. Chart components are `.kpis`/`.kpi`, `.figs`, `.mtable` (mastery table, `toggleStatsGroup`), `.cal` with `.heat-legend`, `.weak` with `.meter`, `.strip`, `.cols` (column chart, value on each cap), `.hbar` with `.pintable`, and `.records` (desktop table) with `.recs` (phone rows).",
+    "A mastery globe would join Stats as another panel inside `.panels`. The Mastery panel spans two grid rows (`.panel--tall`), with Activity and Needs work stacked beside it.",
+    "Settings lives in the SETTINGS section. `renderSettings()` builds the page once into `#settings-content`, then only refreshes controls (`syncThemeControls`, `syncMotionControl`, `syncPlayControls`, `renderSettingsSync`). Add a group with the local `group(key, title, text, body)` helper.",
+    "Dialog API (DIALOG section): `openDialog(html)`, `closeDialog()`, `dialogContent(title, body, actions)`, `confirmDialog({ title, body, confirm, danger, onConfirm })`, `copyDialog(title, text)`, `copyText(text, doneNotice, fallbackTitle)`. Markup is `#dialog` and `#dialog-scrim`.",
+    "In a dialog, `data-autofocus` picks the first focus and `data-submit` marks the button that Enter in a field presses. One keydown handler serves the dialog and the level sheet.",
+    "`switchScreen` closes the dialog. Do not use `alert`, `confirm` or `prompt`; use the dialog, or `showNotice(text)` for a message.",
+    "Sync UI ids: `#sync-now-btn`, `#sync-status-line` (gets `is-error`), `#sync-title`, `#sync-key-display`, `#sync-key-show`, `#sync-key-copy`, `#sync-username-edit`, `#sync-disconnect-btn`. In dialogs: `#sync-username-new`, `#sync-create-btn`, `#sync-key-input`, `#sync-import-btn`, `#sync-import-status`, `#sync-code-full`.",
+    "The navigation's sync light is `[data-sync-dot]`: hidden when sync is off, `.is-error` after a failed push or pull. `syncRefreshEntry()` updates it and the status line in place.",
+    "`syncOpenModal` and every `.sync-modal*` class are gone.",
+    "Review playlists take any names: `reviewGroups(pick)`, `buildReviewPlaylist(groups)`, `startReview(groups)`; with no argument `startReview` reviews what is due. `startWeakPractice()` is the Stats action.",
+    "`dailyDays(n)` replaced `dailyWeek()`.",
+    "`state.worldFailed` is set when the world map cannot load. `renderHome` shows the error; `renderStats` still draws from the stores. `loadLevelData` tolerates a level whose load has not begun.",
+    "The `storage` event now calls `refreshView()` after `mastery.reload()`.",
+    "`setMotionPref('reduce' | 'full')` stores `atlas-motion` and sets `data-motion` on `<html>`. `reducedMotion()` is the test to use before any scripted animation; the map's zoom transitions do not consult it yet.",
+    "Seeds: `require('$S/harness/seed-rich.js').makeSeed({ weeks, seed, playedToday, now })` returns a localStorage object. The CLI writes `$S/harness/scratch/seed-rich.json`; `--unplayed` leaves today's Daily Five unplayed. `seed.summary` (non-enumerable) holds the totals.",
+    "`seed-rich.js` hardcodes the record-key regions in `regionOf()`; a new mode needs an entry there.",
+    "Trap: one very tall headless capture repeats itself past about 8,000 device pixels, which is what made Home look duplicated. Use `pages/shoot.js --pages` for tall phone views; `--full` is safe only on desktop.",
+    "Trap: the game-to-results fade can take several seconds under software rendering. Wait about 3 seconds or more before a results screenshot.",
+    "`pages/shoot.js` flags: `--hash`, `--url`, `--seed`, `--dark`, `--mobile`, `--js`, `--scroll`, `--finish`, `--pages`, `--syncfail=<status>`. It carries a stand-in sync server.",
+    "`pages/check-stats.js` and `pages/check-settings.js` take `--mobile` and `--only=<name>`. Run them after touching Stats, Settings, sync or the dialog.",
+    "The logic tests in `$S/work/integration/logic-tests` now drive Home cards by `[data-level]`, the level sheet, and the Settings sync card. `shell/check-shell.js` is the interaction suite for the shell, Home and the sheet.",
+    "CLAUDE.md drift to fix in a docs pass, on top of the logic stage's list: the menu tree and focus chooser are gone (Home and the level sheet); sync lives in Settings with dialogs; the Stats and Settings views, the theme and motion keys (`atlas-theme`, `atlas-motion`), and the export and reset features are new."
+  ]
+}
+const PIN = Object.assign({ pages: PAGES_DONE }, (args && args.pinned) || {})
+// What an interrupted attempt at the next live stage left behind, written by the orchestrator at relaunch.
+const RESUME = (args && args.resumeNotes) || {}
+const resumeNote = t => t ? '\nWHERE THE ATTEMPT BEFORE YOURS STOPPED (written by the orchestrator):\n' + t + '\n' : ''
 
 // The stage built and pushed its work in two commits and was then cut off by a usage limit before its
 // closing checks; this record was written by the orchestrator from its progress notes and commits.
@@ -410,7 +456,7 @@ with choices; a US Cities round; Pin the City before and after a drop; Learn stu
 Hard; Uncharted with mock satellite tiles; results for a full round with a record, a daily, a practice
 round, a Pin round. Compare against the mockups and close the gaps.
 `
-const game = PIN.game || await agent(gamePrompt, { label: 'game-results', phase: 'Game', schema: STAGE_SCHEMA })
+const game = PIN.game || await agent(gamePrompt + resumeNote(RESUME.game), { label: 'game-results', phase: 'Game', schema: STAGE_SCHEMA })
 if (!game) throw new Error('game stage returned nothing')
 done.push(Object.assign({ stage: 'Game HUD and results' }, game))
 log('Game: ' + (game.commit || 'no commit'))
@@ -501,8 +547,10 @@ const globeRounds = (PIN.globeRounds || []).slice()
 globeRounds.forEach((g, i) => done.push(Object.assign({ stage: 'Globe swap, round ' + (i + 1) }, g)))
 let globeDone = globeRounds.some(g => g.done)
 let lastGlobeCommit = globeRounds.length ? globeRounds[globeRounds.length - 1].commit : game.commit
-for (let round = globeRounds.length + 1; round <= MAX_GLOBE_ROUNDS && !globeDone; round++) {
-  const g = await agent(COMMON2 + notes(done) + globeBrief + `\nThis is round ${round} of at most ${MAX_GLOBE_ROUNDS}.\n`,
+const firstLiveGlobeRound = globeRounds.length + 1
+for (let round = firstLiveGlobeRound; round <= MAX_GLOBE_ROUNDS && !globeDone; round++) {
+  const g = await agent(COMMON2 + notes(done) + globeBrief + `\nThis is round ${round} of at most ${MAX_GLOBE_ROUNDS}.\n` +
+    (round === firstLiveGlobeRound ? resumeNote(RESUME.globe) : ''),
     { label: 'globe-swap-' + round, phase: 'Globe', schema: GLOBE_SCHEMA })
   if (!g) throw new Error('globe round ' + round + ' returned nothing')
   globeRounds.push(g)

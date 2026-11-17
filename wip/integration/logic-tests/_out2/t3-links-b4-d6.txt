@@ -1,0 +1,41 @@
+PASS  B4: a skip left behind does not eat the next round's first question
+PASS  B4: no marks from the abandoned round on the new map
+PASS  B4: a pending "next question" from the old round is dropped
+PASS  B4: capital-choice callbacks are dropped too
+PASS  B4: a round left before its first prompt asks nothing
+PASS  a normal answer still advances
+PASS  no page errors (B4)
+PASS  ?play=midwest-cities stays on the menu
+PASS  ?play=midwest-cities says why
+PASS  ?play=midwest-cities writes nothing
+PASS  ?play=midwest-cities clears the address bar
+PASS  ?play=south-cities stays on the menu
+PASS  ?play=south-cities says why
+PASS  ?play=south-cities writes nothing
+PASS  ?play=south-cities clears the address bar
+PASS  ?play=west-cities stays on the menu
+PASS  ?play=west-cities says why
+PASS  ?play=west-cities writes nothing
+PASS  ?play=west-cities clears the address bar
+PASS  unknown slug stays on the menu, nothing written
+PASS  unknown slug says so
+PASS  an unbuilt level is refused before any map is fetched
+PASS  startGame on an unbuilt level: menu, nothing written
+PASS  startGame on a name that is no level: menu, nothing written
+PASS  ?play=europe starts a full round (a saved focus list does not open the chooser)
+PASS  address bar keeps the link
+PASS  ?play=china-provinces starts the round, no chooser
+PASS  &learn=1 opens Learn
+PASS  &learn=1 on a level without Learn plays it
+PASS  slugs are case-insensitive; pin link starts the round
+PASS  US link
+PASS  leaving a linked level resets the address bar
+PASS  ?play=daily opens the Daily Five
+PASS  ?play=daily after playing lands on the menu
+PASS  registry intact after reloads
+PASS  no page errors (links)
+PASS  D6: the load-failure message shows in the menu
+PASS  D6: no exception thrown while reporting it
+PASS  world level: not ready, no names, load() rejects
+
+links, B4, D6: 39 passed, 0 failed

@@ -1,0 +1,8 @@
+FAIL  script ran to the end
+      page.waitForFunction: Target page, context or browser has been closed
+    at waitNext (/tmp/claude-0/-home-user-atlas-game/7ba1e6a5-1a5b-5e2b-9103-7f072aa14db0/scratchpad/work/integration/logic-tests/lib.js:136:14)
+    at answer (/tmp/claude-0/-home-user-atlas-game/7ba1e6a5-1a5b-5e2b-9103-7f072aa14db0/scratchpad/work/integration/logic-tests/lib.js:187:9)
+    at async playRound (/tmp/claude-0/-home-user-atlas-game/7ba1e6a5-1a5b-5e2b-9103-7f072aa14db0/scratchpad/work/integration/logic-tests/lib.js:199:17)
+    at async /tmp/claude-0/-home-user-atlas-game/7ba1e6a5-1a5b-5e2b-9103-7f072aa14db0/scratchpad/work/integration/logic-tests/t2-modes.js:27:18
+
+modes: 0 passed, 1 failed

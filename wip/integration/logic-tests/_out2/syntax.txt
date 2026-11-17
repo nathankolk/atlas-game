@@ -1,0 +1,2 @@
+1 inline script block(s)
+ok block0.js (6727 lines)

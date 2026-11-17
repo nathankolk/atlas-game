@@ -110,7 +110,7 @@ const stores = (page) => page.evaluate(() => ['atlas-records', 'atlas-focus', 'a
       await page.waitForFunction(() => window.__t.snapshot().current);
       s = await snap(page);
       r.eq('?play=europe starts a full round (a saved focus list does not open the chooser)', [s.screen, s.total, s.practice,
-        await page.evaluate(() => document.getElementById('focus-modal-overlay').classList.contains('show'))], ['game-screen', 39, false, false]);
+        await page.evaluate(() => !document.getElementById('level-sheet').hidden)], ['game-screen', 39, false, false]);
       r.eq('address bar keeps the link', await page.evaluate(() => location.search), '?play=europe');
       s = await open('?play=china-provinces');
       await page.waitForFunction(() => window.__t.snapshot().current, null, { timeout: 20000 });
@@ -132,10 +132,10 @@ const stores = (page) => page.evaluate(() => ['atlas-records', 'atlas-focus', 'a
       await page.waitForFunction(() => window.__t.snapshot().current, null, { timeout: 20000 });
       s = await snap(page);
       r.eq('US link', [s.screen, s.mode, s.total], ['game-screen', 'us-capital-to-state', 50]);
-      // back to the menu lands in the level's folder, address bar reset
+      // back to Home (there are no folders any more), address bar reset
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => window.__t.screen() === 'menu-screen');
-      r.eq('leaving a linked level resets the address bar', await page.evaluate(() => [location.search, window.__atlas.state.menuView]), ['', 'us']);
+      r.eq('leaving a linked level resets the address bar', await page.evaluate(() => [location.search, window.__atlas.state.view]), ['', 'home']);
 
       // daily
       s = await open('?play=daily');
@@ -145,7 +145,7 @@ const stores = (page) => page.evaluate(() => ['atlas-records', 'atlas-focus', 'a
       for (let i = 0; i < 5; i++) await answer(page, 'first');
       await page.waitForFunction(() => window.__t.screen() === 'results-screen');
       s = await open('?play=daily');
-      r.eq('?play=daily after playing lands on the menu', [s.screen, await page.evaluate(() => !!document.querySelector('.daily-card.daily-done'))], ['menu-screen', true]);
+      r.eq('?play=daily after playing lands on the menu', [s.screen, await page.evaluate(() => (document.querySelector('.daily') || { dataset: {} }).dataset.daily === 'played')], ['menu-screen', true]);
 
       // share links still come from the registry
       const links = await page.evaluate(() => {

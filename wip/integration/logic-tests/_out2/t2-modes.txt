@@ -1,0 +1,54 @@
+PASS  States asks 50
+PASS  us-state outcomes
+PASS  States -> Capitals asks 50
+PASS  us-capital outcomes after one mode
+PASS  us-capital outcomes after both modes
+PASS  skills so far
+PASS  50 items in each
+PASS  records keep their old keys
+PASS  D3: each US mode card shows its best
+PASS  D3: US folder best reads the capitals modes too
+   US cards: [["us-state","Best: 49/50 · 97 pts"],["us-capital-to-state","Best: 49/50 · 98 pts"],["us-state-to-capital","Best: 48/50 · 95 pts"]] folder: Best: States 98%
+PASS  city prompt reads "City, State"
+PASS  Northeast asks 40
+PASS  us-city outcomes
+PASS  Canada asks 13
+PASS  province:canada outcomes
+PASS  sessions so far
+PASS  Learn opens on the study panel of level 1
+PASS  level 1 cleared -> study level 2
+PASS  a miss restarts level 2
+PASS  level 2 cleared -> study level 3
+PASS  Learn quizzes record no items
+PASS  two cleared levels = two sessions (1 + 3 questions, 1 + 2 right)
+PASS  ladder saved at level 3
+PASS  ladder resumes at level 3
+PASS  finished ladder: 11 more sessions, still no items recorded
+PASS  finished ladder leaves a done marker
+PASS  results say Learn
+PASS  chooser after a finished ladder
+PASS  chooser counts the round from the registry
+PASS  Pin Oceania asks 20
+   pin points: [["Port Moresby",100],["Auckland",48],["Perth",2],["Sydney",0],["Nouméa",100]]
+PASS  pin points land in the planned bands
+PASS  city-pin outcomes follow the points bands
+PASS  atlas-pin keeps its shape
+PASS  pin round is a session; 20 cities in the store
+PASS  pin session counts the 17 first-band answers as first tries
+PASS  Daily asks 5
+PASS  daily countries feed the country skill
+PASS  daily attempt saved in its old shape
+PASS  a played daily does not start again
+PASS  replay asks the same five
+PASS  replay adds to the country history
+PASS  all sessions counted today
+PASS  country skill has the five
+   atlas-mastery: 4430 chars; skills us-state:50, us-capital:50, us-city:40, province:canada:13, city-pin:20, country:5
+   days: {"319":[21,325,308,21]} life: [21,325,308,21,1,1,319,1]
+   sample: [["Port Moresby",[319,1,1,1]],["Auckland",[319,1,0,0,1]],["Perth",[319,1,0,0,0,1,1]],["Sydney",[319,1,0,0,0,1,1]]]
+PASS  skills in the store
+PASS  store version
+PASS  totals
+PASS  no page errors
+
+modes: 47 passed, 0 failed

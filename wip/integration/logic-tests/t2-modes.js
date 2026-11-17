@@ -51,16 +51,11 @@ const SHOTS = __dirname + '/../../../shots/app/logic/';
     await home();
 
     // ---- D3: all three US cards show a best, and the folder card reads all three ----
-    await page.evaluate(() => { window.__atlas.state.menuView = 'us'; document.querySelector('[data-action="open-folder"][data-folder="us"]') && 0; });
-    await page.click('[data-action="open-folder"][data-folder="us"]');
-    const bests = await page.evaluate(() => Array.from(document.querySelectorAll('.region-card.us-card[data-action="play"]'))
-      .map(c => [c.dataset.region, (c.querySelector('.r-best') || {}).textContent || null]));
-    r.check('D3: each US mode card shows its best', bests.length === 3 && bests.every(b => b[1]), bests);
+    const bests = await page.evaluate(() => ['us-state', 'us-state-to-capital', 'us-capital-to-state']
+      .map(k => [k, (document.querySelector('[data-level="' + k + '"] .level-best') || {}).textContent || null]));
+    r.check('D3: each US mode card shows its best', bests.length === 3 && bests.every(b => /^Best\d/.test(b[1] || '')), bests);
     await page.screenshot({ path: SHOTS + 'menu-us-bests.png' });
-    await page.click('[data-action="back-to"]');
-    const folderBest = await page.evaluate(() => (document.querySelector('[data-folder="us"] .r-best') || {}).textContent || null);
-    r.check('D3: US folder best reads the capitals modes too', /Cap→St 98%|St→Cap|States/.test(folderBest || ''), folderBest);
-    console.log('   US cards: ' + JSON.stringify(bests) + ' folder: ' + folderBest);
+    console.log('   US cards: ' + JSON.stringify(bests));
 
     // ---- Cities: Northeast ----
     await startLevel(page, 'northeast-cities');
@@ -130,14 +125,13 @@ const SHOTS = __dirname + '/../../../shots/app/logic/';
     r.eq('results say Learn', await page.evaluate(() => document.getElementById('results-region').textContent), 'Provinces of Canada · Learn');
     await home();
     // the chooser treats the marker as "no ladder in progress"
-    await page.click('[data-action="open-folder"][data-folder="provinces"]');
-    await page.click('[data-region="canada-provinces"]');
-    const chooser = await page.evaluate(() => ({ shown: document.getElementById('focus-modal-overlay').classList.contains('show'),
-      learn: document.getElementById('focus-choice-learn-title').textContent, reset: document.getElementById('focus-learn-reset').style.display,
-      fresh: document.getElementById('focus-choice-fresh-desc').textContent }));
-    r.eq('chooser after a finished ladder', [chooser.shown, chooser.learn, chooser.reset], [true, 'Learn Them', 'none']);
-    r.check('chooser counts the round from the registry', /All 13 provinces & territories/.test(chooser.fresh), chooser.fresh);
-    await page.click('#focus-modal-close');
+    await page.evaluate(() => document.querySelector('[data-level="canada-provinces"]').click());
+    const chooser = await page.evaluate(() => ({ shown: !document.getElementById('level-sheet').hidden,
+      learn: (document.querySelector('.mode[data-value="learn"] strong') || {}).textContent, reset: !!document.querySelector('[data-action="sheet-learn-reset"]'),
+      info: document.getElementById('sheet-info').textContent }));
+    r.eq('level sheet after a finished ladder', [chooser.shown, chooser.learn, chooser.reset], [true, 'Learn Them', false]);
+    r.check('the sheet counts the round from the registry', /of 13 mastered/.test(chooser.info), chooser.info.slice(0, 120));
+    await page.evaluate(() => document.querySelector('#level-sheet [data-action="sheet-close"]').click());
 
     // ---- Pin the City: Oceania ----
     const firstBefore = (await store()).days[day][2];

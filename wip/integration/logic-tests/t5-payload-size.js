@@ -84,10 +84,11 @@ const LIMIT = 256 * 1024;
       return { items: count, sizes: sizes };
     }, TOKEN);
     await reloadApp(h);
-    await page.evaluate(() => { document.getElementById('sync-entry-btn').click(); });
+    // Sync's controls are a card in Settings
+    await page.evaluate(() => window.__atlas.showView('settings'));
     await page.waitForSelector('#sync-now-btn');
     await page.click('#sync-now-btn');
-    await page.waitForFunction(() => /Synced/.test(document.getElementById('sync-status-line').textContent), null, { timeout: 10000 });
+    await page.waitForFunction(() => !document.getElementById('sync-now-btn').disabled && /last synced/.test(document.getElementById('sync-status-line').textContent), null, { timeout: 10000 });
     const body = posts[posts.length - 1];
     const bytes = Buffer.byteLength(body, 'utf8');
     console.log('   stores (chars): ' + JSON.stringify(built.sizes) + '; mastery items: ' + built.items);

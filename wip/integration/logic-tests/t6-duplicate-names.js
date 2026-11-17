@@ -45,7 +45,7 @@ function makeCopy() {
     await startLevel(page, 'midwest-cities');
     const seen = {};
     for (let i = 0; i < 2; i++) { const s = await snap(page); seen[s.current] = s.prompt; await answer(page, 'first'); }
-    r.eq('prompts read "City, State" once', seen, { 'Springfield, Illinois': 'Springfield, Illinois', 'Chicago': 'Chicago, Illinois' });
+    r.eq('prompts read "City, State" once', [seen['Springfield, Illinois'], seen['Chicago'], Object.keys(seen).length], ['Springfield, Illinois', 'Chicago, Illinois', 2]);
     await page.waitForFunction(() => window.__t.screen() === 'results-screen');
     const m = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('atlas-mastery')).items['us-city']).sort());
     r.eq('mastery keeps the two Springfields apart', m, ['Chicago', 'Springfield, Illinois']);

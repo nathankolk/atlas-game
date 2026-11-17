@@ -224,10 +224,12 @@ const checks = {
     await press(page, nav + ' [data-view="settings"]');
     s = await st(page);
     ok(s.active === 'settings-screen' && s.hash === '#settings', 'Settings view: ' + JSON.stringify(s));
-    ok(await page.locator('#sync-entry-btn').isVisible(), 'sync entry reachable in Settings');
-    await press(page, '#sync-entry-btn');
-    ok(await page.evaluate(() => document.getElementById('sync-modal-overlay').classList.contains('show')), 'sync panel opens from Settings');
+    // Sync is a card in Settings; its steps open in the dialog
+    ok(await page.locator('[data-action="sync-create"]').isVisible(), 'sync reachable in Settings');
+    await press(page, '[data-action="sync-create"]');
+    ok(await page.evaluate(() => !document.getElementById('dialog').hidden), 'the sync dialog opens from Settings');
     await page.keyboard.press('Escape');
+    ok(await page.evaluate(() => document.getElementById('dialog').hidden), 'and Escape closes it');
     await page.evaluate(() => { location.hash = '#stats'; });
     await page.waitForFunction(() => document.querySelector('.screen.active').id === 'stats-screen');
     await page.evaluate(() => { location.hash = ''; });
@@ -299,7 +301,38 @@ const checks = {
     await page.locator('#home-btn').click();
     await page.waitForFunction(() => document.body.dataset.screen === 'menu');
     eq((await st(page)).review, null, 'review state cleared on Home');
-    ok(await page.evaluate(() => /review--empty/.test(document.querySelector('.review').className)), 'skipped places are due again later, not now... or the card is empty');
+    // Every place was skipped, and a miss is due again the same day (mastery SPEC: "due = today")
+    eq(await page.evaluate(() => Number((document.querySelector('.review-num') || {}).textContent)), due, 'places skipped in a review are still due afterwards');
+    eq(h.errors.length, 0, 'page errors: ' + h.errors.join(' | '));
+    await h.close();
+  },
+
+  async 'back button and lazy level data'() {
+    const h = await open(seedOf('seed-rich.json'));
+    const page = h.page;
+    // A hash typed by hand makes a history entry; Back must return to the view before it
+    await page.evaluate(() => { location.hash = 'stats'; });
+    await page.waitForFunction(() => document.body.dataset.screen === 'stats');
+    await page.evaluate(() => { location.hash = 'settings'; });
+    await page.waitForFunction(() => document.body.dataset.screen === 'settings');
+    await page.goBack();
+    await page.waitForFunction(() => document.body.dataset.screen === 'stats');
+    eq((await st(page)).view, 'stats', 'Back returns to Stats');
+    await page.goBack();
+    await page.waitForFunction(() => document.body.dataset.screen === 'menu');
+    eq((await st(page)).view, 'home', 'Back again returns to Home');
+    await page.goForward();
+    await page.waitForFunction(() => document.body.dataset.screen === 'stats');
+    ok(await page.evaluate(() => document.querySelector('#topnav-links a.is-on').dataset.view === 'stats'), 'the navigation follows the address');
+    await page.goBack();
+    await page.waitForFunction(() => document.body.dataset.screen === 'menu');
+    // Russia's rounds share a skill: their rings wait for the map, then fill in without a reload
+    await page.waitForFunction(() => !!document.querySelector('[data-level="russia-west"] .ring b'), null, { timeout: 20000 });
+    const rings = await page.evaluate(() => ['russia-west', 'russia-south', 'russia-east', 'china-provinces', 'india-states', 'canada-provinces'].map(k => {
+      const card = document.querySelector('[data-level="' + k + '"]');
+      return k + ':' + (card.querySelector('.ring b') ? card.querySelector('.ring b').textContent : '-');
+    }));
+    ok(/russia-west:\d+/.test(rings.join(' ')), 'province cards fill in once their map arrives: ' + rings.join(' '));
     eq(h.errors.length, 0, 'page errors: ' + h.errors.join(' | '));
     await h.close();
   },
@@ -312,7 +345,8 @@ const checks = {
     ok(a.x, 'no sideways overflow');
     await page.goto(h.url + '?play=oceania');
     await waitGame(page);
-    for (let i = 0; i < 60; i++) { if (await page.evaluate(() => document.body.dataset.screen === 'results')) break; await page.keyboard.press('s'); await page.waitForTimeout(250); }
+    // Seven skips, each followed by its reveal; keep pressing until the round is over
+    for (let i = 0; i < 200; i++) { if (await page.evaluate(() => document.body.dataset.screen === 'results')) break; await page.keyboard.press('s'); await page.waitForTimeout(250); }
     await page.waitForFunction(() => document.body.dataset.screen === 'results');
     await page.waitForTimeout(400);
     const r = await page.evaluate(() => { const v = document.getElementById('results-screen'); return { taller: v.scrollHeight > v.clientHeight, top: v.scrollTop, kicker: document.querySelector('.results-kicker').getBoundingClientRect().top }; });

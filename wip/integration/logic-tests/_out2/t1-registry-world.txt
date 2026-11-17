@@ -1,0 +1,65 @@
+PASS  hook version
+PASS  27 levels
+PASS  every old slug is a level key (plus daily)
+PASS  level keys are unique
+PASS  every level has the same fields
+PASS  levelByKey
+   world | world | The World | World | world-country | country | countries | true | true | 184
+   africa | world | Africa | Africa | world-country | country | countries | true | true | 54
+   asia | world | Asia | Asia | world-country | country | countries | true | true | 48
+   europe | world | Europe | Europe | world-country | country | countries | true | true | 39
+   north-america | world | North America | North America | world-country | country | countries | true | true | 23
+   south-america | world | South America | South America | world-country | country | countries | true | true | 13
+   oceania | world | Oceania | Oceania | world-country | country | countries | true | true | 7
+   us-state | us | States | us-state | us-state | us-state | states | true | true | 50
+   us-state-to-capital | us | States → Capitals | us-state-to-capital | us-state-to-capital | us-capital | capitals | true | true | 50
+   us-capital-to-state | us | Capitals → States | us-capital-to-state | us-capital-to-state | us-capital | capitals | true | true | 50
+   northeast-cities | us | Cities: Northeast | northeast-cities | us-city | us-city | cities | true | true | 40
+   midwest-cities | us | Cities: Midwest | midwest-cities | us-city | us-city | cities | false | true | 0
+   south-cities | us | Cities: South | south-cities | us-city | us-city | cities | false | true | 0
+   west-cities | us | Cities: West | west-cities | us-city | us-city | cities | false | true | 0
+   canada-provinces | provinces | Canada | canada-provinces | province | province:canada | provinces & territories | true | false | 0
+   china-provinces | provinces | China | china-provinces | province | province:china | provinces & regions | true | false | 0
+   india-states | provinces | India | india-states | province | province:india | states | true | false | 0
+   russia-west | provinces | Central & Northwest Russia | russia-west | province | province:russia | regions | true | false | 0
+   russia-south | provinces | Southern Russia & the Volga | russia-south | province | province:russia | regions | true | false | 0
+   russia-east | provinces | Urals, Siberia & the Far East | russia-east | province | province:russia | regions | true | false | 0
+   pin-world | pins | World | pin-world | city-pin | city-pin | cities | true | true | 120
+   pin-africa | pins | Africa | pin-africa | city-pin | city-pin | cities | true | true | 20
+   pin-asia | pins | Asia | pin-asia | city-pin | city-pin | cities | true | true | 20
+   pin-europe | pins | Europe | pin-europe | city-pin | city-pin | cities | true | true | 20
+   pin-north-america | pins | North America | pin-north-america | city-pin | city-pin | cities | true | true | 20
+   pin-south-america | pins | South America | pin-south-america | city-pin | city-pin | cities | true | true | 20
+   pin-oceania | pins | Oceania | pin-oceania | city-pin | city-pin | cities | true | true | 20
+PASS  The World has 184 countries (Australia back)
+PASS  Oceania has 7
+PASS  continents sum to the world
+PASS  US levels know their 50 states before the map loads
+PASS  Northeast cities
+PASS  unbuilt city regions are flagged
+PASS  province names wait for their map
+PASS  pin levels
+PASS  province levels after load()
+PASS  no name is shared by two items of a skill
+PASS  main menu shows 184 countries
+PASS  Australia is asked for in Oceania
+PASS  7 questions
+PASS  mastery skills after Oceania
+PASS  7 countries recorded
+PASS  each country has the outcome that was played
+PASS  one session: 7 questions, 4 first try
+PASS  summary counts
+PASS  record saved under the old key
+PASS  record score
+PASS  focus list = missed then second-try
+PASS  practice round asks the 3 to revisit
+PASS  practice is a second session
+PASS  practice leaves records alone
+PASS  The World asks 184
+PASS  Australia is asked for in The World
+PASS  184 countries in the store
+PASS  World record
+   mastery store after The World: 4457 chars; summary {"total":184,"seen":184,"new":0,"learning":184,"familiar":0,"mastered":0,"due":0,"accuracy":0.9845360824742269,"pct":20}
+PASS  no page errors
+
+registry + world: 35 passed, 0 failed
