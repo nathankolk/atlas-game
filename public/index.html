@@ -49,6 +49,8 @@
     if (meta) meta.setAttribute('content', dark ? '#101824' : '#f7f1e3');
   })();
 </script>
+<!-- The world map every view waits for: fetched alongside the page, not after its script has run -->
+<link rel="preload" href="/data/countries-50m.json" as="fetch" type="application/json" crossorigin="anonymous" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -152,6 +154,7 @@
     --g-ocean-2: #a7c0c9;
     --g-ocean-3: #7d9fab;
     --g-land: #f5ebd4;
+    --g-dim: #c8d2ce;
     --g-border: #b29e72;
     --g-grat: rgba(255, 255, 255, 0.34);
     --g-limb: rgba(31, 42, 58, 0.3);
@@ -235,7 +238,8 @@
     --g-ocean-1: #2a5270;
     --g-ocean-2: #183650;
     --g-ocean-3: #0c1f33;
-    --g-land: #3e4f66;
+    --g-land: #485a73;
+    --g-dim: #223c56;
     --g-border: #8394ad;
     --g-grat: rgba(180, 205, 230, 0.13);
     --g-limb: rgba(170, 200, 230, 0.4);
@@ -2315,6 +2319,20 @@
     .game-legend { display: none; }
     .map-hint { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
   }
+  /* Short and wide (a phone on its side): the card stands at the left at a
+     set width, and the map has the whole height beside it (see stageClearArea) */
+  @media (max-height: 520px) and (min-width: 600px) {
+    .hud-top { justify-items: start; padding: 0 12px; }
+    .prompt, #game-screen.pin-mode .prompt { width: 280px; min-width: 0; max-width: 280px; padding: 10px 14px 12px; }
+    .prompt-name { min-height: 30px; font-size: 26px; overflow-wrap: anywhere; }
+    .prompt-name.is-long { font-size: 21px; }
+    .prompt-name.is-xlong { font-size: 18px; }
+    .prompt-name.is-flag { min-height: 66px; font-size: 64px; }
+    .choices { grid-template-columns: 1fr 1fr; width: 100%; gap: 6px; }
+    .choice-btn { padding: 4px 6px; }
+    .answer { width: 100%; }
+    .toast { max-width: 280px; }
+  }
   /* Explore on a short, wide window: Colour by loses its heading and moves in beside the map controls */
   @media (max-height: 520px) and (min-width: 761px) {
     .explore-side { top: 12px; bottom: 12px; }
@@ -3762,9 +3780,11 @@
     // that carries its country's name (Luxembourg, Djibouti) is no question.
     'capital-find': {
       slug: 'capitals-find-', collection: 'capitals', variant: 'find', skill: 'capital', noun: 'capitals',
+      // (what Quiz.capitalPrompt calls trivial, without its search through
+      // every other country's capitals, which this list has no use for)
       asks: (name) => {
-        const prompt = Quiz.capitalPrompt(WORLD_FACTS, name);
-        return !!prompt && !prompt.trivial;
+        const own = Quiz.capitalOf(WORLD_FACTS, name);
+        return !!own && Quiz.fold(own.capital) !== Quiz.fold(name);
       }
     },
     // The flag is shown, its country is found on the globe
@@ -3800,6 +3820,7 @@
 
     // US dataset (loaded lazily when a US mode is first selected)
     usFeatures: [],
+    usBorders: null,
     usCanonicalByFeature: new Map(),
     usFeatureByCanonical: new Map(),
     usLoaded: false,
@@ -3911,9 +3932,9 @@
     return res.json();
   }
 
-  // US states: our own filtered copy of Natural Earth 10m admin_1 (51
-  // features, GeoJSON)
-  const US_STATES_URL = '/data/us-states-detail.json';
+  // US states: our own filtered copy of Natural Earth 10m admin_1 (the
+  // fifty states and the District of Columbia, TopoJSON)
+  const US_STATES_URL = '/data/us-states.json';
 
   async function loadUsStatesData() {
     // Cache: load once per session
@@ -3923,8 +3944,9 @@
     state.usLoading = (async () => {
       const res = await fetch(US_STATES_URL);
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      const geojson = await res.json();
-      state.usFeatures = geojson.features.filter(f => featureName(f));
+      const topology = await res.json();
+      state.usFeatures = topojson.feature(topology, topology.objects.states).features.filter(f => featureName(f));
+      state.usBorders = topojson.mesh(topology, topology.objects.states);   // each border once, for the globe
       state.usCanonicalByFeature.clear();
       state.usFeatureByCanonical.clear();
       state.usFeatures.forEach(f => {
@@ -4024,10 +4046,16 @@
       await state.worldLoading;
 
       refreshView();
-      initGlobe();
-      // Explore has been waiting for the globe
-      if (state.view === 'explore') refreshView();
-      openLinkedLevel(link);
+      if (link || state.view === 'explore' || map.globe) {
+        // A level link and Explore show the globe at once
+        initGlobe();
+        if (state.view === 'explore') refreshView();
+        openLinkedLevel(link);
+      } else {
+        // Any other view comes up first; the globe is made and the world
+        // built into it straight after that paint, so a round finds it ready
+        requestAnimationFrame(() => setTimeout(() => { if (!map.globe) initGlobe(); }, 0));
+      }
 
       // Fire-and-forget: pull latest records from server if a sync token is set.
       // syncOnAppLoad re-renders the menu when data arrives.
@@ -4108,19 +4136,31 @@
   // Canonical names of the countries asked for in one continent, or in all
   // of them for 'World'; [] until the world map has loaded
   function countryNames(region) {
-    const names = new Set();
-    state.allFeatures.forEach(f => {
-      const continent = state.continentByFeature.get(featureKey(f));
-      if (continent && (region === 'World' || continent === region)) {
-        names.add(state.canonicalByFeature.get(featureKey(f)));
-      }
+    return listedOnce('country|' + region, () => {
+      const names = new Set();
+      state.allFeatures.forEach(f => {
+        const continent = state.continentByFeature.get(featureKey(f));
+        if (continent && (region === 'World' || continent === region)) {
+          names.add(state.canonicalByFeature.get(featureKey(f)));
+        }
+      });
+      return Array.from(names);
     });
-    return Array.from(names);
   }
 
   // The countries of a region that one kind of country quiz asks about
   function quizNames(mode, region) {
-    return countryNames(region).filter(QUIZ_KINDS[mode].asks);
+    return listedOnce(mode + '|' + region, () => countryNames(region).filter(QUIZ_KINDS[mode].asks));
+  }
+
+  // A list drawn from the world map is worked out once (every screen asks
+  // for these lists, and the map does not change once it is in); each
+  // caller gets its own copy
+  const nameLists = new Map();
+  function listedOnce(key, build) {
+    if (!state.allFeatures.length) return [];
+    if (!nameLists.has(key)) nameLists.set(key, build());
+    return nameLists.get(key).slice();
   }
 
   function usCityNames(region) {
@@ -5140,14 +5180,30 @@
         if (!ok) showNotice(level.why + ', so the flag levels can’t be played here.');
       });
     }
-    // A province map that isn't in yet: fetch it now, so the breakdown can
-    // fill in and Start has nothing left to wait for
-    if (!level.ready()) {
-      level.load().then(() => {
+    // The level's own map (the United States, a country's provinces) is
+    // fetched and built now, so the breakdown can fill in and Start has
+    // nothing left to wait for
+    if (level.available) {
+      const waited = !level.ready();
+      prepareLevelMap(level).then(() => {
+        if (!waited) return;
         if (sheet.level === level) renderSheetInfo();
         refreshView();
       }, () => { /* Start will try again and say so if it still can't */ });
     }
+  }
+
+  // Gets a level's map ready ahead of its round: fetched and, while the
+  // globe is free (a view is showing, and it is not Explore's globe), built
+  // into it. Resolves when the data is in.
+  function prepareLevelMap(level) {
+    const country = level.mode === 'province' ? PROVINCE_ROUNDS[level.arg].country : null;
+    const loading = GAME_MODES[level.mode].dataset === 'us' ? loadUsStatesData()
+      : country ? loadProvinceData(country) : state.worldLoading;
+    return loading.then(() => {
+      const onView = VIEWS.some(view => view.screen === document.body.dataset.screen);
+      if (map.globe && onView && !explore.on) syncMapLayers(country);
+    });
   }
 
   // opts.keepFocus: leave the focus where it is (a round is about to start)
@@ -6056,6 +6112,7 @@
     }
 
     // The globe builds a map the first time it shows it; the round starts once that is drawn
+    if (!map.globe) initGlobe();
     await syncMapLayers();
     hideLoadingOverlay();
     if (state.roundId !== round) return;
@@ -6181,10 +6238,13 @@
     setAddressBar(levelLink(regionOrMode, !!state.learn));
 
     // Imagery gets a fresh chance if it failed last round. The globe comes
-    // in already showing this round, near enough in place.
+    // in already showing this round, in place: the window is laid out as
+    // the game has it (no navigation) before the globe is sized, so its
+    // canvases are sized once.
     sat.failed = false;
     applyMapStyle();
     setupMap();
+    document.body.dataset.screen = 'game';
     frameMap();
 
     switchScreen('game');
@@ -6194,13 +6254,13 @@
     document.getElementById('zoom-hint').hidden = state.zoomHintShown;
     state.zoomHintShown = true;
 
+    // The first question goes up in a task of its own, after the screen
+    // change has been handed to the browser; it may turn the globe from the
+    // opening view (States → Capitals)
     roundTimeout(() => {
-      // The opening view once more, now that the screen is up; the first
-      // question may then turn the globe from it (States → Capitals)
-      frameMap();
       if (state.learn) startLearnLevel();
       else nextCountry();
-    }, 80);
+    }, 0);
   }
 
   // Back to the menu with a word of explanation, for a level that can't
@@ -6380,9 +6440,9 @@
   }
 
   // The part of the stage the HUD leaves clear, in stage px: under the
-  // prompt card, over the actions, and on a wide stage inside the map
-  // controls and over the tally. On a narrow one those two sit over the
-  // map's lower corners instead, and the map keeps its width.
+  // prompt card (or beside it), over the actions, and on a wide stage
+  // inside the map controls and over the tally. On a narrow one those two
+  // sit over the map's lower corners instead, and the map keeps its width.
   function stageClearArea(width, height) {
     const stage = document.getElementById('map-wrap').getBoundingClientRect();
     const box = (sel) => {
@@ -6394,13 +6454,20 @@
     const wide = width >= 720;
     const bar = box('.gamebar');
     const card = box('#prompt');
-    const controls = wide ? box('.mapctl') : null;
+    // On a short, wide window the card stands at the left (see the
+    // stylesheet): the map is clear of it sideways, with the controls on
+    // its other side
+    const cardAtSide = !!card && card.right - stage.left < width / 2;
+    const controls = wide || cardAtSide ? box('#game-screen .mapctl') : null;
     const side = controls ? stage.right - controls.left + gap : gap;
     let top = bar ? bar.bottom - stage.top : 0;
     let bottom = height;
     [box('.game-actions'), wide ? box('#game-legend') : null].forEach(r => {
       if (r) bottom = Math.min(bottom, r.top - stage.top);
     });
+    if (cardAtSide) {
+      return { left: card.right - stage.left + gap, right: width - side, top: top + gap, bottom: bottom - gap };
+    }
     // A short window has no room to keep the map clear of the card as well
     if (card && bottom - (card.bottom - stage.top) > 200) top = card.bottom - stage.top;
     return { left: side, right: width - side, top: top + gap, bottom: bottom - gap };
@@ -7460,6 +7527,11 @@
     'South America': [-82, -34, -56, 13],
     'Oceania': [112, 180, -48, 0]
   };
+  // On a stage taller than it is wide a continent opens on the width its
+  // countries take up across its middle: the box's corners, open sea for
+  // the most part, run off the sides or under the card. Europe's countries
+  // also lie in a narrower band than its box, which reaches out to Iceland.
+  const TALL_FRAMES = { 'Europe': [-12, 42, 35, 71] };
   const WORLD_VIEW = { lon: 15, lat: 20 };   // where a whole-world round opens
   // The United States open on the lower 48: at a size that shows them all,
   // Alaska and Hawaii would shrink every other state by a third. They are a
@@ -7527,17 +7599,19 @@
   }
 
   // Hands the globe every map there is to show: the world, the United
-  // States once loaded, and the provinces of the country played last. A
+  // States once loaded, and the provinces of one country (the one named,
+  // or else the one whose round is in play; the last one stays until then). A
   // map the globe already has is not built again, but every layer comes
   // back plain, so a round is set up after this, never before. Resolves
   // when the maps are drawn.
-  function syncMapLayers() {
+  function syncMapLayers(country) {
     const round = PROVINCE_ROUNDS[state.currentProvinceRound];
-    if (round && state.provinceStores[round.country]) map.provinces = state.provinceStores[round.country];
+    const store = state.provinceStores[country || (round && round.country)];
+    if (store) map.provinces = store;
     // Until the detailed world is in, the coarse one stands in for it
     const world = state.allFeatures.length ? { features: state.allFeatures, borders: state.worldBorders } : map.sketch;
     const layers = [{ id: 'world', features: world.features, key: featureKey, borders: world.borders, style: 'dim' }];
-    if (state.usLoaded) layers.push({ id: 'us', features: state.usFeatures, key: featureKey, style: 'dim', visible: false });
+    if (state.usLoaded) layers.push({ id: 'us', features: state.usFeatures, key: featureKey, borders: state.usBorders, style: 'dim', visible: false });
     if (map.provinces) {
       layers.push({ id: 'prov', features: map.provinces.features, key: featureKey, borders: map.provinces.borders, style: 'dim', visible: false });
     }
@@ -7574,7 +7648,7 @@
     const step = name => { const c = token(name); return imagery ? [c[0], c[1], c[2], 0.82] : c; };
     const styles = {
       land: land,
-      dim: imagery ? token('--g-shade') : mixRgba(land, token('--g-ocean-2'), 0.42),
+      dim: token(imagery ? '--g-shade' : '--g-dim'),
       hover: token('--g-near'),
       found: token('--g-found'), second: token('--g-second'), missed: token('--g-missed'),
       good: veil(token('--m2')), bad: veil(token('--g-wrong')), reveal: veil(select),
@@ -7680,18 +7754,22 @@
 
   // Sizes the globe's host so that its middle, where the globe sits, is the
   // middle of what the HUD leaves clear: the host covers the stage and
-  // reaches past its top or bottom edge by the difference.
+  // reaches past its edges by the difference (past the top or the bottom,
+  // and past one side when the card stands beside the map).
   function placeGlobeHost() {
     const stage = document.getElementById('map-wrap');
     const host = document.getElementById('globe-host');
     const width = stage.clientWidth, height = stage.clientHeight;
     const clear = stageClearArea(width, height);
     const below = Math.round(clear.top + clear.bottom - height);   // how far the clear middle sits under the stage's
-    const top = Math.min(0, below);
+    const beside = Math.round(clear.left + clear.right - width);   // and how far to its right
+    const top = Math.min(0, below), left = Math.min(0, beside);
     host.style.top = top + 'px';
     host.style.bottom = Math.min(0, -below) + 'px';
+    host.style.left = left + 'px';
+    host.style.right = Math.min(0, -beside) + 'px';
     map.globe.resize();
-    map.clear = { left: clear.left, right: clear.right, top: clear.top - top, bottom: clear.bottom - top };
+    map.clear = { left: clear.left - left, right: clear.right - left, top: clear.top - top, bottom: clear.bottom - top };
   }
 
   // Points along the edges of a longitude/latitude box, for fitting a view to it
@@ -7705,6 +7783,13 @@
     return { type: 'MultiPoint', coordinates: points };
   }
 
+  // The middle of each edge of a longitude/latitude box: fitted to these, a
+  // view holds the box's width and height across its middle, not its corners
+  function boxCross(box) {
+    const lon = (box[0] + box[1]) / 2, lat = (box[2] + box[3]) / 2;
+    return { type: 'MultiPoint', coordinates: [[box[0], lat], [box[1], lat], [lon, box[2]], [lon, box[3]]] };
+  }
+
   // What the round's opening view should hold, as GeoJSON; null for the whole globe
   function roundFrame() {
     if (state.pin) return state.currentContinent === 'World' ? null : pinFitGeometry(state.currentContinent);
@@ -7714,7 +7799,9 @@
     if (state.activeDataset === 'us') return boxOutline(US_FRAME);
     // A continent's round; the World and the Daily Five have the whole globe
     const box = CONTINENT_FRAMES[state.currentContinent];
-    return box ? boxOutline(box) : null;
+    if (!box) return null;
+    const tall = !!map.clear && map.clear.right - map.clear.left < map.clear.bottom - map.clear.top;
+    return tall ? boxCross(TALL_FRAMES[state.currentContinent] || box) : boxOutline(box);
   }
 
   // Calls fn with every [lon, lat] of a GeoJSON object
@@ -8246,6 +8333,7 @@
   // shows may have changed under it (a sync pull, a reset, the flag font)
   function renderExplore() {
     const status = document.getElementById('explore-status');
+    if (state.allFeatures.length && !map.globe) initGlobe();
     if (!state.allFeatures.length || !map.globe) {
       if (state.worldFailed) {
         status.className = 'explore-status error-state';
@@ -14192,8 +14280,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     if (!run || run.phase !== 'study' || explore.on) return;
     const g = map.globe;
     const host = document.getElementById('globe-host');
-    // The part of the host that is on screen (it reaches past the stage's edge)
-    const viewW = host.clientWidth;
+    // The part of the host that is on screen (it reaches past the stage's edges)
+    const viewLeft = -host.offsetLeft;
+    const viewRight = viewLeft + document.getElementById('map-wrap').clientWidth;
     const viewTop = -host.offsetTop;
     const viewBottom = viewTop + document.getElementById('map-wrap').clientHeight;
     const byName = activeFeatureByCanonical();
@@ -14237,7 +14326,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
       return sum + (ox > 0 && oy > 0 ? ox * oy : 0);
     }, 0);
     // Off-screen parts count as collisions, so names stay readable
-    const offscreen = (b) => (Math.max(0, -b.x0) + Math.max(0, b.x1 - viewW)) * (b.y1 - b.y0) +
+    const offscreen = (b) => (Math.max(0, viewLeft - b.x0) + Math.max(0, b.x1 - viewRight)) * (b.y1 - b.y0) +
       (Math.max(0, viewTop - b.y0) + Math.max(0, b.y1 - viewBottom)) * (b.x1 - b.x0);
 
     let hidden = 0;
@@ -14267,7 +14356,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
       }
       // A sliver of overlap still reads fine; a fifth of the name doesn't
       if (leastCost > it.w * it.h * 0.2 && !it.isNew) {
-        if (it.sx >= 0 && it.sx <= viewW && it.sy >= viewTop && it.sy <= viewBottom) hidden++;
+        if (it.sx >= viewLeft && it.sx <= viewRight && it.sy >= viewTop && it.sy <= viewBottom) hidden++;
         return;
       }
       it.dx = choice[0];
