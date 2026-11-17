@@ -1329,7 +1329,7 @@
   .prompt-note b { font-weight: 600; color: var(--text); }
 
   /* A flag is the question: large, since some differ by a star */
-  .prompt-name.is-flag { min-height: 96px; font-size: 92px; line-height: 1; letter-spacing: 0; filter: drop-shadow(0 1px 2px var(--flag-edge)); }
+  .prompt-name.is-flag { min-height: 96px; font-family: var(--font-flags); font-size: 92px; font-weight: 400; line-height: 1; letter-spacing: 0; filter: drop-shadow(0 1px 2px var(--flag-edge)); }
   .flag--inline { margin-right: 8px; font-size: 1.35em; line-height: 1; vertical-align: -0.12em; }
 
   /* Name It: the name is typed where the other rounds show one */
@@ -1337,6 +1337,7 @@
   .answer[hidden] { display: none; }
   .answer-field {
     flex: 1;
+    width: 0;       /* the card sets the width, not the field's own idea of it */
     min-width: 0;
     height: 52px;
     padding: 0 14px;
@@ -4187,7 +4188,7 @@
 
   // Singular of each level noun, for a count of one
   const SINGULAR_NOUNS = {
-    'countries': 'country', 'states': 'state', 'capitals': 'capital', 'cities': 'city', 'regions': 'region',
+    'countries': 'country', 'states': 'state', 'capitals': 'capital', 'cities': 'city', 'regions': 'region', 'flags': 'flag',
     'provinces & territories': 'province or territory', 'provinces & regions': 'province or region', 'places': 'place'
   };
 
@@ -5784,6 +5785,7 @@
   // Plural noun for what a mode asks you to find ("Countries", "States", ...)
   function targetNoun(mode, region) {
     if (mode === 'us-city' || mode === 'city-pin') return 'Cities';
+    if (QUIZ_KINDS[mode]) return capitalize(QUIZ_KINDS[mode].noun);
     if (mode === 'province') return PROVINCE_COUNTRIES[PROVINCE_ROUNDS[region].country].noun;
     return GAME_MODES[mode].dataset === 'us' ? 'States' : 'Countries';
   }
@@ -6138,7 +6140,6 @@
     // The card's extra lines exist for the whole round or not at all
     setPrompt(mode === 'city-pin' ? 'Pin the city' : 'Find on the map', '—');
     document.getElementById('prompt-country').classList.toggle('is-flag', mode === 'flag');
-    document.getElementById('prompt-country').classList.toggle('flag', mode === 'flag');
     const note = document.getElementById('prompt-note');
     note.textContent = '';
     note.hidden = !pin;
