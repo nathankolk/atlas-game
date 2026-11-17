@@ -173,6 +173,7 @@
     --shadow-2: 0 10px 28px -12px rgba(31, 42, 58, 0.22), 0 2px 6px rgba(31, 42, 58, 0.05);
     --shadow-3: 0 32px 80px -24px rgba(31, 42, 58, 0.45), 0 6px 18px rgba(31, 42, 58, 0.1);
     --scrim: rgba(31, 42, 58, 0.42);
+    --flag-edge: rgba(31, 42, 58, 0.3);
     --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
   }
 
@@ -255,6 +256,7 @@
     --shadow-2: 0 12px 28px -12px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.25);
     --shadow-3: 0 32px 80px -24px rgba(0, 0, 0, 0.8), 0 6px 18px rgba(0, 0, 0, 0.35);
     --scrim: rgba(4, 8, 14, 0.62);
+    --flag-edge: rgba(0, 0, 0, 0.55);
   }
 
   /* Surfaces that stay dark in both themes read the night theme's text,
@@ -337,6 +339,18 @@
   .eyebrow b { font-weight: 600; color: var(--accent-text); }
   .muted { color: var(--text-3); }
   .tnum { font-variant-numeric: tabular-nums; }
+
+  /* Country flags come from a font of their own, so they look the same
+     everywhere (Windows draws none by itself). It is fetched the first time
+     a flag is on screen. --font-flags is set by the script, which holds the
+     list of fonts to fall back on. */
+  @font-face {
+    font-family: 'Atlas Flags';
+    src: url('/vendor/TwemojiCountryFlags.woff2') format('woff2');
+    unicode-range: U+1F1E6-1F1FF;
+    font-display: swap;
+  }
+  .flag { font-family: var(--font-flags); font-style: normal; font-weight: 400; letter-spacing: 0; }
 
   /* ===== Buttons ===== */
   .btn {
@@ -863,6 +877,9 @@
   .collection-sum { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
   .collection-sum b { font-weight: 600; color: var(--text); }
   .collection-sum .mbar { width: 96px; height: 6px; }
+  /* A collection with two sets of levels: the switch sits before its tally */
+  .collection-head.has-way { grid-template-columns: auto auto 1fr auto auto; }
+  .collection-way { margin-right: 8px; }
 
   .levels { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 1fr; gap: 16px; margin-top: 20px; }
 
@@ -1311,20 +1328,54 @@
   .prompt-note { min-height: 20px; font-size: 14px; line-height: 20px; color: var(--text-2); font-variant-numeric: tabular-nums; }
   .prompt-note b { font-weight: 600; color: var(--text); }
 
-  /* States → Capitals: four capitals to pick from */
+  /* A flag is the question: large, since some differ by a star */
+  .prompt-name.is-flag { min-height: 96px; font-size: 92px; line-height: 1; letter-spacing: 0; filter: drop-shadow(0 1px 2px var(--flag-edge)); }
+  .flag--inline { margin-right: 8px; font-size: 1.35em; line-height: 1; vertical-align: -0.12em; }
+
+  /* Name It: the name is typed where the other rounds show one */
+  .answer { display: flex; gap: 8px; width: 420px; max-width: 100%; }
+  .answer[hidden] { display: none; }
+  .answer-field {
+    flex: 1;
+    min-width: 0;
+    height: 52px;
+    padding: 0 14px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--rule-strong);
+    background: var(--surface);
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 600;
+    font-variant-numeric: lining-nums;
+    letter-spacing: -0.01em;
+    text-align: center;
+    color: var(--text);
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+  .answer-field::placeholder { font-family: var(--font-ui); font-size: 15px; font-weight: 400; letter-spacing: 0; color: var(--text-3); }
+  .answer-field:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus); }
+  .answer-go { display: grid; place-items: center; flex: none; width: 52px; height: 52px; border-radius: var(--r-sm); background: var(--primary); color: var(--on-primary); }
+  @media (hover: hover) {
+    .answer-go:hover { background: var(--primary-hover); }
+  }
+  /* The name as it is written, once the question is over */
+  .answer.is-found .answer-field { border-color: var(--good); background: var(--good-wash); box-shadow: none; }
+  .answer.is-missed .answer-field { border-color: var(--accent); background: var(--accent-wash); box-shadow: none; }
+  .answer.shake { animation: shake 0.4s ease; }
+
+  /* Capitals: four to pick from. A long name takes two lines. */
   .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 420px; max-width: 100%; min-height: 104px; margin-top: 8px; }
   .choice-btn {
     min-height: 48px;
-    padding: 0 12px;
+    padding: 4px 12px;
     border-radius: var(--r-sm);
     border: 1px solid var(--rule-strong);
     background: var(--surface);
     font-size: 15px;
     font-weight: 600;
+    line-height: 1.2;
     color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
     transition: background-color 0.15s, border-color 0.15s;
   }
   @media (hover: hover) {
@@ -1358,6 +1409,8 @@
   .toast em { font-style: normal; font-weight: 600; }
   .toast-icon { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--bad-solid); color: var(--on-bad-solid); }
   .toast.correct .toast-icon { background: var(--good-solid); color: var(--on-good-solid); }
+  /* Neither right nor wrong: an answer that was not counted */
+  .toast.note .toast-icon { background: none; box-shadow: inset 0 0 0 1.5px currentColor; color: inherit; opacity: 0.85; }
   .toast-icon .icon { width: 14px; height: 14px; stroke-width: 2.4; }
 
   /* ===== Game: actions, map controls, tally, hints ===== */
@@ -1404,6 +1457,7 @@
     color: var(--text-3);
   }
   .game-go kbd { border-color: currentColor; color: inherit; opacity: 0.6; }
+  .game-actions kbd#skip-key { width: auto; min-width: 24px; padding: 0 5px; }
   .game-actions kbd .icon { width: 14px; height: 14px; }
 
   .mapctl { position: absolute; right: 24px; top: 50%; z-index: 5; display: grid; gap: 10px; transform: translateY(-50%); }
@@ -1876,6 +1930,9 @@
     .collection-desc { grid-column: 2 / -1; grid-row: 2; padding-top: 0; font-size: 13px; }
     .collection-sum { grid-column: 3; grid-row: 1; font-size: 12px; }
     .collection-sum .mbar, .collection-sum .x { display: none; }
+    .collection-head.has-way { grid-template-columns: auto 1fr auto; }
+    .collection-way { grid-column: 1 / -1; grid-row: 3; display: flex; margin: 10px 0 0; }
+    .collection-way > button { flex: 1; }
 
     .levels { display: block; margin-top: 4px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--rule); overflow: hidden; }
     .level, .level--feature {
@@ -2052,7 +2109,15 @@
     .prompt-name.is-long { font-size: 27px; }
     .prompt-name.is-xlong { font-size: 19px; }
     .choices { width: 100%; gap: 6px; min-height: 94px; margin-top: 6px; }
-    .choice-btn { min-height: 44px; padding: 0 8px; font-size: 14px; }
+    .choice-btn { min-height: 44px; padding: 3px 8px; font-size: 14px; }
+    .prompt-name.is-flag { min-height: 76px; font-size: 72px; }
+    .answer { width: 100%; }
+    .answer-field { height: 48px; font-size: 26px; }
+    .answer-go { width: 48px; height: 48px; }
+    /* The keyboard is up (see followKeyboard): the map keeps what room is left */
+    #game-screen.kb-open .mapctl, #game-screen.kb-open .game-legend, #game-screen.kb-open .map-hint { display: none; }
+    #game-screen.kb-open .game-actions { bottom: 10px; }
+    #game-screen.kb-open .skip { height: 44px; }
     .game-actions { left: 12px; right: 12px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); justify-content: center; transform: none; }
     .skip, .game-go { height: 52px; min-width: 168px; padding: 0 28px; font-size: 15px; }
     #game-screen.pin-mode .skip { flex: 1; min-width: 0; }
@@ -2127,6 +2192,9 @@
     .prompt-name.is-xlong { font-size: 19px; }
     .choices { min-height: 0; margin-top: 4px; grid-template-columns: repeat(4, 1fr); width: 640px; }
     .choice-btn { min-height: 44px; font-size: 13px; }
+    .prompt-name.is-flag { min-height: 50px; font-size: 48px; }
+    .answer-field, .answer-go { height: 40px; }
+    .answer-field { font-size: 22px; }
     .game-actions { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
     .game-legend { display: none; }
     .map-hint { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
@@ -2195,6 +2263,9 @@
   <symbol id="i-sat" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M5 7.5c2 .3 3.6 1.3 3.6 3s1.7 2 2.4 3.3-.3 3.3-.5 6.5M20 8.5c-2-.6-4.3-.2-4.8 1.4s1 2.6 2.6 3.1 2 1.6 1.4 2.9"/></symbol>
   <symbol id="i-device" viewBox="0 0 24 24"><rect x="7" y="3.5" width="10" height="17" rx="2"/><path d="M11 17.5h2"/></symbol>
   <symbol id="i-enter" viewBox="0 0 24 24"><path d="M19 6v6a2 2 0 0 1-2 2H6M9.5 10.5 6 14l3.5 3.5"/></symbol>
+  <symbol id="i-capitol" viewBox="0 0 24 24"><path d="M3.5 9.5 12 4l8.5 5.5z"/><path d="M6 12.5v5M10 12.5v5M14 12.5v5M18 12.5v5"/><path d="M4 20.5h16"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.5 21V4"/><path d="M5.5 5c4.5-2 8.5 2 13 0v9c-4.5 2-8.5-2-13 0"/></symbol>
+  <symbol id="i-type" viewBox="0 0 24 24"><rect x="3" y="6.5" width="18" height="11" rx="2"/><path d="M7 10.5h.01M10.3 10.5h.01M13.7 10.5h.01M17 10.5h.01M8.5 14h7"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21c4.3-4.3 6.5-8 6.5-11a6.5 6.5 0 0 0-13 0c0 3 2.2 6.7 6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
   <!-- Line-art globe behind the Daily Five -->
   <symbol id="art-globe" viewBox="0 0 200 200"><circle cx="100" cy="100" r="96"/><ellipse cx="100" cy="100" rx="48" ry="96"/><ellipse cx="100" cy="100" rx="83.1" ry="96"/><path d="M100 4v192"/><ellipse cx="100" cy="100" rx="96" ry="30"/><ellipse cx="100" cy="55" rx="83.1" ry="26"/><ellipse cx="100" cy="145" rx="83.1" ry="26"/><ellipse cx="100" cy="22" rx="48" ry="15"/><ellipse cx="100" cy="178" rx="48" ry="15"/></symbol>
@@ -2271,6 +2342,10 @@
       <div class="prompt float" id="prompt" aria-live="polite" aria-atomic="true">
         <span class="eyebrow"><span id="prompt-label">Find on the map</span><span class="prompt-try" id="prompt-try" hidden><i>·</i>Second try</span></span>
         <strong class="prompt-name" id="prompt-country">—</strong>
+        <form class="answer" id="answer-form" autocomplete="off" hidden>
+          <input type="text" class="answer-field" id="answer-input" maxlength="60" placeholder="Type its name" aria-label="The country’s name" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="go" />
+          <button type="submit" class="answer-go" id="answer-btn" aria-label="Check this name"><svg class="icon" aria-hidden="true"><use href="#i-enter"/></svg></button>
+        </form>
         <span class="prompt-note" id="prompt-note" hidden></span>
         <div class="choices" id="choices-panel" hidden></div>
       </div>
@@ -2296,7 +2371,7 @@
     <div class="map-hint float" id="learn-hint" hidden>Zoom in to see every name</div>
 
     <div class="game-actions">
-      <button type="button" class="skip float" id="skip-btn">Skip <kbd aria-hidden="true">S</kbd></button>
+      <button type="button" class="skip float" id="skip-btn">Skip <kbd aria-hidden="true" id="skip-key">S</kbd></button>
       <button type="button" class="game-go" id="learn-ready-btn" hidden>Quiz me <kbd aria-hidden="true"><svg class="icon"><use href="#i-enter"/></svg></kbd></button>
       <button type="button" class="game-go" id="pin-btn" hidden disabled><span id="pin-btn-label">Drop pin</span> <kbd aria-hidden="true"><svg class="icon"><use href="#i-enter"/></svg></kbd></button>
     </div>
@@ -2533,6 +2608,285 @@
     if (!canonicalName) return null;
     return NAME_TO_CONTINENT[canonicalName.toLowerCase()] || null;
   }
+
+  /* =========================================================
+   * WORLD FACTS (capitals, ISO codes, typed spellings of country names)
+   *
+   * Kept as the file the data checks run against, two spaces in.
+   * ========================================================= */
+
+  // Capital, ISO 3166-1 alpha-2 code, and (optional) other capitals a quiz should accept.
+  // Keys are the canonical names in CONTINENTS. The first capital is the one to show and teach. The
+  // optional list holds other cities that are also a capital of that country (de facto, legislative,
+  // judicial, interim): count them as right, and never offer them as a wrong choice for that country.
+  // Never offer two cities together when one name contains the other (Nicosia / North Nicosia,
+  // Jerusalem / East Jerusalem, La Paz / Ciudad de la Paz): in a list of choices they read as one place.
+  // Somaliland and Northern Cyprus have no ISO code and no flag emoji. XS and XN are placeholders from
+  // ISO's private-use block: skip the flag for those two.
+  const WORLD_FACTS = {
+    // Africa
+    'Algeria': ['Algiers', 'DZ'],
+    'Angola': ['Luanda', 'AO'],
+    'Benin': ['Porto-Novo', 'BJ', ['Cotonou']], // Porto-Novo: official; Cotonou: de facto, seat of government
+    'Botswana': ['Gaborone', 'BW'],
+    'Burkina Faso': ['Ouagadougou', 'BF'],
+    'Burundi': ['Gitega', 'BI', ['Bujumbura']], // Gitega: political capital since 2019; Bujumbura: economic capital
+    'Cameroon': ['Yaoundé', 'CM'],
+    'Cape Verde': ['Praia', 'CV'],
+    'Central African Republic': ['Bangui', 'CF'],
+    'Chad': ["N'Djamena", 'TD'],
+    'Comoros': ['Moroni', 'KM'],
+    'Democratic Republic of the Congo': ['Kinshasa', 'CD'],
+    'Republic of the Congo': ['Brazzaville', 'CG'],
+    'Djibouti': ['Djibouti', 'DJ'],
+    'Egypt': ['Cairo', 'EG'],
+    'Equatorial Guinea': ['Ciudad de la Paz', 'GQ', ['Malabo']], // capital by decree since January 2026; Malabo: capital until then
+    'Eritrea': ['Asmara', 'ER'],
+    'Eswatini': ['Mbabane', 'SZ', ['Lobamba']], // Mbabane: administrative; Lobamba: legislative
+    'Ethiopia': ['Addis Ababa', 'ET'],
+    'Gabon': ['Libreville', 'GA'],
+    'Gambia': ['Banjul', 'GM'],
+    'Ghana': ['Accra', 'GH'],
+    'Guinea': ['Conakry', 'GN'],
+    'Guinea-Bissau': ['Bissau', 'GW'],
+    'Ivory Coast': ['Yamoussoukro', 'CI', ['Abidjan']], // Yamoussoukro: official; Abidjan: de facto, seat of government
+    'Kenya': ['Nairobi', 'KE'],
+    'Lesotho': ['Maseru', 'LS'],
+    'Liberia': ['Monrovia', 'LR'],
+    'Libya': ['Tripoli', 'LY'],
+    'Madagascar': ['Antananarivo', 'MG'],
+    'Malawi': ['Lilongwe', 'MW'],
+    'Mali': ['Bamako', 'ML'],
+    'Mauritania': ['Nouakchott', 'MR'],
+    'Mauritius': ['Port Louis', 'MU'],
+    'Morocco': ['Rabat', 'MA'],
+    'Mozambique': ['Maputo', 'MZ'],
+    'Namibia': ['Windhoek', 'NA'],
+    'Niger': ['Niamey', 'NE'],
+    'Nigeria': ['Abuja', 'NG'],
+    'Rwanda': ['Kigali', 'RW'],
+    'Senegal': ['Dakar', 'SN'],
+    'Sierra Leone': ['Freetown', 'SL'],
+    'Somalia': ['Mogadishu', 'SO'],
+    'South Africa': ['Pretoria', 'ZA', ['Cape Town', 'Bloemfontein']], // executive; legislative; judicial
+    'South Sudan': ['Juba', 'SS'],
+    'Sudan': ['Khartoum', 'SD'],
+    'Tanzania': ['Dodoma', 'TZ'], // Dar es Salaam is the former capital and largest city, not a capital
+    'Togo': ['Lomé', 'TG'],
+    'Tunisia': ['Tunis', 'TN'],
+    'Uganda': ['Kampala', 'UG'],
+    'Western Sahara': ['Laayoune', 'EH'],
+    'Zambia': ['Lusaka', 'ZM'],
+    'Zimbabwe': ['Harare', 'ZW'],
+    'Somaliland': ['Hargeisa', 'XS'], // XS is a private-use placeholder: no ISO code, no flag emoji
+
+    // Asia
+    'Afghanistan': ['Kabul', 'AF'],
+    'Armenia': ['Yerevan', 'AM'],
+    'Azerbaijan': ['Baku', 'AZ'],
+    'Bahrain': ['Manama', 'BH'],
+    'Bangladesh': ['Dhaka', 'BD'],
+    'Bhutan': ['Thimphu', 'BT'],
+    'Brunei': ['Bandar Seri Begawan', 'BN'],
+    'Cambodia': ['Phnom Penh', 'KH'],
+    'China': ['Beijing', 'CN'],
+    'Cyprus': ['Nicosia', 'CY'],
+    'Georgia': ['Tbilisi', 'GE'],
+    'India': ['New Delhi', 'IN'],
+    'Indonesia': ['Jakarta', 'ID'],
+    'Iran': ['Tehran', 'IR'],
+    'Iraq': ['Baghdad', 'IQ'],
+    'Israel': ['Jerusalem', 'IL'],
+    'Japan': ['Tokyo', 'JP'],
+    'Jordan': ['Amman', 'JO'],
+    'Kazakhstan': ['Astana', 'KZ'],
+    'Kuwait': ['Kuwait City', 'KW'],
+    'Kyrgyzstan': ['Bishkek', 'KG'],
+    'Laos': ['Vientiane', 'LA'],
+    'Lebanon': ['Beirut', 'LB'],
+    'Malaysia': ['Kuala Lumpur', 'MY'], // Putrajaya is the administrative centre, not a capital
+    'Mongolia': ['Ulaanbaatar', 'MN'],
+    'Myanmar': ['Naypyidaw', 'MM'],
+    'Nepal': ['Kathmandu', 'NP'],
+    'North Korea': ['Pyongyang', 'KP'],
+    'Oman': ['Muscat', 'OM'],
+    'Pakistan': ['Islamabad', 'PK'],
+    'Palestine': ['Ramallah', 'PS', ['East Jerusalem', 'Jerusalem']], // Ramallah: seat of government; Jerusalem: declared capital
+    'Philippines': ['Manila', 'PH'],
+    'Qatar': ['Doha', 'QA'],
+    'Saudi Arabia': ['Riyadh', 'SA'],
+    'South Korea': ['Seoul', 'KR'],
+    'Sri Lanka': ['Sri Jayawardenepura Kotte', 'LK', ['Colombo']], // Kotte: legislative; Colombo: executive and judicial
+    'Syria': ['Damascus', 'SY'],
+    'Taiwan': ['Taipei', 'TW'],
+    'Tajikistan': ['Dushanbe', 'TJ'],
+    'Thailand': ['Bangkok', 'TH'],
+    'Timor-Leste': ['Dili', 'TL'],
+    'Turkey': ['Ankara', 'TR'],
+    'Turkmenistan': ['Ashgabat', 'TM'],
+    'United Arab Emirates': ['Abu Dhabi', 'AE'],
+    'Uzbekistan': ['Tashkent', 'UZ'],
+    'Vietnam': ['Hanoi', 'VN'],
+    'Yemen': ['Sanaa', 'YE', ['Aden']], // Sanaa: constitutional capital; Aden: interim capital of the recognised government
+    'Northern Cyprus': ['North Nicosia', 'XN', ['Nicosia']], // the northern half of divided Nicosia; XN is a private-use placeholder: no ISO code, no flag emoji
+
+    // Europe
+    'Albania': ['Tirana', 'AL'],
+    'Austria': ['Vienna', 'AT'],
+    'Belarus': ['Minsk', 'BY'],
+    'Belgium': ['Brussels', 'BE'],
+    'Bosnia and Herzegovina': ['Sarajevo', 'BA'],
+    'Bulgaria': ['Sofia', 'BG'],
+    'Croatia': ['Zagreb', 'HR'],
+    'Czech Republic': ['Prague', 'CZ'],
+    'Denmark': ['Copenhagen', 'DK'],
+    'Estonia': ['Tallinn', 'EE'],
+    'Finland': ['Helsinki', 'FI'],
+    'France': ['Paris', 'FR'],
+    'Germany': ['Berlin', 'DE'],
+    'Greece': ['Athens', 'GR'],
+    'Hungary': ['Budapest', 'HU'],
+    'Iceland': ['Reykjavík', 'IS'],
+    'Ireland': ['Dublin', 'IE'],
+    'Italy': ['Rome', 'IT'],
+    'Kosovo': ['Pristina', 'XK'], // XK is user-assigned, not ISO, but has a flag emoji
+    'Latvia': ['Riga', 'LV'],
+    'Lithuania': ['Vilnius', 'LT'],
+    'Luxembourg': ['Luxembourg', 'LU'],
+    'Moldova': ['Chișinău', 'MD'],
+    'Montenegro': ['Podgorica', 'ME'], // Cetinje's "Old Royal Capital" is an honorary title
+    'Netherlands': ['Amsterdam', 'NL'], // The Hague is the seat of government, not a capital
+    'North Macedonia': ['Skopje', 'MK'],
+    'Norway': ['Oslo', 'NO'],
+    'Poland': ['Warsaw', 'PL'],
+    'Portugal': ['Lisbon', 'PT'],
+    'Romania': ['Bucharest', 'RO'],
+    'Russia': ['Moscow', 'RU'],
+    'Serbia': ['Belgrade', 'RS'],
+    'Slovakia': ['Bratislava', 'SK'],
+    'Slovenia': ['Ljubljana', 'SI'],
+    'Spain': ['Madrid', 'ES'],
+    'Sweden': ['Stockholm', 'SE'],
+    'Switzerland': ['Bern', 'CH'],
+    'Ukraine': ['Kyiv', 'UA'],
+    'United Kingdom': ['London', 'GB'],
+
+    // North America
+    'Antigua and Barbuda': ["Saint John's", 'AG'],
+    'Bahamas': ['Nassau', 'BS'],
+    'Barbados': ['Bridgetown', 'BB'],
+    'Belize': ['Belmopan', 'BZ'],
+    'Canada': ['Ottawa', 'CA'],
+    'Costa Rica': ['San José', 'CR'],
+    'Cuba': ['Havana', 'CU'],
+    'Dominica': ['Roseau', 'DM'],
+    'Dominican Republic': ['Santo Domingo', 'DO'],
+    'El Salvador': ['San Salvador', 'SV'],
+    'Grenada': ["Saint George's", 'GD'],
+    'Guatemala': ['Guatemala City', 'GT'],
+    'Haiti': ['Port-au-Prince', 'HT'],
+    'Honduras': ['Tegucigalpa', 'HN'],
+    'Jamaica': ['Kingston', 'JM'],
+    'Mexico': ['Mexico City', 'MX'],
+    'Nicaragua': ['Managua', 'NI'],
+    'Panama': ['Panama City', 'PA'],
+    'Saint Kitts and Nevis': ['Basseterre', 'KN'],
+    'Saint Lucia': ['Castries', 'LC'],
+    'Saint Vincent and the Grenadines': ['Kingstown', 'VC'],
+    'Trinidad and Tobago': ['Port of Spain', 'TT'],
+    'United States': ['Washington, D.C.', 'US'],
+
+    // South America
+    'Argentina': ['Buenos Aires', 'AR'],
+    'Bolivia': ['Sucre', 'BO', ['La Paz']], // Sucre: constitutional and judicial; La Paz: seat of government
+    'Brazil': ['Brasília', 'BR'],
+    'Chile': ['Santiago', 'CL'],
+    'Colombia': ['Bogotá', 'CO'],
+    'Ecuador': ['Quito', 'EC'],
+    'Falkland Islands': ['Stanley', 'FK'],
+    'French Guiana': ['Cayenne', 'GF'],
+    'Guyana': ['Georgetown', 'GY'],
+    'Paraguay': ['Asunción', 'PY'],
+    'Peru': ['Lima', 'PE'],
+    'Suriname': ['Paramaribo', 'SR'],
+    'Uruguay': ['Montevideo', 'UY'],
+    'Venezuela': ['Caracas', 'VE'],
+
+    // Oceania
+    'Australia': ['Canberra', 'AU'],
+    'Fiji': ['Suva', 'FJ'],
+    'New Caledonia': ['Nouméa', 'NC'],
+    'New Zealand': ['Wellington', 'NZ'],
+    'Papua New Guinea': ['Port Moresby', 'PG'],
+    'Solomon Islands': ['Honiara', 'SB'],
+    'Vanuatu': ['Port Vila', 'VU']
+  };
+
+  // Extra spellings accepted when the player types a country's name (lower-case, no diacritics needed —
+  // the matcher folds case and accents). Only real alternative names, not misspellings. No spelling
+  // appears under two countries, so the lists also work as one typed-name lookup. Match the whole
+  // answer against these and the canonical names, never part of it ("republic of korea" sits inside
+  // North Korea's long name), and not through NAME_ALIASES, which sends "congo" to one country for the
+  // map data's sake. A bare "congo" could mean either Congo, so it is accepted for neither.
+  const COUNTRY_TYPED_ALIASES = {
+    // Africa
+    'Burkina Faso': ['burkina'],
+    'Cape Verde': ['cabo verde'],
+    'Central African Republic': ['car'],
+    'Democratic Republic of the Congo': ['dr congo', 'drc', 'democratic republic of congo', 'congo-kinshasa', 'congo kinshasa'],
+    'Republic of the Congo': ['republic of congo', 'congo-brazzaville', 'congo brazzaville'],
+    'Eswatini': ['swaziland'],
+    'Gambia': ['the gambia'],
+    'Guinea-Bissau': ['guinea bissau'],
+    'Ivory Coast': ["cote d'ivoire", 'cote divoire'],
+    'South Africa': ['rsa'],
+
+    // Asia
+    'Brunei': ['brunei darussalam'],
+    'China': ["people's republic of china", 'peoples republic of china', 'prc'],
+    'Kyrgyzstan': ['kyrgyz republic'],
+    'Laos': ['lao pdr'],
+    'Myanmar': ['burma'],
+    'North Korea': ['dprk', "democratic people's republic of korea", 'democratic peoples republic of korea'],
+    'Palestine': ['state of palestine', 'palestinian territories'],
+    'Philippines': ['the philippines'],
+    'Saudi Arabia': ['ksa'],
+    'South Korea': ['republic of korea', 'rok'],
+    'Timor-Leste': ['east timor', 'timor leste'],
+    'Turkey': ['turkiye'],
+    'United Arab Emirates': ['uae', 'emirates'],
+    'Vietnam': ['viet nam'],
+    'Northern Cyprus': ['north cyprus', 'turkish republic of northern cyprus', 'trnc'],
+
+    // Europe
+    'Bosnia and Herzegovina': ['bosnia', 'bosnia-herzegovina', 'bosnia herzegovina', 'bosnia & herzegovina', 'bih'],
+    'Czech Republic': ['czechia'],
+    'Ireland': ['republic of ireland', 'eire'],
+    'Netherlands': ['the netherlands', 'holland'],
+    'North Macedonia': ['macedonia'],
+    'Russia': ['russian federation'],
+    'Slovakia': ['slovak republic'],
+    'United Kingdom': ['uk', 'great britain', 'britain'],
+
+    // North America
+    'Antigua and Barbuda': ['antigua', 'antigua & barbuda'],
+    'Bahamas': ['the bahamas'],
+    'Saint Kitts and Nevis': ['st kitts and nevis', 'st. kitts and nevis', 'saint kitts & nevis', 'saint kitts', 'st kitts', 'st. kitts'],
+    'Saint Lucia': ['st lucia', 'st. lucia'],
+    'Saint Vincent and the Grenadines': ['st vincent and the grenadines', 'st. vincent and the grenadines', 'saint vincent & the grenadines', 'saint vincent', 'st vincent', 'st. vincent'],
+    'Trinidad and Tobago': ['trinidad', 'trinidad & tobago'],
+    'United States': ['usa', 'us', 'united states of america', 'america'],
+
+    // South America
+    'Falkland Islands': ['falklands', 'malvinas', 'islas malvinas'],
+    'Suriname': ['surinam'],
+
+    // Oceania
+    'New Zealand': ['nz', 'aotearoa'],
+    'Papua New Guinea': ['png'],
+    'Solomon Islands': ['solomons']
+  };
+  /* ===== END OF WORLD FACTS ===== */
 
   /* =========================================================
    * US STATES & CAPITALS DATA
@@ -3220,7 +3574,67 @@
       // map it to the round's display title.
       label: (roundKey) => (PROVINCE_ROUNDS[roundKey] || {}).label || 'Provinces',
     },
+    // The country quizzes (see QUIZ_KINDS): currentContinent is a continent or 'World'
+    'capital-pick': {
+      dataset: 'world',
+      label: (region) => 'Capitals of ' + (region === 'World' ? 'the World' : region),
+    },
+    'capital-find': {
+      dataset: 'world',
+      label: (region) => (region === 'World' ? 'The World' : region) + ' by Capital',
+    },
+    'flag': {
+      dataset: 'world',
+      label: (region) => 'Flags of ' + (region === 'World' ? 'the World' : region),
+    },
+    'name-it': {
+      dataset: 'world',
+      label: (region) => 'Name It · ' + (region === 'World' ? 'The World' : region),
+    },
   };
+
+  // The country quizzes: four more ways to be asked about the countries of
+  // the world or of one continent. Each kind is a game mode with a level
+  // per region.
+  //   slug        what its level keys (and links) start with; the region follows
+  //   variant     which of its collection's two sets of cards the level is in
+  //   skill       the mastery skill it feeds (both capitals kinds feed one)
+  //   asks(name)  true for a country this kind has a question about
+  const QUIZ_KINDS = {
+    // The country is shown, its capital is picked from four
+    'capital-pick': {
+      slug: 'capitals-', collection: 'capitals', variant: 'pick', skill: 'capital', noun: 'capitals',
+      asks: (name) => !!Quiz.capitalOf(WORLD_FACTS, name)
+    },
+    // The capital is named, its country is found on the globe. A capital
+    // that carries its country's name (Luxembourg, Djibouti) is no question.
+    'capital-find': {
+      slug: 'capitals-find-', collection: 'capitals', variant: 'find', skill: 'capital', noun: 'capitals',
+      asks: (name) => {
+        const prompt = Quiz.capitalPrompt(WORLD_FACTS, name);
+        return !!prompt && !prompt.trivial;
+      }
+    },
+    // The flag is shown, its country is found on the globe
+    'flag': {
+      slug: 'flags-', collection: 'flags', skill: 'flag', noun: 'flags',
+      asks: (name) => Quiz.hasFlag(WORLD_FACTS, name)
+    },
+    // The country is shown, its name is typed
+    'name-it': {
+      slug: 'name-', collection: 'name', skill: 'country-name', noun: 'countries',
+      asks: (name) => Object.prototype.hasOwnProperty.call(WORLD_FACTS, name)
+    }
+  };
+
+  // Level key -> { mode, region } for every country quiz ('flags-europe',
+  // 'capitals-find-north-america', 'name-world', ...)
+  const QUIZ_ROUNDS = {};
+  Object.keys(QUIZ_KINDS).forEach(mode => {
+    ['World'].concat(CONTINENT_ORDER).forEach(region => {
+      QUIZ_ROUNDS[QUIZ_KINDS[mode].slug + region.toLowerCase().replace(/ /g, '-')] = { mode: mode, region: region };
+    });
+  });
 
   const state = {
     // World dataset
@@ -3269,6 +3683,8 @@
     practice: false,          // True for a focus round (subset of a level; skips records)
     learn: null,              // Learn mode run (province ladder), see LEARN MODE section
     pin: null,                // Pin the City round: { phase, guess, results }
+    quiz: null,               // Country quiz round: { rng, pool } for capital choices, { matcher } for typed names
+    flagsOff: false,          // true once this browser is known to draw no flags (see flagsReady)
     roundNeedsWork: [],       // missed + secondTry from the round just finished
     picks: [],                // Wrong answers given to the question in play
     roundLog: new Map(),      // name -> { picks, skipped } for each question answered this round
@@ -3444,6 +3860,7 @@
   }
 
   async function init() {
+    document.documentElement.style.setProperty('--font-flags', Quiz.FLAG_FONT_STACK);
     const link = linkedLevel();
     try {
       state.worldLoading = loadWorldFeatures();
@@ -3501,7 +3918,10 @@
    *   skill       the mastery skill its answers feed; levels that teach the
    *               same thing share one (every continent feeds 'country')
    *   noun        plural of what the level asks for, lower case
-   *   available   false while the level has nothing to play yet
+   *   variant     for a collection with a switch (COLLECTIONS' variants):
+   *               which of its sets of cards the level belongs to
+   *   available   false while the level cannot be played
+   *   why         in a few words, why not (when that is not "coming soon")
    *   names()     the level's item names, exactly as the game queues them
    *               and the mastery store keys them. Country and province
    *               names come from map files, so this is [] until ready().
@@ -3516,6 +3936,13 @@
     { key: 'world', icon: 'globe', title: 'World & Continents', desc: 'Find every country on the globe' },
     { key: 'us', icon: 'star', title: 'United States', desc: 'States, capitals and cities' },
     { key: 'provinces', icon: 'layers', title: 'Provinces & States', desc: 'The inner divisions of Canada, China, India and Russia' },
+    // Two sets of seven levels; the switch in its header shows one set at a time
+    {
+      key: 'capitals', icon: 'capitol', title: 'Capitals', desc: 'Every country and its capital city, asked either way round',
+      variants: [{ key: 'pick', label: 'Pick the capital' }, { key: 'find', label: 'Find the country' }]
+    },
+    { key: 'flags', icon: 'flag', title: 'Flags', desc: 'A flag is shown, and you find its country' },
+    { key: 'name', icon: 'type', title: 'Name It', desc: 'A country is shown, and you type its name' },
     { key: 'pins', icon: 'pin', title: 'Pin the City', desc: 'A blank map, a city name, and a pin' }
   ];
 
@@ -3530,6 +3957,11 @@
       }
     });
     return Array.from(names);
+  }
+
+  // The countries of a region that one kind of country quiz asks about
+  function quizNames(mode, region) {
+    return countryNames(region).filter(QUIZ_KINDS[mode].asks);
   }
 
   function usCityNames(region) {
@@ -3590,17 +4022,43 @@
         count: () => round.count
       };
     }),
+    Object.keys(QUIZ_ROUNDS).map(key => {
+      const round = QUIZ_ROUNDS[key];
+      const kind = QUIZ_KINDS[round.mode];
+      const level = {
+        key: key, collection: kind.collection, variant: kind.variant,
+        title: round.region === 'World' ? 'The World' : round.region,
+        arg: key, mode: round.mode, skill: kind.skill, noun: kind.noun,
+        names: () => quizNames(round.mode, round.region),
+        ready: () => state.allFeatures.length > 0,
+        load: () => state.worldLoading
+      };
+      if (round.mode === 'flag') {
+        // Whether flags can be drawn is only known once one has been tried (see flagsReady)
+        Object.defineProperty(level, 'available', { enumerable: true, get: () => !state.flagsOff });
+        level.why = 'This browser can’t draw flags';
+      }
+      return level;
+    }),
     // A World round draws 20 of these; a continent round asks them all
     Object.keys(PIN_ROUNDS).map(key => ({
       key: key, collection: 'pins', title: PIN_ROUNDS[key],
       arg: key, mode: 'city-pin', skill: 'city-pin', noun: 'cities',
       names: () => pinCitiesFor(PIN_ROUNDS[key]).map(c => c.name)
     }))
-  ).map(def => {
-    const level = Object.assign({ available: true, ready: () => true, load: () => Promise.resolve() }, def);
-    if (!level.count) level.count = () => level.names().length;
+  ).map(level => {
+    const defaults = { available: true, ready: () => true, load: () => Promise.resolve(), count: () => level.names().length };
+    Object.keys(defaults).forEach(field => { if (!(field in level)) level[field] = defaults[field]; });
     return level;
   });
+
+  // A level's title where its collection's switch is not there to say which
+  // set it is from: "Europe · Find the country"
+  function levelFullTitle(level) {
+    const collection = COLLECTIONS.find(c => c.key === level.collection);
+    const variant = level.variant && collection.variants.find(v => v.key === level.variant);
+    return variant ? level.title + ' · ' + variant.label : level.title;
+  }
 
   function levelByKey(key) {
     return LEVELS.find(level => level.key === key) || null;
@@ -3608,6 +4066,21 @@
 
   function levelForStartArg(startArg) {
     return LEVELS.find(level => level.arg === startArg) || null;
+  }
+
+  // Resolves to whether this browser draws flags. Asked the first time a
+  // flag is about to be shown, which is also what fetches the flag font;
+  // if it finds that none can be drawn, the flag levels go out of play.
+  function flagsReady() {
+    return Quiz.flagSupport(document).then(support => {
+      const off = support === 'none';
+      if (off !== state.flagsOff) {
+        state.flagsOff = off;
+        if (off && sheet.level && sheet.level.mode === 'flag') closeLevelSheet();
+        refreshView();
+      }
+      return !off;
+    });
   }
 
   // The mastery skill the round in play feeds. The Daily Five has no level
@@ -3727,6 +4200,10 @@
   const LEAD_BLURBS = {
     'world': 'Every continent, every nation. The grand tour.',
     'us-state': 'Find each state on the map, Alaska and Hawaii included.',
+    'capitals-world': 'The globe turns to a country, and you pick its capital from four.',
+    'capitals-find-world': 'A capital is named, and you find its country on the globe.',
+    'flags-world': 'A flag is shown, and you find the country that flies it.',
+    'name-world': 'The globe turns to a country, and you type its name. Small slips of spelling are forgiven.',
     'pin-world': 'A blank map and a city name. The closer the pin, the higher the score.'
   };
 
@@ -4104,11 +4581,25 @@
     hard: { label: 'Hard', desc: 'No process of elimination — completed targets stay unmarked' },
     uncharted: { label: 'Uncharted', desc: 'Satellite only, no borders — a shape shows only once you answer' }
   };
-  // Pin the City draws no names at any difficulty, so its three mean something else
-  const PIN_DIFFICULTY_DESCS = {
-    normal: 'Country borders drawn, no names',
-    hard: 'No borders — just coastlines and your memory',
-    uncharted: 'Satellite only, no borders'
+  // What the three mean in the modes where that differs. Pin the City draws
+  // no names at any difficulty. Where the question shows its country, the
+  // country is outlined in Uncharted too, the one shape on the map.
+  const MODE_DIFFICULTY_DESCS = {
+    'city-pin': {
+      normal: 'Country borders drawn, no names',
+      hard: 'No borders — just coastlines and your memory',
+      uncharted: 'Satellite only, no borders'
+    },
+    'capital-pick': {
+      normal: 'Countries you have answered stay marked on the map',
+      hard: 'Answered countries stay unmarked — the questions are the same',
+      uncharted: 'Satellite only, no borders — just the outline of the country asked about'
+    },
+    'name-it': {
+      normal: 'Countries you have named stay marked on the map',
+      hard: 'No process of elimination — named countries stay unmarked',
+      uncharted: 'Satellite only, no borders — just the outline of the country to name'
+    }
   };
 
   // Shown beside the map and difficulty controls where the globe is drawn without WebGL
@@ -4155,7 +4646,7 @@
     });
     document.querySelectorAll('[data-imagery-note]').forEach(el => { el.hidden = imagery; });
     document.querySelectorAll('[data-difficulty-note]').forEach(el => {
-      const descs = el.dataset.difficultyNote === 'pin' ? PIN_DIFFICULTY_DESCS : null;
+      const descs = MODE_DIFFICULTY_DESCS[el.dataset.difficultyNote];
       el.innerHTML = '<b>' + DIFFICULTY_INFO[state.difficulty].label + '</b> · ' +
         (descs ? descs[state.difficulty] : DIFFICULTY_INFO[state.difficulty].desc);
     });
@@ -4181,12 +4672,11 @@
   // The Library's heading, controls and collection chips. Drawn once; the
   // collections under it are redrawn whenever progress or difficulty changes.
   function renderLibraryFrame() {
-    const playable = LEVELS.filter(level => level.available).length;
     document.getElementById('home-library').innerHTML =
       '<div class="library-head">' +
         '<div>' +
           '<h2 class="display-l" id="library-title">The Library</h2>' +
-          '<p>' + capitalize(numberWord(playable)) + ' levels in ' + numberWord(COLLECTIONS.length) + ' collections.</p>' +
+          '<p id="library-count"></p>' +
         '</div>' +
         '<div>' +
           '<div class="playbar">' +
@@ -4209,8 +4699,8 @@
     if (!level.available) {
       return '<div class="level is-soon">' +
         '<span class="level-title">' + title + '</span>' +
-        '<span class="level-sub"><span class="level-meta">Coming soon</span></span>' +
-        '<span class="level-due"><span class="tag">Soon</span></span>' +
+        '<span class="level-sub"><span class="level-meta">' + (level.why || 'Coming soon') + '</span></span>' +
+        '<span class="level-due"><span class="tag">' + (level.why ? 'Unavailable' : 'Soon') + '</span></span>' +
         '<span class="ring"></span>' +
       '</div>';
     }
@@ -4268,17 +4758,31 @@
     const focused = document.activeElement && container.contains(document.activeElement)
       ? document.activeElement.dataset.level : null;
 
+    const playable = LEVELS.filter(level => level.available).length;
+    document.getElementById('library-count').textContent =
+      capitalize(numberWord(playable)) + ' levels in ' + numberWord(COLLECTIONS.length) + ' collections.';
+
     container.innerHTML = COLLECTIONS.map(collection => {
-      const levels = LEVELS.filter(level => level.collection === collection.key);
-      const sum = addSummaries(skillSummaries(levels));
+      const all = LEVELS.filter(level => level.collection === collection.key);
+      // Mastery is the whole collection's; the cards are the set its switch has on show
+      const sum = addSummaries(skillSummaries(all));
+      const variant = collectionVariant(collection);
+      const levels = all.filter(level => !variant || level.variant === variant);
       // Seven cards sit as a wide lead plus two rows of three; six as two rows of three
       const lead = levels.length % 4 === 3;
       const three = !lead && levels.length % 3 === 0 && levels.length % 4 !== 0;
+      const way = !variant ? '' :
+        '<div class="seg collection-way" role="radiogroup" aria-label="Which way round">' +
+          collection.variants.map(v =>
+            '<button type="button" role="radio" data-action="set-variant" data-collection="' + collection.key + '" data-value="' + v.key +
+              '" aria-checked="' + (v.key === variant) + '" tabindex="' + (v.key === variant ? 0 : -1) + '">' + v.label + '</button>').join('') +
+        '</div>';
       return '<section class="collection" id="collection-' + collection.key + '" aria-labelledby="collection-' + collection.key + '-title">' +
-        '<header class="collection-head">' +
+        '<header class="collection-head' + (way ? ' has-way' : '') + '">' +
           '<span class="collection-icon">' + icon(collection.icon) + '</span>' +
           '<h3 class="collection-title" id="collection-' + collection.key + '-title">' + escapeHtml(collection.title) + '</h3>' +
           '<p class="collection-desc">' + escapeHtml(collection.desc) + '.</p>' +
+          way +
           '<span class="collection-sum">' + renderMasteryBar(sum) +
             '<span><b>' + sum.mastered.toLocaleString('en-US') + '</b> of ' + sum.total.toLocaleString('en-US') + '<span class="x"> mastered</span></span>' +
           '</span>' +
@@ -4293,6 +4797,16 @@
       const card = container.querySelector('[data-level="' + focused + '"]');
       if (card) card.focus({ preventScroll: true });
     }
+  }
+
+  // The switch in a collection's header: show its other set of levels
+  function chooseCollectionVariant(key, variant) {
+    const collection = COLLECTIONS.find(c => c.key === key);
+    if (!collection || collectionVariant(collection) === variant) return;
+    saveCollectionVariant(collection, variant);
+    renderCollections();
+    const on = document.querySelector('[data-action="set-variant"][data-collection="' + key + '"][aria-checked="true"]');
+    if (on) on.focus({ preventScroll: true });
   }
 
   function jumpToCollection(key) {
@@ -4311,12 +4825,15 @@
 
   // Skills taught by several levels name the one that hosts their reviews.
   // The rest (cities, provinces) go to whichever level holds each name.
-  const REVIEW_HOSTS = { 'country': 'world', 'us-state': 'us-state', 'us-capital': 'us-state-to-capital' };
+  const REVIEW_HOSTS = {
+    'country': 'world', 'us-state': 'us-state', 'us-capital': 'us-state-to-capital',
+    'capital': 'capitals-world', 'flag': 'flags-world', 'country-name': 'name-world'
+  };
 
   // The levels that can run reviews for a skill; none for Pin the City,
   // whose practice rounds would be saved as full games
   function reviewLevels(skill) {
-    if (REVIEW_HOSTS[skill]) return [levelByKey(REVIEW_HOSTS[skill])];
+    if (REVIEW_HOSTS[skill]) return [levelByKey(REVIEW_HOSTS[skill])].filter(level => level.available);
     return LEVELS.filter(level => level.skill === skill && level.available && level.mode !== 'city-pin');
   }
 
@@ -4331,7 +4848,7 @@
     });
     return skills.map(skill => {
       const levels = reviewLevels(skill);
-      let names = pick(skill);
+      let names = levels.length ? pick(skill) : [];
       if (levels.every(level => level.ready())) {
         const asked = new Set();
         levels.forEach(level => level.names().forEach(name => asked.add(name)));
@@ -4362,6 +4879,8 @@
     for (const group of groups) {
       try {
         await Promise.all(group.levels.map(level => level.load()));
+        // Flags that turn out not to draw here are left out
+        if (group.levels.some(level => level.mode === 'flag') && !(await flagsReady())) continue;
       } catch (err) {
         continue;
       }
@@ -4421,7 +4940,11 @@
     'us-state-to-capital': 'a state is shown, pick its capital',
     'us-city': 'find each city on the map',
     'city-pin': 'drop a pin, score by how close you land',
-    'province': 'find each on the map'
+    'province': 'find each on the map',
+    'capital-pick': 'a country is shown, pick its capital',
+    'capital-find': 'a capital is named, find its country',
+    'flag': 'a flag is shown, find its country',
+    'name-it': 'a country is shown, type its name'
   };
 
   // The level on show (null when closed), the way to play picked in it, and
@@ -4439,6 +4962,13 @@
     document.getElementById('level-sheet-scrim').hidden = false;
     document.getElementById('level-sheet').hidden = false;
     document.getElementById('sheet-start-btn').focus();
+    // Flags are about to be shown: fetch their font now, and find out
+    // whether they can be drawn at all (if not, the sheet closes again)
+    if (level.mode === 'flag') {
+      flagsReady().then(ok => {
+        if (!ok) showNotice(level.why + ', so the flag levels can’t be played here.');
+      });
+    }
     // A province map that isn't in yet: fetch it now, so the breakdown can
     // fill in and Start has nothing left to wait for
     if (!level.ready()) {
@@ -4467,6 +4997,7 @@
   function renderSheetInfo() {
     const level = sheet.level;
     const collection = COLLECTIONS.find(c => c.key === level.collection);
+    const variant = level.variant && collection.variants.find(v => v.key === level.variant);
     const round = PROVINCE_ROUNDS[level.arg];
     const summary = levelSummary(level);
     const pin = level.mode === 'city-pin';
@@ -4530,7 +5061,7 @@
 
     document.getElementById('sheet-info').innerHTML =
       '<header class="sheet-head">' +
-        '<p class="eyebrow">' + escapeHtml(collection.title) + '</p>' +
+        '<p class="eyebrow">' + escapeHtml(collection.title) + (variant ? ' · ' + variant.label : '') + '</p>' +
         '<h2 class="display-l" id="sheet-title">' + escapeHtml(level.title) + '</h2>' +
         '<p class="sheet-sub">' + (round ? capitalize(round.subname) : levelCountText(level)) +
           '<span class="x"> · ' + MODE_HOW[level.mode] + '</span></p>' +
@@ -4603,7 +5134,7 @@
         '<div class="option">' +
           '<p class="eyebrow">Difficulty</p>' +
           renderDifficultySeg('seg--block seg--rich', bests) +
-          '<p class="option-note" data-difficulty-note="' + (level.mode === 'city-pin' ? 'pin' : '') + '"></p>' +
+          '<p class="option-note" data-difficulty-note="' + level.mode + '"></p>' +
         '</div>' +
         '<div class="option">' +
           '<p class="eyebrow">Map</p>' +
@@ -4871,7 +5402,7 @@
         levels.map(level => {
           const summary = levelSummary(level);
           if (!summary) loadLevelData(level);
-          return '<tr class="mtable-level"' + (open ? '' : ' hidden') + '><th scope="row">' + escapeHtml(level.title) + '</th>' +
+          return '<tr class="mtable-level"' + (open ? '' : ' hidden') + '><th scope="row">' + escapeHtml(levelFullTitle(level)) + '</th>' +
             cells(summary) + '</tr>';
         }).join('') +
       '</tbody>';
@@ -4963,7 +5494,10 @@
       const country = PROVINCE_COUNTRIES[skill.slice('province:'.length)];
       if (country) return country.name;
     }
-    const named = { 'country': 'Countries', 'us-state': 'US states', 'us-capital': 'US capitals', 'us-city': 'US cities' };
+    const named = {
+      'country': 'Countries', 'us-state': 'US states', 'us-capital': 'US capitals', 'us-city': 'US cities',
+      'capital': 'World capitals', 'flag': 'Flags', 'country-name': 'Country names'
+    };
     if (named[skill]) return named[skill];
     const level = LEVELS.find(l => l.skill === skill);
     return level ? capitalize(level.noun) : 'Places';
@@ -5095,7 +5629,7 @@
     });
     COLLECTIONS.forEach(collection => {
       LEVELS.filter(level => level.collection === collection.key && level.available && level.mode !== 'city-pin')
-        .forEach(level => add(collection.title, level.title, level.mode, resolveGameTarget(level.arg).region));
+        .forEach(level => add(collection.title, levelFullTitle(level), level.mode, resolveGameTarget(level.arg).region));
     });
     add('Daily', 'Daily Five', 'daily-five', 'Daily');
     return rows;
@@ -5243,6 +5777,7 @@
       // so records stay per-round and GAME_MODES.province.label() can title it.
       return { mode: 'province', region: regionOrMode };
     }
+    if (QUIZ_ROUNDS[regionOrMode]) return QUIZ_ROUNDS[regionOrMode];
     return { mode: 'world-country', region: regionOrMode };
   }
 
@@ -5279,6 +5814,7 @@
     state.practice = false;
     state.learn = null;
     state.pin = null;
+    state.quiz = null;
     // Any round that isn't the next step of a review ends the review
     state.review = (opts && opts.review) || null;
     // Set (or cleared) per start and left in place through finishGame, so
@@ -5331,6 +5867,12 @@
           return;
         }
       }
+    }
+
+    // A flag round needs flags that draw; asking is what fetches their font
+    if (mode === 'flag' && !(await flagsReady())) {
+      if (state.roundId === round) refuseLevel(level);
+      return;
     }
 
     // The globe builds a map the first time it shows it; the round starts once that is drawn
@@ -5406,12 +5948,24 @@
       });
       state.queue = shuffle(US_STATE_NAMES.filter(name => state.usFeatureByCanonical.has(name)));
     } else {
-      // The World, or one continent
+      // The World, or one continent: every country of it is on the map,
+      // and a country quiz asks about those it has a question for
       state.eligibleFeatures = state.allFeatures.filter(f => {
         const continent = state.continentByFeature.get(featureKey(f));
         return region === 'World' ? !!continent : continent === region;
       });
-      state.queue = shuffle(countryNames(region));
+      state.queue = shuffle(QUIZ_KINDS[mode] ? quizNames(mode, region) : countryNames(region));
+    }
+    if (mode === 'capital-pick') {
+      // One generator for the round: each question draws its wrong capitals
+      // from the level's own countries
+      state.quiz = { rng: Quiz.rng(Math.floor(Math.random() * 4294967296)), pool: state.queue.slice() };
+    } else if (mode === 'name-it') {
+      // Every country's name is known to the matcher, so that a name from
+      // outside the level is told apart from a misspelling
+      state.quiz = {
+        matcher: Quiz.matcher(Quiz.entries(Object.keys(WORLD_FACTS), COUNTRY_TYPED_ALIASES), { restrictTo: state.queue.slice() })
+      };
     }
 
     // The map held none of the level's items: nothing to play or to save
@@ -5471,7 +6025,8 @@
   function refuseLevel(level) {
     hideLoadingOverlay();
     switchScreen('menu');
-    showNotice((level ? level.title : 'That level') + ' isn’t ready to play yet.');
+    showNotice(level && level.why && !level.available ? level.why + ', so the flag levels can’t be played here.'
+      : (level ? level.title : 'That level') + ' isn’t ready to play yet.');
   }
 
   // Allow replaying a past daily puzzle without affecting today's record.
@@ -5560,6 +6115,7 @@
     screen.classList.toggle('pin-hard', pin && state.difficulty === 'hard');
     screen.classList.toggle('learn-mode', learn);
     screen.classList.toggle('city-mode', mode === 'us-city');
+    screen.classList.toggle('name-mode', mode === 'name-it');
 
     document.getElementById('region-tag').textContent = mode === 'daily-five'
       ? 'Daily #' + dailyPuzzleNumber(state.dailyDateKey)
@@ -5574,17 +6130,25 @@
     document.getElementById('stat-extra-label').textContent = learn ? 'Restarts' : 'Avg km';
 
     document.getElementById('skip-btn').hidden = false;
+    // S is a letter to type while a name is being typed: Escape skips there
+    document.getElementById('skip-key').textContent = mode === 'name-it' ? 'Esc' : 'S';
     document.getElementById('learn-ready-btn').hidden = true;
     document.getElementById('pin-btn').hidden = !pin;
 
     // The card's extra lines exist for the whole round or not at all
     setPrompt(mode === 'city-pin' ? 'Pin the city' : 'Find on the map', '—');
+    document.getElementById('prompt-country').classList.toggle('is-flag', mode === 'flag');
+    document.getElementById('prompt-country').classList.toggle('flag', mode === 'flag');
     const note = document.getElementById('prompt-note');
     note.textContent = '';
     note.hidden = !pin;
     const choices = document.getElementById('choices-panel');
     choices.innerHTML = '';
-    choices.hidden = mode !== 'us-state-to-capital';
+    choices.hidden = !answersByChoice();
+    // Name It: the field stands where the other rounds show a name
+    document.getElementById('prompt-country').hidden = mode === 'name-it';
+    document.getElementById('answer-form').hidden = mode !== 'name-it';
+    resetAnswerField();
   }
 
   // Writes the prompt card: the small label over the name. A long name
@@ -5731,6 +6295,21 @@
       setPrompt('Which capital belongs to', state.current);
       renderCapitalChoices(state.current);
       setPromptFeature(state.usFeatureByCanonical.get(state.current) || null);
+    } else if (mode === 'capital-pick') {
+      // The same for a country: the globe turns to it
+      setPrompt('Which city is the capital of', state.current);
+      renderCapitalChoices(state.current);
+      setPromptFeature(state.featureByCanonical.get(state.current) || null);
+    } else if (mode === 'capital-find') {
+      setPrompt('Find the country whose capital is', capitalFor(state.current));
+    } else if (mode === 'flag') {
+      setPrompt('Find the country that flies this flag', Quiz.flagPrompt(WORLD_FACTS, state.current).flag);
+    } else if (mode === 'name-it') {
+      // The globe turns to the country; its name is typed into the card
+      setPrompt('Name this country', '');
+      setPromptFeature(state.featureByCanonical.get(state.current) || null);
+      resetAnswerField();
+      focusAnswerField();
     } else {
       setPrompt(state.learn
         ? 'Level ' + state.learn.level + ' of ' + state.learn.order.length + ' · find'
@@ -5770,14 +6349,32 @@
     if (skill) mastery.record(skill, state.current, Mastery.OUTCOMES[points]);
   }
 
-  // Builds 4 capital-choice buttons for state-to-capital mode: the correct
-  // answer plus 3 plausible distractors (other state capitals).
-  function renderCapitalChoices(stateName) {
-    const correctCapital = US_CAPITALS[stateName];
-    const distractors = shuffle(
-      US_STATE_NAMES.filter(s => s !== stateName).map(s => US_CAPITALS[s])
-    ).slice(0, 3);
-    const choices = shuffle([correctCapital, ...distractors]);
+  // True when the round in play is answered by picking one of four capitals on the card
+  function answersByChoice() {
+    return state.gameMode === 'us-state-to-capital' || state.gameMode === 'capital-pick';
+  }
+
+  // The capital a capitals round teaches for a state, or for a country
+  function capitalFor(name) {
+    if (GAME_MODES[state.gameMode].dataset === 'us') return US_CAPITALS[name];
+    const facts = Quiz.capitalOf(WORLD_FACTS, name);
+    return facts ? facts.capital : '';
+  }
+
+  // Builds the four capital buttons for the state or country asked about:
+  // the right answer plus three plausible wrong ones (other states'
+  // capitals; for a country, capitals from the same level)
+  function renderCapitalChoices(name) {
+    const correctCapital = capitalFor(name);
+    let choices;
+    if (state.gameMode === 'capital-pick') {
+      choices = Quiz.capitalChoices(WORLD_FACTS, name, state.quiz.pool, state.quiz.rng, 4);
+    } else {
+      const distractors = shuffle(
+        US_STATE_NAMES.filter(s => s !== name).map(s => US_CAPITALS[s])
+      ).slice(0, 3);
+      choices = shuffle([correctCapital, ...distractors]);
+    }
 
     const container = document.getElementById('choices-panel');
     container.innerHTML = '';
@@ -5795,7 +6392,7 @@
     if (state.interactionLocked) return;
     if (!state.current) return;
 
-    const correctCapital = US_CAPITALS[state.current];
+    const correctCapital = capitalFor(state.current);
     if (capital === correctCapital) {
       const pointsEarned = state.attempts === 0 ? 2 : 1;
       scoreAnswer(pointsEarned);
@@ -5805,8 +6402,8 @@
       updateStats();
       flashScore();
 
-      // Also mark the state on the map as completed
-      const feature = state.usFeatureByCanonical.get(state.current);
+      // Also mark the state or country on the map as completed
+      const feature = activeFeatureByCanonical().get(state.current);
       if (feature) flashFeature(featureKey(feature), 'good', 700, state.hardMode ? null : foundMark(pointsEarned));
 
       roundTimeout(nextCountry, 1100);
@@ -5827,8 +6424,8 @@
           if (b.dataset.capital === correctCapital) b.classList.add('choice-reveal');
         });
 
-        // Also mark state on map as wrong + show the reveal marker
-        const feature = state.usFeatureByCanonical.get(state.current);
+        // Also mark it on the map as missed + show the reveal marker
+        const feature = activeFeatureByCanonical().get(state.current);
         if (feature) {
           revealTargetFeature(feature,
             '<em>' + state.current + '</em> → ' + correctCapital);
@@ -5862,26 +6459,55 @@
     }
   }
 
+  // A country's flag, to stand before its name in a line of text
+  function flagHtml(name) {
+    const prompt = Quiz.flagPrompt(WORLD_FACTS, name);
+    return prompt ? '<span class="flag flag--inline" aria-hidden="true">' + prompt.flag + '</span>' : '';
+  }
+
+  // The places a tap counts as right for in the question in play: the one
+  // asked for, and any that answers to the same flag (Chad and Romania) or
+  // has the same city for a capital (Nicosia)
+  function acceptedAnswers() {
+    if (state.gameMode === 'flag') return Quiz.flagPrompt(WORLD_FACTS, state.current).accept;
+    if (state.gameMode === 'capital-find') return Quiz.capitalPrompt(WORLD_FACTS, state.current).accept;
+    return [state.current];
+  }
+
   // An answer given on the map: the feature with this key was picked
   function answerFeature(key) {
     const clickedCanonical = activeCanonicalByFeature().get(key);
     const targetFeature = activeFeatureByCanonical().get(state.current);
     if (!targetFeature) return;
+    const byCapital = state.gameMode === 'us-capital-to-state' || state.gameMode === 'capital-find';
+    const flag = state.gameMode === 'flag' ? flagHtml(state.current) : '';
 
-    if (clickedCanonical === state.current) {
+    if (acceptedAnswers().indexOf(clickedCanonical) !== -1) {
       const pointsEarned = state.attempts === 0 ? 2 : 1;
       scoreAnswer(pointsEarned);
-      flashFeature(key, 'good', 900, state.hardMode ? null : foundMark(pointsEarned));
+      const mark = state.hardMode ? null : foundMark(pointsEarned);
+      const targetKey = featureKey(targetFeature);
+      // The mark goes to the place asked for, also when its twin was tapped
+      flashFeature(key, 'good', 900, key === targetKey ? mark : null);
+      if (key !== targetKey) flashFeature(targetKey, 'good', 900, mark);
       const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
-      // For capital mode, the toast shows "Capital → State" to reinforce learning
-      let toastMsg = state.gameMode === 'us-capital-to-state'
+      // The capital rounds say "Capital → Place", to tie the two together
+      let toastMsg = byCapital
         ? '<em>' + state.currentPromptText + '</em> → ' + state.current + ' · ' + pointsLabel
-        : 'Well done — <em>' + state.current + '</em> · ' + pointsLabel;
+        : flag + 'Well done — <em>' + state.current + '</em> · ' + pointsLabel;
+      if (flag && key !== targetKey) {
+        toastMsg = flag + '<em>' + clickedCanonical + '</em> flies the same flag — this one is <em>' + state.current + '</em> · ' + pointsLabel;
+      }
       if (state.learn) toastMsg = 'Well done — <em>' + state.current + '</em>';
       showToast('correct', toastMsg);
       updateStats();
       flashScore();
       roundTimeout(nextCountry, 900);
+    } else if (state.gameMode === 'capital-find' &&
+        Quiz.capitalPrompt(WORLD_FACTS, state.current).shared.indexOf(clickedCanonical) !== -1) {
+      // A country that lays claim to one of the same cities is never the
+      // wrong answer to a question about a capital: the tap counts for nothing
+      showToast('note', 'That’s <em>' + clickedCanonical + '</em> — not counted. Try again');
     } else {
       state.attempts++;
       state.picks.push(clickedCanonical || null);
@@ -5891,9 +6517,9 @@
       // Learn mode allows no second try: one miss restarts the level
       if (state.attempts >= 2 || state.learn) {
         scoreAnswer(0);
-        let revealMsg = state.gameMode === 'us-capital-to-state'
+        let revealMsg = byCapital
           ? '<em>' + state.currentPromptText + '</em> → ' + state.current
-          : 'Not quite — this is <em>' + state.current + '</em>';
+          : flag + 'Not quite — this is <em>' + state.current + '</em>';
         if (state.learn) {
           revealMsg = (clickedCanonical ? 'That’s <em>' + clickedCanonical + '</em> — ' : '') +
             'this is <em>' + state.current + '</em>';
@@ -5906,6 +6532,105 @@
           : 'Not quite — try again');
       }
     }
+  }
+
+  /* ----- Name It: the answer is typed ----- */
+
+  // Empties the field for the next question
+  function resetAnswerField() {
+    const form = document.getElementById('answer-form');
+    form.classList.remove('is-found', 'is-missed', 'shake');
+    document.getElementById('answer-input').value = '';
+  }
+
+  // Puts the cursor in the field. It stays there from question to question,
+  // so a phone's keyboard stays up for the whole round.
+  function focusAnswerField() {
+    const input = document.getElementById('answer-input');
+    if (document.activeElement !== input) input.focus({ preventScroll: true });
+  }
+
+  // Shows the country's name, properly spelled, where the answer was typed
+  function showTypedAnswer(cls) {
+    document.getElementById('answer-input').value = state.current;
+    document.getElementById('answer-form').classList.add(cls);
+  }
+
+  // A wrong or unknown name shakes the field and is selected, so that typing replaces it
+  function rejectTypedAnswer() {
+    const form = document.getElementById('answer-form');
+    form.classList.remove('shake');
+    void form.offsetWidth;
+    form.classList.add('shake');
+    document.getElementById('answer-input').select();
+  }
+
+  // The typed name was the country's (result is the matcher's): right
+  function acceptTypedAnswer(result) {
+    const pointsEarned = state.attempts === 0 ? 2 : 1;
+    const name = state.current;
+    scoreAnswer(pointsEarned);
+    showTypedAnswer('is-found');
+    const feature = state.featureByCanonical.get(name);
+    if (feature) flashFeature(featureKey(feature), 'good', 900, state.hardMode ? null : foundMark(pointsEarned));
+    const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
+    // A forgiven misspelling is told how the name is written
+    showToast('correct', (result.exact ? 'Well done — <em>' + name + '</em>' : 'Yes — it’s spelled <em>' + name + '</em>') + ' · ' + pointsLabel);
+    updateStats();
+    flashScore();
+    roundTimeout(nextCountry, 900);
+  }
+
+  // Enter, or the button beside the field: the typed name is the answer.
+  // Another country's name is a wrong try; text that is no country's name
+  // costs nothing, since it may only be a slip of the keys.
+  function submitTypedAnswer() {
+    if (state.gameMode !== 'name-it' || state.interactionLocked || !state.current) return;
+    const input = document.getElementById('answer-input');
+    if (!input.value.trim()) return;
+    const result = state.quiz.matcher.match(input.value);
+    if (result && result.name === state.current) {
+      acceptTypedAnswer(result);
+      return;
+    }
+    rejectTypedAnswer();
+    if (!result) {
+      showToast('note', 'No country goes by that name — check the spelling');
+      return;
+    }
+    state.attempts++;
+    state.picks.push(result.name);
+    if (state.attempts >= 2) {
+      scoreAnswer(0);
+      showTypedAnswer('is-missed');
+      const feature = state.featureByCanonical.get(state.current);
+      if (feature) {
+        revealTargetFeature(feature, 'Not quite — this is <em>' + state.current + '</em>');
+      } else {
+        showToast('wrong', 'Not quite — this is <em>' + state.current + '</em>');
+        roundTimeout(nextCountry, 1800);
+      }
+    } else {
+      setPromptTry(true);
+      // A country from outside the level is still a country: say so
+      showToast('wrong', result.outside
+        ? '<em>' + result.name + '</em> is a real country, but not this one'
+        : 'Not quite — this isn’t <em>' + result.name + '</em>');
+    }
+  }
+
+  // The field changed. A complete, exactly spelled name is taken at once;
+  // anything less waits for Enter ("Niger" may be on its way to "Nigeria").
+  function onAnswerInput() {
+    const input = document.getElementById('answer-input');
+    if (state.gameMode !== 'name-it' || !state.current) return;
+    if (state.interactionLocked) {
+      // Nothing is typed over an answer that is on show
+      input.value = state.current;
+      return;
+    }
+    const result = state.quiz.matcher.match(input.value);
+    if (result && result.exact && !result.partial && result.name === state.current) acceptTypedAnswer(result);
   }
 
   // Shows a missed answer on the map for a while: its shape in gold with a
@@ -5996,16 +6721,14 @@
     }
     scoreAnswer(0, true);
 
-    // In state-to-capital mode, also show the correct capital button
-    if (state.gameMode === 'us-state-to-capital') {
-      const correctCapital = US_CAPITALS[state.current];
-      const container = document.getElementById('choices-panel');
-      if (container) {
-        container.querySelectorAll('.choice-btn').forEach(b => {
-          if (b.dataset.capital === correctCapital) b.classList.add('choice-reveal');
-        });
-      }
+    // Where the answer is one of four capitals, also show which
+    if (answersByChoice()) {
+      const correctCapital = capitalFor(state.current);
+      document.getElementById('choices-panel').querySelectorAll('.choice-btn').forEach(b => {
+        if (b.dataset.capital === correctCapital) b.classList.add('choice-reveal');
+      });
     }
+    if (state.gameMode === 'name-it') showTypedAnswer('is-missed');
 
     // City mode has no polygon for the missed answer — reveal the dot
     // and pulse a ring at its coords instead.
@@ -6019,10 +6742,14 @@
     if (targetFeature) {
       // Toast message depends on mode
       let msg;
-      if (state.gameMode === 'us-capital-to-state') {
+      if (state.gameMode === 'us-capital-to-state' || state.gameMode === 'capital-find') {
         msg = '<em>' + state.currentPromptText + '</em> → ' + state.current;
-      } else if (state.gameMode === 'us-state-to-capital') {
-        msg = '<em>' + state.current + '</em> → ' + US_CAPITALS[state.current];
+      } else if (answersByChoice()) {
+        msg = '<em>' + state.current + '</em> → ' + capitalFor(state.current);
+      } else if (state.gameMode === 'flag') {
+        msg = flagHtml(state.current) + '<em>' + state.current + '</em> — shown on the map';
+      } else if (state.gameMode === 'name-it') {
+        msg = 'This is <em>' + state.current + '</em>';
       } else {
         msg = '<em>' + state.current + '</em> — shown on the map';
       }
@@ -6085,14 +6812,15 @@
     el.classList.add('score-flash');
   }
 
-  // Right-or-wrong feedback under the prompt card; fades by itself
+  // Feedback under the prompt card: 'correct', 'wrong', or a 'note' that
+  // an answer was not counted either way; fades by itself
   function showToast(kind, html) {
     const toast = document.getElementById('toast');
     toast.className = 'toast ' + kind;
-    toast.innerHTML = '<span class="toast-icon">' + icon(kind === 'correct' ? 'check' : 'close') + '</span><span>' + html + '</span>';
+    toast.innerHTML = '<span class="toast-icon">' + icon(kind === 'correct' ? 'check' : kind === 'note' ? 'minus' : 'close') + '</span><span>' + html + '</span>';
     toast.classList.add('show');
     clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => toast.classList.remove('show'), 1400);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), kind === 'note' ? 2400 : 1400);
   }
 
   function finishGame() {
@@ -6182,12 +6910,14 @@
     const first = state.correct - second;
     const skipped = state.missed.filter(name => (state.roundLog.get(name) || {}).skipped).length;
     const noun = targetNoun(state.gameMode, state.currentContinent);
-    // The capital modes ask about a state through its capital: say which
-    const capitalMode = state.gameMode === 'us-capital-to-state' || state.gameMode === 'us-state-to-capital';
+    // The capital modes ask about a place through its capital: say which.
+    // A flag round shows the flag again beside its country.
+    const capitalMode = answersByChoice() || state.gameMode === 'us-capital-to-state' || state.gameMode === 'capital-find';
     const row = (name, isSecond) => ({
       second: isSecond,
       name: name,
-      story: (capitalMode ? US_CAPITALS[name] + ' · ' : '') + answerStory(name, isSecond)
+      flag: state.gameMode === 'flag' ? flagHtml(name) : '',
+      story: (capitalMode ? capitalFor(name) + ' · ' : '') + answerStory(name, isSecond)
     });
 
     renderResults({
@@ -6293,14 +7023,15 @@
   function answerStory(name, second) {
     const log = state.roundLog.get(name) || { picks: [], skipped: false };
     const picks = log.picks.filter(Boolean);
+    const did = state.gameMode === 'name-it' ? 'You typed ' : 'You chose ';
     if (second) return picks.length ? 'Second try, after ' + picks[0] : 'Second try';
-    if (log.skipped) return picks.length ? 'You chose ' + picks[0] + ', then skipped' : 'Skipped';
+    if (log.skipped) return picks.length ? did + picks[0] + ', then skipped' : 'Skipped';
     if (picks.length >= 2) {
       return picks[0] === picks[1]
-        ? 'You chose ' + picks[0] + ' twice'
-        : 'You chose ' + picks[0] + ', then ' + picks[1];
+        ? did + picks[0] + ' twice'
+        : did + picks[0] + ', then ' + picks[1];
     }
-    return picks.length ? 'You chose ' + picks[0] : 'Missed';
+    return picks.length ? did + picks[0] : 'Missed';
   }
 
   // The names a round's mastery gain is measured over, with where each
@@ -6397,7 +7128,7 @@
     const swatch = { new: '', learning: ' m1', familiar: ' m2', mastered: ' m3' }[level];
     return '<li>' +
       '<span class="revisit-mark' + (row.second ? ' is-second' : '') + '" aria-hidden="true">' + (row.second ? (row.glyph || '2') : icon('close')) + '</span>' +
-      '<div><strong>' + escapeHtml(row.name) + '</strong><small>' + escapeHtml(row.story) + '</small></div>' +
+      '<div><strong>' + (row.flag || '') + escapeHtml(row.name) + '</strong><small>' + escapeHtml(row.story) + '</small></div>' +
       '<span class="revisit-tally">' + (item && item.seen ? item.first + ' of ' + item.seen + ' ' + (row.tally || 'first try') : '') + '</span>' +
       '<span class="level-pill"><i class="swatch' + swatch + '"></i>' + level.charAt(0).toUpperCase() + level.slice(1) + '</span>' +
     '</li>';
@@ -6413,7 +7144,7 @@
   //   gain     true to show what the round did to the level's mastery
   //   daily    { sequence, share }: the Daily Five's answers, or null
   //   bests    { heading, items: [{ label, value, sub, record }] }, or null
-  //   revisit  { heading, rows: [{ second, name, story, glyph, tally }], note }, or null
+  //   revisit  { heading, rows: [{ second, name, flag, story, glyph, tally }], note }, or null
   //            (glyph: the mark of a second-kind row, "2" unless given;
   //            tally: what a best outcome is called, "first try" unless given)
   //   note     a paragraph for the detail column, or nothing
@@ -6555,6 +7286,7 @@
   const MAP_LAYERS = ['world', 'us', 'prov'];   // bottom to top
   const DATASET_LAYER = { world: 'world', us: 'us', province: 'prov' };
   const CITY_DOT_RADIUS = 6;                 // px, at every zoom
+  const PROMPT_MIN_PX = 40;                  // a country a question shows is drawn at least this wide
 
   // A CSS colour as [r, g, b, a]: r, g and b 0–255, a 0–1
   function cssRgba(value) {
@@ -6714,7 +7446,7 @@
 
   // True when answers to the round in play are given by tapping its map's shapes
   function answersOnShapes() {
-    return state.gameMode !== 'us-city' && state.gameMode !== 'us-state-to-capital' && !state.pin;
+    return state.gameMode !== 'us-city' && state.gameMode !== 'name-it' && !answersByChoice() && !state.pin;
   }
 
   // True when a tap on this feature would count as an answer
@@ -6785,8 +7517,9 @@
       return { type: 'FeatureCollection', features: state.eligibleFeatures };
     }
     if (state.activeDataset === 'us') return boxOutline(US_FRAME);
+    // A continent's round; the World and the Daily Five have the whole globe
     const box = CONTINENT_FRAMES[state.currentContinent];
-    return state.gameMode === 'world-country' && box ? boxOutline(box) : null;
+    return box ? boxOutline(box) : null;
   }
 
   // Calls fn with every [lon, lat] of a GeoJSON object
@@ -6927,7 +7660,8 @@
     map.globe.invalidate();
   }
 
-  // Shows the state the question is about (States → Capitals), in view
+  // Shows the state or country the question is about, in view: tinted and
+  // outlined, also where the map has no borders (Uncharted)
   function setPromptFeature(feature) {
     const old = map.promptKey;
     map.promptKey = feature ? featureKey(feature) : null;
@@ -6936,7 +7670,45 @@
     if (!feature) return;
     paintFeature(map.promptKey);
     map.outlines.push({ feature: feature, kind: 'prompt', until: Infinity });
-    bringIntoView(feature);
+    if (map.layer === 'world') turnToCountry(feature);
+    else bringIntoView(feature);
+  }
+
+  // Where a place would be drawn in a view the globe is not showing: host
+  // px, and z, which falls from 1 at the middle of the disc to 0 at its edge
+  function projectInView(lonlat, view) {
+    const rad = Math.PI / 180, host = document.getElementById('globe-host');
+    const radius = map.globe.radiusPx() / map.globe.getView().k * view.k;
+    const dLon = (lonlat[0] - view.lon) * rad, lat = lonlat[1] * rad, lat0 = view.lat * rad;
+    return {
+      x: host.clientWidth / 2 + radius * Math.cos(lat) * Math.sin(dLon),
+      y: host.clientHeight / 2 - radius * (Math.cos(lat0) * Math.sin(lat) - Math.sin(lat0) * Math.cos(lat) * Math.cos(dLon)),
+      z: Math.sin(lat0) * Math.sin(lat) + Math.cos(lat0) * Math.cos(lat) * Math.cos(dLon)
+    };
+  }
+
+  // Turns the globe to the country a question is about. The round's opening
+  // view is kept wherever it shows the country well, so a continent stays
+  // put from question to question; otherwise the country comes to the
+  // middle, closer up when it would be too small to make out.
+  function turnToCountry(feature) {
+    const g = map.globe;
+    const key = featureKey(feature);
+    const info = g.featureInfo(map.layer, key);
+    if (!info || !map.home) return;
+    const lonlat = g.anchor(map.layer, key) || info.centroid;
+    const home = map.home;
+    // How wide the country is drawn at zoom 1, in px
+    const across = 2 * g.radiusPx() / g.getView().k * Math.sin(Math.min(info.radiusDeg, 90) * Math.PI / 180);
+    const p = projectInView(lonlat, home);
+    const c = map.clear, edge = 48;
+    const atHome = across * home.k >= PROMPT_MIN_PX && p.z > 0.5 &&
+      p.x >= c.left + edge && p.x <= c.right - edge && p.y >= c.top + edge && p.y <= c.bottom - edge;
+    const view = atHome ? home
+      : { lon: lonlat[0], lat: lonlat[1], k: Math.max(home.k, PROMPT_MIN_PX / Math.max(across, 1e-6)) };
+    const now = g.getView();
+    if (Math.abs(now.lon - view.lon) < 1e-6 && Math.abs(now.lat - view.lat) < 1e-6 && Math.abs(now.k - view.k) < 1e-6) return;
+    g.flyTo(view, { duration: reducedMotion() ? 0 : 550 });
   }
 
   // Everything drawn over the globe, bottom to top
@@ -11184,6 +11956,603 @@ const Mastery = (function () {
 if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
 /* ===== END OF MASTERY MODULE ===== */
 
+/* ===== QUIZ LOGIC (quiz.js): typed-answer matching, capital choices, flags, level lists. Pasted byte for byte from the tested module. ===== */
+const Quiz = (function () {
+  'use strict';
+
+  const MAX_INPUT = 60;          // longer typed answers never match
+  const NEAR_ONE = 6;            // a spelling this long forgives one edit
+  const NEAR_TWO = 10;           // a spelling this long forgives two
+  const MAX_REACH = 3;           // farthest edit distance the matcher ever needs to know about
+
+  function own(obj, key) { return obj != null && Object.prototype.hasOwnProperty.call(obj, key); }
+  function isString(v) { return typeof v === 'string'; }
+
+  /* ===== QUIZ: text folding ===== */
+
+  // Unicode property escapes are compiled at run time, so an engine without them falls back to
+  // ASCII-only rules instead of failing to parse the whole script.
+  function rx(source, fallback) {
+    try { return new RegExp(source, 'gu'); } catch (e) { return new RegExp(fallback, 'g'); }
+  }
+  const RX_MARKS = rx('\\p{M}+', '[\\u0300-\\u036f]+');
+  const RX_INVISIBLE = rx('\\p{Cf}+', '[\\u00ad\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\ufeff]+');
+  const RX_SEPARATOR = rx('[\\s\\p{Z}\\p{Pd}\\u2212/_]+', '[\\s\\-\\u2010-\\u2015\\u2212/_]+');
+  const RX_JUNK = rx('[^\\p{L}\\p{N} .]+|[\\u02b0-\\u02ff]+', '[^a-z0-9 .]+');
+  // Letters NFKD leaves whole: sharp s, ae, oe, o-slash, d-stroke, eth, thorn, l-stroke, h-stroke,
+  // dotless i, eng, t-stroke, kra
+  const SPECIAL = {
+    '\u00df': 'ss', '\u00e6': 'ae', '\u0153': 'oe', '\u00f8': 'o', '\u0111': 'd', '\u00f0': 'd', '\u00fe': 'th',
+    '\u0142': 'l', '\u0127': 'h', '\u0131': 'i', '\u014b': 'n', '\u0167': 't', '\u0138': 'k'
+  };
+  const RX_SPECIAL = /[\u00df\u00e6\u0153\u00f8\u0111\u00f0\u00fe\u0142\u0127\u0131\u014b\u0167\u0138]/g;
+
+  // Reduces a typed or stored name to the form names are compared in: lower case, no accents, no
+  // punctuation, single spaces, "&" as "and", "st"/"st." as "saint", no leading "the".
+  function fold(text) {
+    if (!isString(text)) return '';
+    let s = text.toLowerCase();
+    // Plain letters and spaces (most typing) need none of the Unicode work.
+    if (/[^a-z ]/.test(s)) {
+      s = text.normalize('NFKD').toLowerCase();
+      s = s.replace(RX_MARKS, '').replace(RX_INVISIBLE, '').replace(RX_SPECIAL, ch => SPECIAL[ch]);
+      s = s.replace(/&/g, ' and ').replace(RX_SEPARATOR, ' ').replace(RX_JUNK, '');
+      s = s.replace(/(^| )st\./g, '$1saint ').replace(/\./g, '');
+    }
+    s = s.replace(/ +/g, ' ').trim().replace(/(^| )st(?= |$)/g, '$1saint');
+    return s.replace(/^(?:the )+/, '');
+  }
+
+  /* ===== QUIZ: typed answers ===== */
+
+  // Real places that are not answers in the game. A typed decoy matches nothing, and a near match is
+  // refused when the input is at least as close to a decoy as to the answer ("prussia" is not Russia,
+  // "south amrica" is not South Africa).
+  const DECOYS = Object.freeze((
+    'andorra|liechtenstein|malta|monaco|san marino|singapore|maldives|seychelles|sao tome and principe|' +
+    'sao tome|kiribati|marshall islands|micronesia|nauru|palau|samoa|tonga|tuvalu|vatican city|vatican|' +
+    'greenland|puerto rico|guam|bermuda|aruba|curacao|martinique|guadeloupe|reunion|mayotte|hong kong|' +
+    'macau|macao|tibet|gibraltar|england|scotland|wales|northern ireland|tahiti|hawaii|alaska|siberia|' +
+    'sardinia|sicily|corsica|crete|tasmania|zanzibar|borneo|sumatra|java|bali|kashmir|kurdistan|' +
+    'catalonia|bavaria|anguilla|montserrat|cayman islands|virgin islands|cook islands|faroe islands|' +
+    'canary islands|american samoa|french polynesia|guiana|new guinea|papua|timor|sahara|korea|congo|' +
+    'africa|asia|europe|oceania|antarctica|americas|north america|south america|central america|' +
+    'latin america|north africa|west africa|east africa|central africa|southern africa|middle east|' +
+    'arabia|scandinavia|balkans|iberia|caribbean|polynesia|melanesia|australasia|indochina|patagonia|' +
+    'prussia|persia|siam|ceylon|zaire|rhodesia|yugoslavia|czechoslovakia|soviet union|ussr|bohemia|' +
+    'abyssinia|formosa|mesopotamia|moldavia|transylvania|east germany|west germany|tanganyika|bengal|' +
+    'malaya|slavonia|kampuchea|dahomey|gold coast|galicia|silesia|lapland|dalmatia'
+  ).split('|'));
+
+  // What other languages call one place in the table, one letter away from a different one ("Guyane" is
+  // French Guiana in French). Typed exactly these match nothing; unlike a decoy they do not stand in the
+  // way of the misspellings around them.
+  const DECOYS_EXACT = Object.freeze(['guyane', 'guayana']);
+
+  // Words that dress a name up as a formal one without saying which country it is.
+  const FORMAL = new Set((
+    'republic|of|the|state|kingdom|democratic|peoples|people|federal|federation|islamic|arab|socialist|' +
+    'united|commonwealth|union|independent|principality|sultanate|emirate|grand|duchy'
+  ).split('|'));
+
+  // Words that turn a name into a different place when swapped for one another.
+  const COMPASS = [['north', 'south', 'east', 'west'], ['northern', 'southern', 'eastern', 'western']];
+
+  // Number of set bits in a 32-bit integer.
+  function bitCount(x) {
+    x -= (x >>> 1) & 0x55555555;
+    x = (x & 0x33333333) + ((x >>> 2) & 0x33333333);
+    return Math.imul((x + (x >>> 4)) & 0x0f0f0f0f, 0x01010101) >>> 24;
+  }
+
+  // True Damerau-Levenshtein distance (insert, delete, substitute, swap two neighbours) between two
+  // sequences of small integer codes. h is scratch space of at least (n + 2) * (m + 2) cells; last has
+  // one cell per code and remembers the last row each code was seen in.
+  function editDistance(a, n, b, m, h, last) {
+    const w = m + 2, inf = n + m;
+    last.fill(0);
+    h[0] = inf;
+    for (let i = 0; i <= n; i++) { h[(i + 1) * w] = inf; h[(i + 1) * w + 1] = i; }
+    for (let j = 0; j <= m; j++) { h[j + 1] = inf; h[w + j + 1] = j; }
+    for (let i = 1; i <= n; i++) {
+      const ai = a[i - 1];
+      let lastJ = 0;
+      for (let j = 1; j <= m; j++) {
+        const bj = b[j - 1];
+        const i1 = last[bj], j1 = lastJ;
+        let best = h[i * w + j];
+        if (ai === bj) lastJ = j; else best++;
+        const ins = h[(i + 1) * w + j] + 1;
+        const del = h[i * w + j + 1] + 1;
+        const swap = h[i1 * w + j1] + (i - i1 - 1) + 1 + (j - j1 - 1);
+        if (ins < best) best = ins;
+        if (del < best) best = del;
+        if (swap < best) best = swap;
+        h[(i + 1) * w + j + 1] = best;
+      }
+      last[ai] = i;
+    }
+    return h[(n + 1) * w + m + 1];
+  }
+
+  // Damerau-Levenshtein distance between two strings, compared as given (no folding).
+  function distance(a, b) {
+    a = String(a); b = String(b);
+    const codes = new Map();
+    const encode = s => {
+      const out = new Uint16Array(s.length);
+      for (let i = 0; i < s.length; i++) {
+        const ch = s.charCodeAt(i);
+        if (!codes.has(ch)) codes.set(ch, codes.size);
+        out[i] = codes.get(ch);
+      }
+      return out;
+    };
+    const ca = encode(a), cb = encode(b);
+    return editDistance(ca, ca.length, cb, cb.length, new Int32Array((ca.length + 2) * (cb.length + 2)), new Int32Array(codes.size + 1));
+  }
+
+  // Turns a list of names plus a { name: [spellings] } table into matcher entries.
+  function entries(names, aliases) {
+    return (Array.isArray(names) ? names : []).filter(isString).map(name => ({
+      name: name,
+      aliases: own(aliases, name) && Array.isArray(aliases[name]) ? aliases[name].filter(isString) : []
+    }));
+  }
+
+  // Builds a typed-answer matcher for one level. list is [{ name, aliases }]; opts.restrictTo limits the
+  // names that can be answers; opts.decoys replaces the built-in list of real places that are not answers.
+  function matcher(list, opts) {
+    opts = opts || {};
+    if (!Array.isArray(list)) throw new TypeError('Quiz.matcher: entries must be an array');
+    const names = [];
+    const exact = new Map();       // folded spelling -> { entry, via }; entry is -1 for a decoy
+    const texts = [];              // folded spellings, in the order the arrays below use
+    const owners = [];             // entry index per spelling, -1 for a decoy
+
+    // Registers one accepted spelling; two entries sharing one is a data bug.
+    function accept(raw, entry, via) {
+      const f = fold(raw);
+      if (!f) throw new Error('Quiz.matcher: "' + raw + '" (' + names[entry] + ') has nothing left to match after folding');
+      const seen = exact.get(f);
+      if (seen) {
+        if (seen.entry !== entry) {
+          throw new Error('Quiz.matcher: "' + raw + '" (' + names[entry] + ') and ' + names[seen.entry] + ' share the spelling "' + f + '"');
+        }
+        return;
+      }
+      exact.set(f, { entry: entry, via: via });
+      texts.push(f);
+      owners.push(entry);
+    }
+    list.forEach((item, i) => {
+      if (!item || !isString(item.name)) throw new TypeError('Quiz.matcher: entry ' + i + ' has no name');
+      names.push(item.name);
+      accept(item.name, i, 'name');
+    });
+    list.forEach((item, i) => {
+      (Array.isArray(item.aliases) ? item.aliases : []).forEach(alias => {
+        if (!isString(alias)) throw new TypeError('Quiz.matcher: ' + item.name + ' has an alias that is not a string');
+        accept(alias, i, 'alias');
+      });
+    });
+    const realCount = texts.length;
+
+    // Decoys never displace an accepted spelling.
+    function decoy(raw) {
+      const f = fold(raw);
+      if (!f || exact.has(f)) return;
+      exact.set(f, { entry: -1, via: 'decoy' });
+      texts.push(f);
+      owners.push(-1);
+    }
+    (Array.isArray(opts.decoys) ? opts.decoys : DECOYS).forEach(d => { if (isString(d)) decoy(d); });
+    for (let s = 0; s < realCount; s++) {
+      const words = texts[s].split(' ');
+      if (words.length < 2) continue;
+      words.forEach((word, at) => {
+        COMPASS.forEach(group => {
+          if (group.indexOf(word) === -1) return;
+          group.forEach(other => {
+            if (other !== word) decoy(words.slice(0, at).concat(other, words.slice(at + 1)).join(' '));
+          });
+        });
+      });
+    }
+    // Names refused only as typed: they take no part in the near search.
+    if (!Array.isArray(opts.decoys)) {
+      DECOYS_EXACT.forEach(raw => { if (!exact.has(raw)) exact.set(raw, { entry: -1, via: 'decoy' }); });
+    }
+
+    // Every proper prefix of an accepted spelling -> the one entry it belongs to, or -1 for several.
+    const prefixOwner = new Map();
+    for (let s = 0; s < realCount; s++) {
+      for (let k = 1; k < texts[s].length; k++) {
+        if (texts[s].charCodeAt(k - 1) === 32) continue;
+        const p = texts[s].slice(0, k);
+        const had = prefixOwner.get(p);
+        if (had === undefined) prefixOwner.set(p, owners[s]);
+        else if (had !== owners[s]) prefixOwner.set(p, -1);
+      }
+    }
+    // True when f is also the start of a spelling of some entry other than this one.
+    function startsAnother(f, entry) {
+      const o = prefixOwner.get(f);
+      return o !== undefined && o !== entry;
+    }
+
+    // The words of each entry's accepted spellings, and each spelling with its formal words taken out.
+    const informal = text => text.split(' ').filter(word => !FORMAL.has(word)).join(' ');
+    const wordsOf = names.map(() => new Set()), restsOf = names.map(() => new Set());
+    for (let s = 0; s < realCount; s++) {
+      texts[s].split(' ').forEach(word => wordsOf[owners[s]].add(word));
+      restsOf[owners[s]].add(informal(texts[s]));
+    }
+    // True when the typed words carry the whole name of a place other than this entry. What is left
+    // after the formal words is another entry ("republic of iceland" is not Ireland) or, where two edits
+    // are being forgiven, a decoy ("republic of tonga" is not a Congo). Or, again at two edits, a single
+    // word is another entry and is no part of this entry's names ("new macedonia" is not New Caledonia).
+    function namesAnother(f, entry, reach) {
+      if (f.indexOf(' ') === -1) return false;
+      const rest = informal(f);
+      if (rest !== f && !restsOf[entry].has(rest)) {
+        const hit = exact.get(rest);
+        if (hit && hit.entry !== entry && (hit.entry >= 0 || reach > 1)) return true;
+      }
+      return reach > 1 && f.split(' ').some(word => {
+        const hit = exact.get(word);
+        return !!hit && hit.entry >= 0 && hit.entry !== entry && !wordsOf[entry].has(word);
+      });
+    }
+
+    // Spellings as integer codes, a letter-set bitmask each, and buckets by length for the near search.
+    const codeOf = new Map();
+    texts.forEach(t => { for (let i = 0; i < t.length; i++) if (!codeOf.has(t.charCodeAt(i))) codeOf.set(t.charCodeAt(i), codeOf.size); });
+    const unknown = codeOf.size;
+    const ascii = new Int16Array(128).fill(unknown);
+    codeOf.forEach((code, ch) => { if (ch < 128) ascii[ch] = code; });
+    let maxLen = 0;
+    const coded = [], masks = new Int32Array(texts.length), buckets = [];
+    texts.forEach((t, s) => {
+      const c = new Uint16Array(t.length);
+      let mask = 0;
+      for (let i = 0; i < t.length; i++) { c[i] = codeOf.get(t.charCodeAt(i)); mask |= 1 << (c[i] & 31); }
+      coded.push(c);
+      masks[s] = mask;
+      (buckets[t.length] || (buckets[t.length] = [])).push(s);
+      if (t.length > maxLen) maxLen = t.length;
+    });
+    const input = new Uint16Array(maxLen + MAX_REACH);
+    const scratch = new Int32Array((maxLen + MAX_REACH + 2) * (maxLen + 2));
+    const last = new Int32Array(unknown + 1);
+    const slots = names.length + 1;                  // one per entry, plus one shared by all decoys
+    const any = new Uint8Array(slots), long1 = new Uint8Array(slots), long2 = new Uint8Array(slots);
+
+    let allowed = null;
+    if (Array.isArray(opts.restrictTo)) {
+      const wanted = new Set(opts.restrictTo);
+      allowed = names.map(name => wanted.has(name));
+    }
+
+    // Index of the one entry the folded input is a forgivable misspelling of, or -1.
+    function nearest(f) {
+      const n = f.length;
+      if (n < NEAR_ONE - 1 || n > maxLen + MAX_REACH) return -1;
+      let mask = 0;
+      for (let i = 0; i < n; i++) {
+        const ch = f.charCodeAt(i);
+        const code = ch < 128 ? ascii[ch] : (codeOf.has(ch) ? codeOf.get(ch) : unknown);
+        input[i] = code;
+        mask |= 1 << (code & 31);
+      }
+      any.fill(9); long1.fill(9); long2.fill(9);
+      const top = Math.min(maxLen, n + MAX_REACH);
+      for (let len = Math.max(1, n - MAX_REACH); len <= top; len++) {
+        const bucket = buckets[len];
+        if (!bucket) continue;
+        for (let b = 0; b < bucket.length; b++) {
+          const s = bucket[b];
+          // Each edit changes the set of letters by at most two.
+          if (bitCount(mask ^ masks[s]) > 2 * MAX_REACH) continue;
+          const d = editDistance(input, n, coded[s], len, scratch, last);
+          if (d > MAX_REACH) continue;
+          const slot = owners[s] < 0 ? slots - 1 : owners[s];
+          if (d < any[slot]) any[slot] = d;
+          if (len >= NEAR_ONE && d < long1[slot]) long1[slot] = d;
+          if (len >= NEAR_TWO && d < long2[slot]) long2[slot] = d;
+        }
+      }
+      // One edit from exactly one entry, or failing that two edits from exactly one long name.
+      let winner = -1, found = 0, reach = 1;
+      for (let e = 0; e < names.length; e++) if (long1[e] <= 1) { winner = e; found++; }
+      if (found === 0) {
+        reach = 2;
+        for (let e = 0; e < names.length; e++) if (long2[e] <= 2) { winner = e; found++; }
+      }
+      if (found !== 1) return -1;
+      // Nothing else may be within one more edit, a decoy may not be as close, and the input may not be
+      // the beginning of somebody else's name or hold somebody else's whole name.
+      for (let e = 0; e < names.length; e++) if (e !== winner && any[e] <= reach + 1) return -1;
+      if (any[slots - 1] <= reach || startsAnother(f, winner) || namesAnother(f, winner, reach)) return -1;
+      return winner;
+    }
+
+    // Resolves a typed answer to an entry: { name, exact, via } for an answer, { name, outside: true }
+    // for an exact name outside restrictTo, null otherwise. partial: true marks an exact match that is
+    // also the start of another entry's name.
+    function match(text) {
+      if (!isString(text) || text.length > MAX_INPUT) return null;
+      const f = fold(text);
+      if (!f) return null;
+      const hit = exact.get(f);
+      if (hit) {
+        if (hit.entry < 0) return null;
+        const res = allowed && !allowed[hit.entry]
+          ? { name: names[hit.entry], outside: true }
+          : { name: names[hit.entry], exact: true, via: hit.via };
+        if (startsAnother(f, hit.entry)) res.partial = true;
+        return res;
+      }
+      const e = nearest(f);
+      if (e < 0 || (allowed && !allowed[e])) return null;
+      return { name: names[e], exact: false, via: 'near' };
+    }
+
+    return Object.freeze({ match: match, size: names.length });
+  }
+
+  /* ===== QUIZ: capitals ===== */
+
+  // The [capital, code, alternates] row for a country, or null when the table has no usable one.
+  function fact(facts, country) {
+    if (!isString(country) || !own(facts, country)) return null;
+    const row = facts[country];
+    return Array.isArray(row) && isString(row[0]) && row[0] !== '' ? row : null;
+  }
+
+  // The capital to show and teach, plus the other cities that also count as right. null if unknown.
+  function capitalOf(facts, country) {
+    const row = fact(facts, country);
+    if (!row) return null;
+    return { capital: row[0], alternates: Array.isArray(row[2]) ? row[2].filter(isString) : [] };
+  }
+
+  // True when the text names the country's capital or one of its alternates.
+  function isCapital(facts, country, text) {
+    const c = capitalOf(facts, country);
+    if (!c || !isString(text) || text.length > MAX_INPUT) return false;
+    const f = fold(text);
+    return f !== '' && (fold(c.capital) === f || c.alternates.some(a => fold(a) === f));
+  }
+
+  // Every country the city is an accepted capital of, in table order (Nicosia: Cyprus and Northern Cyprus).
+  function capitalOwners(facts, capital) {
+    const f = isString(capital) && capital.length <= MAX_INPUT ? fold(capital) : '';
+    if (!f) return [];
+    return Object.keys(facts || {}).filter(country => {
+      const c = capitalOf(facts, country);
+      return !!c && (fold(c.capital) === f || c.alternates.some(a => fold(a) === f));
+    });
+  }
+
+  // The capital to name in the reverse mode. trivial: the city carries the country's own name.
+  // accept: every country a tap should count as right for. shared: the other countries that claim one
+  // of this country's capital cities (Cyprus and Northern Cyprus, Israel and Palestine), which the data
+  // says are never each other's wrong answers in a question about a capital.
+  function capitalPrompt(facts, country) {
+    const c = capitalOf(facts, country);
+    if (!c) return null;
+    const mine = [c.capital].concat(c.alternates).map(fold).filter(Boolean);
+    const shared = Object.keys(facts).filter(other => {
+      const o = other !== country ? capitalOf(facts, other) : null;
+      return !!o && [o.capital].concat(o.alternates).some(city => mine.indexOf(fold(city)) !== -1);
+    });
+    return { capital: c.capital, trivial: fold(c.capital) === fold(country), accept: capitalOwners(facts, c.capital), shared: shared };
+  }
+
+  // Mulberry32: a seeded generator of numbers in [0, 1). A string seed is hashed with FNV-1a first.
+  function rng(seed) {
+    let a = 0;
+    if (isString(seed)) {
+      a = 2166136261;
+      for (let i = 0; i < seed.length; i++) a = Math.imul(a ^ seed.charCodeAt(i), 16777619);
+    } else {
+      a = Number(seed) || 0;
+    }
+    a >>>= 0;
+    return function () {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // n shuffled capitals holding the answer once. Wrong options are first-listed capitals of countries in
+  // pool, topped up from the whole table only when the pool runs dry. No option is an alternate capital
+  // of the asked country, and no two options (or an option and an accepted answer) contain one another.
+  function capitalChoices(facts, country, pool, random, n) {
+    const asked = capitalOf(facts, country);
+    if (!asked) return [];
+    let want = Number.isFinite(n) ? Math.floor(n) : 4;
+    if (want < 1) want = 1;
+    const rand = typeof random === 'function' ? random : Math.random;
+    // A generator that strays outside [0, 1) must not index outside the array.
+    const pick = k => { const i = Math.floor(rand() * k); return i >= 0 && i < k ? i : 0; };
+    const shuffle = arr => {
+      for (let i = arr.length - 1; i > 0; i--) { const j = pick(i + 1), t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
+      return arr;
+    };
+    const avoid = [asked.capital].concat(asked.alternates).map(fold).filter(Boolean);
+    const options = [];
+    const draw = countries => {
+      shuffle(countries);
+      for (let i = 0; i < countries.length && options.length < want - 1; i++) {
+        const city = capitalOf(facts, countries[i]).capital;
+        const f = fold(city);
+        if (!f || avoid.some(g => g.indexOf(f) !== -1 || f.indexOf(g) !== -1)) continue;
+        options.push(city);
+        avoid.push(f);
+      }
+    };
+    const seen = new Set([country]);
+    const usable = c => isString(c) && !seen.has(c) && capitalOf(facts, c) && seen.add(c);
+    draw((Array.isArray(pool) ? pool : []).filter(usable));
+    if (options.length < want - 1) draw(Object.keys(facts).filter(usable));
+    options.push(asked.capital);
+    return shuffle(options);
+  }
+
+  /* ===== QUIZ: flags ===== */
+
+  const FLAG_FONT = 'Atlas Flags';
+  const FLAG_FONT_STACK = "'Atlas Flags', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
+  // Codes with no flag to show: ISO private-use placeholders; codes the flag font has no picture for;
+  // codes whose picture in the font is a flag the country has since replaced (Syria: the font still
+  // draws the red-white-black flag with two green stars, replaced in 2025).
+  const FLAG_PLACEHOLDERS = ['XS', 'XN'];
+  const FLAG_NO_GLYPH = [];
+  const FLAG_STALE = ['SY'];
+  // Flags that differ only by a shade of blue: a question about one cannot count the other as wrong.
+  const FLAG_TWINS = [['TD', 'RO'], ['ID', 'MC']];
+  const FLAG_LOAD_TIMEOUT = 4000;
+  let flagSupportPromise = null;
+
+  // The flag emoji for an upper-case two-letter code: two regional-indicator symbols, or '' for
+  // anything else and for the placeholder codes.
+  function flagEmoji(iso2) {
+    if (!isString(iso2) || !/^[A-Z]{2}$/.test(iso2) || FLAG_PLACEHOLDERS.indexOf(iso2) !== -1) return '';
+    return String.fromCodePoint(0x1F1E6 + iso2.charCodeAt(0) - 65, 0x1F1E6 + iso2.charCodeAt(1) - 65);
+  }
+
+  // True when the country has a flag the flag font draws, and draws as the country flies it today.
+  function hasFlag(facts, country) {
+    const row = fact(facts, country);
+    return !!row && flagEmoji(row[1]) !== '' && FLAG_NO_GLYPH.indexOf(row[1]) === -1 && FLAG_STALE.indexOf(row[1]) === -1;
+  }
+
+  // The flag to show for a country, or null when it has none. accept: every country a tap should count
+  // as right for (Chad's flag also answers to Romania).
+  function flagPrompt(facts, country) {
+    if (!hasFlag(facts, country)) return null;
+    const code = facts[country][1];
+    const twins = [];
+    FLAG_TWINS.forEach(pair => { if (pair.indexOf(code) !== -1) pair.forEach(other => { if (other !== code) twins.push(other); }); });
+    const accept = [country].concat(Object.keys(facts).filter(c => c !== country && hasFlag(facts, c) && twins.indexOf(facts[c][1]) !== -1));
+    return { flag: flagEmoji(code), accept: accept };
+  }
+
+  // Draws the flag for a code in black on a small canvas: true when it comes out as one glyph painted in
+  // colours of its own (white counts) rather than two letters, boxes or nothing. Works on the raw code,
+  // so it can also test placeholder codes.
+  function flagDraws(doc, iso2) {
+    try {
+      const size = 32;
+      const first = String.fromCodePoint(0x1F1E6 + iso2.charCodeAt(0) - 65);
+      const second = String.fromCodePoint(0x1F1E6 + iso2.charCodeAt(1) - 65);
+      const canvas = doc.createElement('canvas');
+      canvas.width = size * 4;
+      canvas.height = size * 2;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return false;
+      ctx.font = size + 'px ' + FLAG_FONT_STACK;
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#000';
+      // A real flag is one glyph: clearly narrower than its two indicator letters set apart.
+      const width = ctx.measureText(first + second).width;
+      const apart = ctx.measureText(first).width + ctx.measureText(second).width;
+      if (!(width > 0) || !(width < apart * 0.75)) return false;
+      ctx.fillText(first + second, 4, size);
+      const px = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let painted = 0;
+      for (let i = 0; i < px.length; i += 4) {
+        if (px[i + 3] >= 128 && Math.max(px[i], px[i + 1], px[i + 2]) >= 96) painted++;
+      }
+      return painted >= size * 2;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Resolves to how flags render in this browser: 'font' (the Atlas Flags web font drew them),
+  // 'native' (the web font did not load but the system draws flags) or 'none'. Waits for the font load
+  // to settle first. The answer is cached once the load has settled.
+  function flagSupport(doc) {
+    if (flagSupportPromise) return flagSupportPromise;
+    if (!doc || typeof doc.createElement !== 'function') return Promise.resolve('none');
+    const view = doc.defaultView;
+    const later = view && typeof view.setTimeout === 'function' ? view.setTimeout.bind(view) : setTimeout;
+    let loading;
+    try {
+      loading = doc.fonts && typeof doc.fonts.load === 'function'
+        ? doc.fonts.load("32px '" + FLAG_FONT + "'", flagEmoji('FR'))
+        : [];
+    } catch (e) {
+      loading = [];
+    }
+    const settled = Promise.resolve(loading).then(faces => (faces && faces.length > 0 ? 'loaded' : 'missing'), () => 'missing');
+    const timeout = new Promise(resolve => later(() => resolve('slow'), FLAG_LOAD_TIMEOUT));
+    const run = Promise.race([settled, timeout]).then(font => {
+      // A load that has not settled may still succeed, so that answer is not kept.
+      if (font === 'slow' && flagSupportPromise === run) flagSupportPromise = null;
+      if (!flagDraws(doc, 'FR')) return 'none';
+      return font === 'loaded' ? 'font' : 'native';
+    });
+    flagSupportPromise = run;
+    return run;
+  }
+
+  /* ===== QUIZ: levels ===== */
+
+  // Region name -> the hyphenated lower-case form used in level keys and links.
+  function slug(region) { return fold(region).replace(/ /g, '-'); }
+
+  const LEVEL_KINDS = [
+    ['capital', 'capitals-', (facts, c) => !!capitalOf(facts, c)],
+    ['capital-reverse', 'capitals-reverse-', (facts, c) => { const cap = capitalOf(facts, c); return !!cap && fold(cap.capital) !== fold(c); }],
+    ['flag', 'flags-', hasFlag],
+    ['name', 'name-', (facts, c) => fold(c) !== '']
+  ];
+
+  // One level per continent plus World for each kind of question, holding only the countries that kind
+  // can ask about. Names keep the order of the continents table; a level with nothing to ask is left out.
+  function levels(continents, facts) {
+    const regions = [], world = [], inWorld = new Set();
+    Object.keys(continents || {}).forEach(region => {
+      if (!Array.isArray(continents[region])) return;
+      const names = [], here = new Set();
+      continents[region].forEach(name => {
+        if (!isString(name) || here.has(name)) return;
+        here.add(name);
+        names.push(name);
+        if (!inWorld.has(name)) { inWorld.add(name); world.push(name); }
+      });
+      regions.push([region, names]);
+    });
+    regions.push(['World', world]);
+    const out = [];
+    LEVEL_KINDS.forEach(kind => {
+      regions.forEach(region => {
+        const names = region[1].filter(name => kind[2](facts, name));
+        if (names.length) out.push({ key: kind[1] + slug(region[0]), kind: kind[0], region: region[0], names: names });
+      });
+    });
+    return out;
+  }
+
+  return Object.freeze({
+    fold: fold, distance: distance, entries: entries, matcher: matcher, DECOYS: DECOYS, DECOYS_EXACT: DECOYS_EXACT,
+    capitalOf: capitalOf, isCapital: isCapital, capitalOwners: capitalOwners, capitalPrompt: capitalPrompt,
+    capitalChoices: capitalChoices, rng: rng,
+    flagEmoji: flagEmoji, hasFlag: hasFlag, flagPrompt: flagPrompt, flagDraws: flagDraws, flagSupport: flagSupport,
+    FLAG_FONT_STACK: FLAG_FONT_STACK, FLAG_NO_GLYPH: Object.freeze(FLAG_NO_GLYPH.slice()),
+    FLAG_STALE: Object.freeze(FLAG_STALE.slice()),
+    slug: slug, levels: levels
+  });
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
+/* ===== END QUIZ LOGIC (quiz.js) ===== */
+
   /* =========================================================
    * MASTERY — the game's store and how rounds feed it
    *
@@ -11198,6 +12567,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
    *   us-city              the four Cities levels
    *   province:<country>   that country's rounds
    *   city-pin             Pin the City
+   *   capital              both kinds of Capitals level (item = the country)
+   *   flag                 Flags (item = the country)
+   *   country-name         Name It (item = the country)
    * An item's name is the name the game queues it under, which is unique
    * within its skill (see claimName).
    *
@@ -12142,7 +13514,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
    * "atlas-difficulty" is 'normal' | 'hard' | 'uncharted'. Older installs
    * only have "atlas-hard-mode" ('true' | 'false'), so fall back to it.
    * "atlas-map-style" is 'parchment' | 'satellite'.
-   * Both are per-device preferences: they are not synced.
+   * "atlas-capitals-way" is 'pick' | 'find': which set of Capitals levels
+   * the Library shows.
+   * All are per-device preferences: they are not synced.
    * ========================================================= */
 
   function loadHardMode() {
@@ -12186,6 +13560,20 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     } catch (e) { /* ignore */ }
   }
 
+  // Which of a collection's sets of level cards is on show (see COLLECTIONS' variants)
+  function collectionVariant(collection) {
+    if (!collection.variants) return null;
+    let saved = null;
+    try { saved = localStorage.getItem('atlas-' + collection.key + '-way'); } catch (e) { /* storage blocked */ }
+    return collection.variants.some(v => v.key === saved) ? saved : collection.variants[0].key;
+  }
+
+  function saveCollectionVariant(collection, variant) {
+    try {
+      localStorage.setItem('atlas-' + collection.key + '-way', variant);
+    } catch (e) { /* ignore */ }
+  }
+
   // Load once at startup, before anything is drawn from them
   setDifficulty(loadDifficulty());
   state.mapStyle = loadMapStyle();
@@ -12218,7 +13606,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     if (mode === 'us-state') region = 'US States';
     else if (mode === 'us-capital-to-state') region = 'US Capitals → States';
     else if (mode === 'us-state-to-capital') region = 'US States → Capitals';
-    else if (mode === 'province') region = GAME_MODES.province.label(state.currentContinent);
+    else if (mode === 'province' || QUIZ_KINDS[mode]) region = GAME_MODES[mode].label(state.currentContinent);
     else region = state.currentContinent === 'World' ? 'The World' : state.currentContinent;
     const total = state.correct + state.wrong;
     const maxScore = state.totalQuestions * 2;
@@ -12511,11 +13899,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
           '</div>') +
         group('about', 'About', 'What this is, and what it is made with.',
           '<div class="about">' +
-            '<p><b>Cartographer’s Atlas</b> is a geography trainer. Find countries, states, provinces and cities on the map; it keeps track of the ones you know and brings back the ones you miss. It works offline once loaded, and your progress stays on your own devices.</p>' +
+            '<p><b>Cartographer’s Atlas</b> is a geography trainer. Find countries, states, provinces and cities on the map, and learn capitals, flags and names; it keeps track of the ones you know and brings back the ones you miss. It works offline once loaded, and your progress stays on your own devices.</p>' +
             '<dl class="credits">' +
               '<div><dt>Borders and places</dt><dd>Natural Earth, public domain. US outlines fall back to US Census Bureau data.</dd></div>' +
               '<div><dt>Satellite imagery</dt><dd>Esri World Imagery (Esri, Maxar, Earthstar Geographics)</dd></div>' +
               '<div><dt>Typefaces</dt><dd>Cormorant Garamond and Inter, SIL Open Font License</dd></div>' +
+              '<div><dt>Flags</dt><dd>Twemoji artwork by Twitter and contributors, CC BY 4.0, from the Twemoji Country Flags font of country-flag-emoji-polyfill (© 2022 TalkJS, MIT License)</dd></div>' +
             '</dl>' +
             '<button type="button" class="btn btn--secondary" data-action="share-app">' + icon('share') + 'Share the atlas</button>' +
           '</div>');
@@ -12772,6 +14161,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     target.classList.add('active');
     if (view) playEntrance(target);
+    // Leaving the game lets go of the field a name was typed in, so a phone's keyboard closes
+    if (name !== 'game') document.getElementById('answer-input').blur();
+    followKeyboard();
     // The globe draws and listens only while it is on show
     if (map.globe) {
       if (name === 'game') map.globe.resume();
@@ -12836,6 +14228,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     'set-difficulty': (el) => chooseDifficulty(el.dataset.value),
     'set-map': (el) => chooseMapStyle(el.dataset.value),
     'jump': (el) => jumpToCollection(el.dataset.collection),
+    'set-variant': (el) => chooseCollectionVariant(el.dataset.collection, el.dataset.value),
     'open-level': (el) => openLevelSheet(el.dataset.level, el),
     'sheet-close': () => closeLevelSheet(),
     'sheet-way': (el) => chooseSheetWay(el.dataset.value),
@@ -12886,6 +14279,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   });
   document.getElementById('skip-btn').addEventListener('click', handleSkip);
 
+  // Name It: Enter and the button beside the field hand the typed name in
+  document.getElementById('answer-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    submitTypedAnswer();
+    focusAnswerField();
+  });
+  document.getElementById('answer-input').addEventListener('input', onAnswerInput);
+  // While a name is being typed, pressing a button or the globe must not
+  // take the cursor out of the field: on a phone that would drop the
+  // keyboard, and bring it back at the next question
+  ['skip-btn', 'answer-btn', 'globe-host', 'zoom-in-btn', 'zoom-out-btn', 'zoom-reset-btn', 'map-style-btn'].forEach(id => {
+    document.getElementById(id).addEventListener('mousedown', (e) => {
+      if (document.activeElement === document.getElementById('answer-input')) e.preventDefault();
+    });
+  });
+
   // Zoom controls
   function zoomBy(factor) {
     map.globe.zoomBy(factor, { animate: !reducedMotion() });
@@ -12899,8 +14308,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   document.getElementById('map-style-btn').addEventListener('click', toggleMapStyle);
 
   document.addEventListener('keydown', (e) => {
-    const gameActive = document.getElementById('game-screen').classList.contains('active');
-    if (!gameActive) return;
+    const screen = document.getElementById('game-screen');
+    if (!screen.classList.contains('active')) return;
+    if (state.gameMode === 'name-it' && !screen.classList.contains('review-mode')) {
+      // Every letter belongs to the name being typed, S and M included, so
+      // Escape is the key that skips; a key pressed anywhere goes to the field
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleSkip();
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.target.tagName !== 'BUTTON') {
+        focusAnswerField();
+      }
+      return;
+    }
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     if (e.key === 'Enter' && state.learn && state.learn.phase === 'study') {
       e.preventDefault();
@@ -12928,19 +14348,46 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     }
   });
 
-  // A new window size (a phone turned on its side): the globe keeps its
-  // picture and its marks; a view the player has not moved is fitted to
-  // the new shape
+  // A new window size (a phone turned on its side, or its keyboard coming
+  // up): the globe keeps its picture and its marks; a view the player has
+  // not moved is fitted to the new shape, and a country a question is
+  // showing is brought back into what is left of the map
   let resizeTimer;
-  window.addEventListener('resize', () => {
+  function refitMapSoon() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       if (!map.globe || !document.getElementById('game-screen').classList.contains('active')) return;
-      if (mapAtHome()) frameMap();
+      const shown = map.layer === 'world' && map.promptKey ? map.globe.featureInfo('world', map.promptKey) : null;
+      if (mapAtHome() || shown) frameMap();
       else placeGlobeHost();
+      if (shown) turnToCountry(shown.feature);
       placeLearnLabels();
     }, 200);
-  });
+  }
+  window.addEventListener('resize', refitMapSoon);
+
+  // A phone's on-screen keyboard covers the lower part of the window
+  // without changing the window's size. The game screen keeps to the part
+  // still in sight, so the map, and the country a typed answer is about,
+  // stay clear of the keyboard.
+  function followKeyboard() {
+    const view = window.visualViewport;
+    const screen = document.getElementById('game-screen');
+    const whole = document.documentElement.clientHeight;
+    // A pinch-zoomed page also has a smaller visual viewport; that is not a keyboard
+    const up = !!view && screen.classList.contains('active') && Math.abs(view.scale - 1) < 0.01 && whole - view.height > 120;
+    const top = up ? Math.round(view.offsetTop) + 'px' : '';
+    const height = up ? Math.round(view.height) + 'px' : '';
+    if (screen.style.top === top && screen.style.height === height) return;
+    screen.style.top = top;
+    screen.style.height = height;
+    screen.classList.toggle('kb-open', up);
+    refitMapSoon();
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', followKeyboard);
+    window.visualViewport.addEventListener('scroll', followKeyboard);
+  }
 
   /* =========================================================
    * PROGRESS (everything a player has earned: snapshot, export, reset)
@@ -13552,6 +14999,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
   window.__atlas = {
     state, mastery, LEVELS, COLLECTIONS, VIEWS, startGame, levelByKey, showView, exportProgress, resetProgress,
     map, get globe() { return map.globe; },
+    Quiz, WORLD_FACTS, COUNTRY_TYPED_ALIASES,
     version: 2
   };
 
