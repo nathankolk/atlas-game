@@ -35,12 +35,13 @@ const checks = {
     const info = await page.evaluate(() => {
       const A = window.__atlas;
       const cards = Array.from(document.querySelectorAll('a.level')).map(a => ({ key: a.dataset.level, meta: a.querySelector('.level-meta').textContent, due: a.querySelector('.level-due').textContent, ringNum: !!a.querySelector('.ring b') }));
-      return { cards, soon: document.querySelectorAll('.level.is-soon').length, levels: A.LEVELS.map(l => ({ key: l.key, available: l.available, count: l.count(), mode: l.mode })),
+      return { cards, soon: document.querySelectorAll('.level.is-soon').length, levels: A.LEVELS.map(l => ({ key: l.key, available: l.available, count: l.count(), mode: l.mode, variant: l.variant })),
         figures: Array.from(document.querySelectorAll('.summary dd')).map(d => d.textContent), greeting: document.querySelector('.masthead h1').textContent,
         chipHidden: document.getElementById('streak-chip').hidden, daily: document.querySelector('.daily').dataset.daily, review: document.querySelector('.review').className,
         titles: document.querySelectorAll('[title]').length, storage: Object.keys(localStorage) };
     });
-    eq(info.cards.length, info.levels.filter(l => l.available).length, 'one card per playable level');
+    // Capitals holds two sets of levels and shows one at a time: 'pick' until its switch is turned
+    eq(info.cards.length, info.levels.filter(l => l.available && (!l.variant || l.variant === 'pick')).length, 'one card per playable level on show');
     eq(info.soon, 3, 'three coming-soon cards');
     info.cards.forEach(c => {
       const l = info.levels.find(x => x.key === c.key);
@@ -69,7 +70,7 @@ const checks = {
     let a = await page.evaluate(() => ({ inside: document.getElementById('level-sheet').contains(document.activeElement), title: document.getElementById('sheet-title').textContent, ways: document.querySelectorAll('.mode').length }));
     ok(a.inside, 'focus moved into the sheet');
     eq(a.title, 'Europe', 'sheet title');
-    eq(a.ways, 1, 'a new level offers only Play');
+    eq(a.ways, 2, 'a new continent level offers Play and Learn');
     for (let i = 0; i < 14; i++) await page.keyboard.press('Tab');
     ok(await page.evaluate(() => document.getElementById('level-sheet').contains(document.activeElement)), 'Tab stays inside the sheet');
     for (let i = 0; i < 5; i++) await page.keyboard.press('Shift+Tab');
@@ -152,7 +153,7 @@ const checks = {
     await press(page, '[data-level="africa"]');
     await page.waitForSelector('#level-sheet:not([hidden])');
     a = await page.evaluate(() => ({ ways: Array.from(document.querySelectorAll('.mode')).map(m => m.dataset.value), rows: Array.from(document.querySelectorAll('.bests tbody tr')).map(r => r.textContent), segs: Array.from(document.querySelectorAll('#level-sheet .seg--rich small')).map(x => x.textContent) }));
-    eq(a.ways.join(','), 'play,focus', 'Africa offers Play and Focus Practice');
+    eq(a.ways.join(','), 'play,focus,learn', 'Africa offers Play, Focus Practice and Learn');
     ok(/Normal49 \/ 54—91%14/.test(a.rows[0]) && /Hard47 \/ 54/.test(a.rows[1]) && /Uncharted———0/.test(a.rows[2]), 'bests table: ' + a.rows.join(' | '));
     eq(a.segs.join(','), '49 / 54,47 / 54,No best yet', 'difficulty options carry their bests');
     await press(page, '.mode[data-value="focus"]');

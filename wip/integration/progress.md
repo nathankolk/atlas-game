@@ -525,3 +525,166 @@ The old app's figure does not include its first paint (its paths exist and the p
 - Known warts unchanged: Crimea in Russia rounds over imagery; on a phone on its side the prompt card covers the top
   of the map's clear area (stageClearArea's short-window rule); the found mark over imagery cannot be judged on the
   green stand-in tiles.
+
+## Stage: Capitals, Flags, Name It (three new ways to learn the world's countries)
+
+Status: IN PROGRESS (started 2026-11-17 14:15 UTC from 1b0c32f, tree clean, nothing of this stage existed).
+Working files: `$S/work/integration/modes/` (check-modes.js = this stage's suite, shoot-modes.js = screenshots).
+Screenshots: `$S/shots/app/modes/`. Paste checks: `logic-tests/check-quiz-paste.js`.
+
+### Plan (commit + push after each)
+1. Pieces: quiz.js pasted (section QUIZ LOGIC, column 0, before MASTERY), WORLD_FACTS + COUNTRY_TYPED_ALIASES
+   pasted (section WORLD FACTS), font to public/vendor/, @font-face 'Atlas Flags', paste check.
+2. Modes: GAME_MODES capital-pick / capital-find / flag / name-it; QUIZ_ROUNDS; LEVELS (+variant); play logic; HUD.
+3. Library (three collections, Capitals switch, flags unavailable), level sheet, mastery skills, Smart Review hosts,
+   Stats, Settings credit.
+4. Suite check-modes.js, seed-rich.js extended + payload size, screenshots, all suites, report.
+
+### State at 14:50 UTC (commits 7702a54 checkpoint, f86b9cd; more edits after it uncommitted until the next commit)
+DONE in public/index.html (all parse; check-modes.js desktop 176/176 over its groups, phone 169/170 with the one
+failure a timing slip in the test itself, since fixed):
+- Pasted: `QUIZ LOGIC (quiz.js)` at column 0 right after `END OF MASTERY MODULE`; section `WORLD FACTS` (world-facts.js
+  two spaces in, up to `/* ===== END OF WORLD FACTS ===== */`) before US STATES; font `public/vendor/TwemojiCountryFlags.woff2`;
+  `@font-face 'Atlas Flags'` in the Type CSS; `--font-flags` set from `Quiz.FLAG_FONT_STACK` in `init()`.
+  Paste check: `logic-tests/check-quiz-paste.js` (in run-all.sh, with check-globe-paste.js).
+- Registry: `QUIZ_KINDS` (capital-pick, capital-find, flag, name-it: slug, collection, variant, skill, noun, asks) and
+  `QUIZ_ROUNDS` (level key -> { mode, region }) after GAME_MODES; four GAME_MODES entries; `quizNames(mode, region)`;
+  28 LEVELS (arg = key; `variant` 'pick' | 'find' on the Capitals levels; flag levels have an `available` getter on
+  `state.flagsOff` and `why`); COLLECTIONS capitals (with `variants`), flags, name between provinces and pins;
+  `levelFullTitle(level)` ("Europe · Find the country") for Stats. LEVELS = 55, 52 playable.
+- Play: `startGame` (flag rounds await `flagsReady()`; `state.quiz` = { rng, pool } or { matcher }), `nextCountry`
+  branches, `answersByChoice()`, `capitalFor(name)`, `renderCapitalChoices` (Quiz.capitalChoices for countries),
+  `acceptedAnswers()` + twins and shared capitals in `answerFeature`, `flagHtml(name)`, Name It: `resetAnswerField`,
+  `focusAnswerField`, `showTypedAnswer`, `rejectTypedAnswer`, `acceptTypedAnswer`, `submitTypedAnswer`, `onAnswerInput`;
+  toast kind 'note' (not counted); `setPromptFeature` -> `turnToCountry(feature)` on the world layer (`projectInView`,
+  `PROMPT_MIN_PX`); `followKeyboard()` (visualViewport -> #game-screen top/height + `.kb-open`), `refitMapSoon()`.
+- Keys: in Name It every printable key goes to the field, Escape skips (Skip's key cap `#skip-key` says Esc); elsewhere
+  as before. mousedown on Skip / the globe / map buttons keeps the field focused.
+- Markup: `#answer-form` (`#answer-input`, `#answer-btn`) in `#prompt`; icons i-capitol, i-flag, i-type.
+- Home: `collectionVariant()` / `saveCollectionVariant()` (localStorage `atlas-capitals-way`), `set-variant` action,
+  `#library-count` redrawn with the collections; unavailable card shows `level.why` + "Unavailable".
+- Sheet: `MODE_DIFFICULTY_DESCS` (replaces PIN_DIFFICULTY_DESCS; `data-difficulty-note` = the level's mode), MODE_HOW,
+  eyebrow names the variant, a flag level's sheet calls `flagsReady()`.
+- Mastery: skills capital / flag / country-name; REVIEW_HOSTS capitals-world, flags-world, name-world; skillLabel.
+- Settings About: Flags credit. Hook: `window.__atlas.Quiz`, `.WORLD_FACTS`, `.COUNTRY_TYPED_ALIASES`.
+- Stats: mastery table rows use levelFullTitle; the three quiz collections start folded on desktop too.
+Test tools: `modes/check-modes.js` (groups registry, pick, find, flag, name, keys, difficulty, library, noflags,
+review, results, keyboard[--mobile only]); `modes/shoot-modes.js [--mobile] [--dark] [--only=scene]`;
+`modes/measure-payload.js` (heavy seed -> POST body size); `logic-tests/lib.js` T.attempt knows capital-pick and name-it,
+`T.typeAnswer`. `harness/seed-rich.js --quiz` (seed-quiz.json) and `--heavy` (seed-heavy.json); default seed unchanged.
+Numbers: heavy player payload 126.6 KB of 256 KB (before capping its pin games at the app's 200; re-measure).
+Totals: places mastered denominator 609 -> 1,158 (+184 capital, +181 flag, +184 country-name).
+
+Later the same day (commit 6aaeacb, pushed; one small edit after it: the unknown-name toast wording):
+- Prompt labels: "Which city is the capital of", "Which country’s capital is", "Which country’s flag is this",
+  "Name this country" (short enough to share a phone card's line with "· Second try"; the label now gives way with
+  an ellipsis before the marker is cut). Flag prompt 120 px desktop / 96 px phone.
+- `flagsReady()` looks again when a slow font finally loads. LEVELS entries all carry `variant` and `why` (null by default).
+- CLAUDE.md: a paragraph on the country quizzes, the font in the repo layout.
+- Suites updated because they were out of date with intended changes (none weakened): t1 (55 levels; the 27 old slugs
+  still checked as a set), t3 (55), t5 (records and focus regions for the new modes; "under half the limit" is now
+  "under 200 KB"), check-stats (seven collections, 52 level rows, Capitals rows named with their set),
+  check-shell (cards on show = playable levels of the set the Capitals switch has on).
+- ALL SUITES on that tree: check-modes 163 desktop / 170 phone; smoke 13/13 desktop and --mobile; check-shell
+  246 / 242; check-stats 168 / 170; check-settings 93 / 93; check-game 110 / 115; check-globe 123 / 121;
+  check-edges 37; logic run-all (syntax, three paste checks, t1 38, t2 46, t3 39, t4 67, t5 4, t6 7); t7; v-b4-learn 10.
+  Runner: `modes/run-suites.sh` (writes modes/suites.log and modes/suites/*.log).
+- Payload: heavy seed (`seed-rich.js --heavy`) 126.6 KB before the pin cap fix (re-measure); worst case the app can
+  produce (t5) 156.7 KB of 256 KB (was 106 KB).
+
+### Final state of this stage
+- Status: DONE. Commits on claude/determined-hamilton-w2lcbm, all pushed: 7702a54 (checkpoint), f86b9cd, 6aaeacb,
+  4bf934c (final; tree clean after it).
+- Payload: heavy player of `seed-rich.js --heavy` (every level played daily for 57 weeks, all 1,158 items seen, 136
+  record keys, 200 pin games) = 122,024 bytes (119.2 KB) of 256 KB. The largest the app can produce (t5: every store
+  at its cap, 147 record keys, every focus list half full) = 156.7 KB (it was 106 KB before this stage). Both under 200 KB.
+- Totals: "Places mastered ... of N": N went from 609 to 1,158 (184 capitals, 181 flags and 184 country names added;
+  each skill's names once, as US capitals were already counted beside US states).
+- Screenshots: `$S/shots/app/modes/<scene>-<d|m>-<light|dark>.png` (pick-, find-, flag-, name-1..4; name-5/6 keyboard
+  (phone); name-7 / pick-5 uncharted; pick-6/7 world; library-1..4; sheet-*; results-*; stats-1..3; settings-credits).
+  In-play shots are taken with the page's delays stretched (a capture takes a second or more here).
+- The full chain was run twice: on 6aaeacb's tree (all green but check-shell's card count, an out-of-date expectation,
+  then fixed and green) and again on the final tree 4bf934c (modes/suites.log; the first run is suites-first-run.log):
+  smoke 13/13 desktop and --mobile; check-shell 246 / 242; check-stats 168 / 170; check-settings 93 / 93; check-game
+  110 / 115; check-globe 123 / 121; check-edges 37; logic run-all all green; v-b4-learn 10; t7 passes. check-modes
+  failed one assertion in that run on both sizes ("keys: Enter submits": the test read the lock after the next
+  question was already up); the test was corrected and check-modes re-run on the same tree: 163 desktop, 170 phone.
+- Decisions worth knowing: text that is no name in the atlas costs no try in Name It; Escape skips there (S is a
+  letter); a shared-capital tap (Cyprus for North Nicosia, Israel for Ramallah) is not counted either way; a twin's
+  tap (Romania for Chad's flag, Northern Cyprus for Nicosia) is right and the mark goes to the country asked for;
+  Hard in Capitals-pick is honest about being the same questions without marks.
+- Not done / not verifiable here: real phones' keyboards (focus at round start may need one tap on iOS; whether a
+  keyboard's own word suggestions are suppressed by the field's attributes), Safari / Firefox, Windows without the
+  flag font. atlas_handoff.md is untouched. The Afghanistan flag question from the quiz stage stays with the owner.
+
+
+## Stage: Explore view, and Learn for more levels
+
+Status: IN PROGRESS (started 2026-11-17 16:40 UTC from 4bf934c, tree clean, nothing of this stage existed).
+Working files: `$S/work/integration/explore/` (nb-raw.js = neighbours straight from the topology, check-explore.js =
+this stage's suite, shoot-explore.js = screenshots). Screenshots: `$S/shots/app/explore/`.
+
+### Plan (commit + push after each)
+1. Learn for the six continent levels and States (LEVELS `learn: true`; ladder key = level key). Small.
+2. Explore: VIEWS entry + `#explore-screen` (stage `#explore-stage`, host `#explore-globe`; the one globe moves there
+   with `globe.attachTo`), EXPLORE section (after SATELLITE IMAGERY): place card, neighbours from the topology,
+   search, Colour by + legend, deep link `#explore=<slug>`, keys, Stats link.
+3. Suite check-explore.js, screenshots (desktop/phone, both themes), all suites, CLAUDE.md paragraph, report.
+
+### Decisions
+- Neighbours: `topojson.neighbors` on the 50m file, checked by hand against all 184 countries (not just twenty):
+  it is right everywhere except two real borders the 50m shapes do not draw (Botswana–Zambia at Kazungula,
+  Morocco–Spain at Ceuta and Melilla), which are added by a two-line table. Neighbours that are not countries of
+  this atlas are left out, except the five European microstates (Andorra, Liechtenstein, Monaco, San Marino,
+  Vatican City), shown as plain chips so that France or Italy's list is complete.
+
+### State at 18:25 UTC (commits 1628408 Learn, 8a4be64 + e97df55 + fd779a9 Explore; all pushed, tree clean)
+DONE in public/index.html and verified by `explore/check-explore.js` (desktop 185+ and --mobile 185 on e97df55; the
+groups touched since were re-run):
+- **Learn widened**: `LEVELS[].learn` (true for the six continents, `us-state`, the province levels); the sheet, the
+  Home card ("Learning · level n of N"), `linkedLevel()` (`&learn=1`) and `startGame` all read it. Ladder key =
+  `level.key` (`state.learn.levelKey`; was `roundKey`). `learnAnchor(feature)` / `anchorInBox(feature, box)`: on a
+  continent a name whose engine anchor is outside `CONTINENT_FRAMES[...]` goes on the part of the country the frame
+  holds (Russia in Europe); `run.anchors` caches it. `finishLearn` label = the mode's own label.
+- **Explore**: `VIEWS` has `explore` between home and stats; `#explore-screen` (not a `.view`: it does not scroll) with
+  `#explore-stage.stage` > `#explore-globe.globe-host` + `#explore-credit`, `.explore-side` (`.explore-search` with
+  `#explore-search` combobox, `#explore-search-clear`, `#explore-results` listbox; `#place-card.place`),
+  `#explore-tools` (Colour by seg + `#explore-legend`), a `.mapctl` (data-action `explore-zoom` in|out|reset,
+  `#explore-style-btn`), `#explore-status`.
+- JS, section EXPLORE (after SATELLITE IMAGERY, before the engine): `EXPLORE_SKILLS`, `MASTERY_STEPS`, `explore`
+  (state: on, selected, colour, view, home, countries, focus, results, active, flags), `worldNeighbours(geometries)`
+  -> `state.neighbours` (set in `loadWorldFeatures`), `EXTRA_BORDERS`, `BORDER_ONLY`, `exploreCountries()`,
+  `isCountryKey(key)`, `countryFromHash()`, `renderExplore()`, `enterExplore()` / `leaveExplore()` /
+  `setExploreLayers()` / `frameExplore()`, `paintExplore()`, `drawExploreOverlay(ctx)`, `onExploreClick(e)`,
+  `countryFocus(name)`, `exploreClear()`, `viewCentreFor(lonlat, radius, dx, dy)`, `showCountry(name, opts)`,
+  `selectCountry(name, opts)`, `renderExploreTools()`, `chooseExploreColour()`, `daysAgoText(day)`, `renderPlace()`,
+  `setPlaceHeight()` (`--place-h` on the screen), `searchCountries(text)`, `pickCountry(name, fromSearch)`.
+- Map code generalised: `mapStage()` (the stage in use), `mapStyleButtons()`, `imageryFailedNotice()`,
+  `satEnabled()` ignores Uncharted while `explore.on`; engine styles `step0`..`step3` (0.82 alpha over imagery);
+  `drawMapOverlay`, `onMapClick`, `onMapMove`, the hover handler and `placeLearnLabels` branch on `explore.on`.
+  `switchScreen` leaves Explore for any other screen and keeps the globe running on `explore`; `startGame` calls
+  `leaveExplore()` right after its awaits. `init()` re-renders Explore once the globe exists.
+- Keys: `globeKey(e)` + `turnGlobe(dx, dy)` (arrows, + - 0) shared by the game's key handler and Explore's.
+- ACTIONS: `see-on-globe` (Stats footer chips), `explore-colour`, `explore-pick`, `explore-close`,
+  `explore-search-clear`, `explore-zoom`, `explore-map-style`. Hook: `window.__atlas.explore`, `.selectCountry`,
+  `.searchCountries`.
+- CLAUDE.md: Explore paragraph, Learn paragraph rewritten, `&learn=1`.
+REMAINING: full suite chain on the final tree (`explore/run-suites.sh` -> `explore/suites.log`), fix what it
+finds (expected: check-shell / check-stats may count nav links or panels), final screenshots looked at, report.
+
+### Traps and notes for successors
+- Never call `frameMap()` / `applyMapStyle()` for a round while `explore.on` is true: they would measure and style
+  Explore's stage. `startGame` handles it (`leaveExplore()` before `applyImagerySupport()`).
+- `.explore-side` is a flex item with a z-index: it is a stacking context (search results must stay above the tools).
+- The colour check in the suite reads the screen through `page.screenshot` + a canvas in the page (no PNG library here).
+- A flight starts a frame or more after the key or click under software rendering: tests wait with `moved(page, from)`
+  (the view left `from`, then came to rest), not with a fixed sleep.
+- Test tools: `explore/check-explore.js [--mobile] [--only=nav,neighbours,select,search,colour,satellite,keys,
+  roundtrip,links,stats,learn,nogl]`, `explore/shoot-explore.js [--mobile] [--dark] [--size=WxH] [--only=explore,
+  search,colour,satellite,stats,link,sizes,learn,learnsheet]`, `explore/nb-raw.js` (topology neighbours, raw names),
+  `explore/run-suites.sh` (every suite; writes explore/suites.log and explore/suites/*.log).
+
+Orchestrator note, 2026-11-17 18:00 UTC: the pipeline was stopped at the owner's request (they need the rest of
+this usage window) while the Explore stage was on its final suite run; tree clean at 245bb57, Explore's code is
+fd779a9. What is left of the stage is in the resume note (`$S/resume-note-explore.txt`); a resume is scheduled
+for 20:41 UTC with `atlas-learning-resume.js` (quiz and modes pinned, Explore to finish, then Polish).

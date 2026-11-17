@@ -131,7 +131,7 @@ groups.hud = async () => {
         const q = b.getBoundingClientRect();
         return q.width > 0 && getComputedStyle(b).visibility !== 'hidden' && (q.width < 44 || q.height < 44);
       }).map(b => b.id || b.className)), []);
-    const card = await rect(page, '#prompt'), skip = await rect(page, '#skip-btn'), ctl = await rect(page, '.mapctl');
+    const card = await rect(page, '#prompt'), skip = await rect(page, '#skip-btn'), ctl = await rect(page, '#game-screen .mapctl');
     r.check('hud (phone): prompt at the top, Skip bottom centre, controls lower right above it',
       card[1] < 100 && skip[1] > 700 && Math.abs(skip[0] + skip[2] / 2 - 195) < 3 && ctl[0] > 300 && ctl[1] + ctl[3] <= skip[1], [card, skip, ctl]);
     r.eq('hud (phone): one line says where the round stands', await text(page, '#game-sub'), '5 of 54');

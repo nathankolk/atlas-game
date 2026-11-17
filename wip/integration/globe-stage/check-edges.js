@@ -36,7 +36,7 @@ groups.opening = async () => {
       const A = window.__atlas, screen = document.getElementById('game-screen');
       const hidden = sel => getComputedStyle(document.querySelector(sel)).visibility === 'hidden';
       return { opening: screen.classList.contains('is-opening'), world: A.state.allFeatures.length, sketch: A.map.sketch.features.length,
-        hud: [hidden('.gamebar'), hidden('.hud-top'), hidden('.game-actions'), hidden('.mapctl')],
+        hud: [hidden('.gamebar'), hidden('.hud-top'), hidden('.game-actions'), hidden('#game-screen .mapctl')],
         globe: getComputedStyle(document.getElementById('globe-host')).visibility, triangles: A.globe.stats().triangles,
         loading: document.getElementById('loading-overlay').classList.contains('visible') && document.getElementById('loading-overlay').textContent };
     });
