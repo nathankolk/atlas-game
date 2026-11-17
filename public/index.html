@@ -1800,7 +1800,8 @@
     width: 360px;
     pointer-events: none;
   }
-  .explore-side > * { pointer-events: auto; }
+  /* (only while the screen is the one on show: a screen fading out must not take the next one's clicks) */
+  #explore-screen.active .explore-side > * { pointer-events: auto; }
   .explore-search {
     position: relative;
     flex: none;
@@ -2313,6 +2314,13 @@
     .game-actions { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
     .game-legend { display: none; }
     .map-hint { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+  }
+  /* Explore on a short, wide window: Colour by loses its heading and moves in beside the map controls */
+  @media (max-height: 520px) and (min-width: 761px) {
+    .explore-side { top: 12px; bottom: 12px; }
+    .explore-tools { top: 12px; right: 86px; padding: 8px 10px 10px; }
+    .explore-tools > .eyebrow { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); }
+    .explore-legend { margin-top: 8px; }
   }
 
   /* Touch: every control gets a 44px target, even where the visible shape is smaller */
@@ -5589,7 +5597,7 @@
         groups +
       '</table>' +
       // The same mastery, country by country, on the globe
-      '<div class="panel-foot globe-links"><span>See it on the globe</span>' +
+      '<div class="panel-foot"><span>See it on the globe</span>' +
         '<div class="chips">' + EXPLORE_SKILLS.map(skill =>
           '<button type="button" class="chip" data-action="see-on-globe" data-value="' + skill.key + '">' + icon('globe', 'icon--sm') + skill.plural + '</button>').join('') +
         '</div>' +
@@ -8419,7 +8427,7 @@
       // The side column on the left, the map controls on the right, the tools in the top corner
       clear.left = search.right - stage.left + gap;
       clear.right = document.querySelector('#explore-screen .mapctl').getBoundingClientRect().left - stage.left - gap;
-      if (tools && stage.height - (tools.bottom - stage.top) > 360) clear.top = tools.bottom - stage.top + gap;
+      if (tools && stage.height - (tools.bottom - stage.top) > 160) clear.top = tools.bottom - stage.top + gap;
     }
     return clear;
   }
@@ -8592,7 +8600,7 @@
         '<ul class="place-skills">' + skills + '</ul>' +
       '</div>' +
       '<button type="button" class="btn btn--secondary btn--block" data-action="open-level" data-level="' +
-        continent.toLowerCase().replace(/ /g, '-') + '">' + escapeHtml(continent) + ' level' + icon('arrow') + '</button>';
+        continent.toLowerCase().replace(/ /g, '-') + '">Open the ' + escapeHtml(continent) + ' level' + icon('arrow') + '</button>';
     card.scrollTop = 0;
     setPlaceHeight();
     // The flag's font is fetched the first time a card wants one
