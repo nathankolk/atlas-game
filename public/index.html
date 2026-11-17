@@ -3924,6 +3924,9 @@
    *   variant     for a collection with a switch (COLLECTIONS' variants):
    *               which of its sets of cards the level belongs to
    *   available   false while the level cannot be played
+   *   learn       true where the level can also be taken as a Learn ladder
+   *               (see LEARN MODE): the levels that ask for shapes on the
+   *               map and are short enough to climb one name at a time
    *   why         in a few words, why not (when that is not "coming soon")
    *   names()     the level's item names, exactly as the game queues them
    *               and the mastery store keys them. Country and province
@@ -3988,6 +3991,8 @@
       collection: 'world',
       title: region === 'World' ? 'The World' : region,
       arg: region, mode: 'world-country', skill: 'country', noun: 'countries',
+      // All 184 countries would be too long a ladder
+      learn: region !== 'World',
       names: () => countryNames(region),
       ready: () => state.allFeatures.length > 0,
       load: () => state.worldLoading
@@ -3995,7 +4000,7 @@
     [
       // The fifty state names are known without the map (every map file the
       // game can load has all of them), so these are ready from the start
-      { key: 'us-state', title: 'States', skill: 'us-state', noun: 'states' },
+      { key: 'us-state', title: 'States', skill: 'us-state', noun: 'states', learn: true },
       { key: 'us-state-to-capital', title: 'States → Capitals', skill: 'us-capital', noun: 'capitals' },
       { key: 'us-capital-to-state', title: 'Capitals → States', skill: 'us-capital', noun: 'capitals' }
     ].map(def => Object.assign(def, {
@@ -4018,7 +4023,7 @@
         key: key, collection: 'provinces',
         title: round.group ? round.label : country.name,
         arg: key, mode: 'province', skill: 'province:' + round.country,
-        noun: country.noun.toLowerCase(),
+        noun: country.noun.toLowerCase(), learn: true,
         names: () => provinceRoundNames(key),
         ready: () => !!state.provinceStores[round.country],
         load: () => loadProvinceData(round.country),
@@ -4051,7 +4056,7 @@
     }))
   ).map(level => {
     const defaults = {
-      variant: null, available: true, why: null,
+      variant: null, available: true, why: null, learn: false,
       ready: () => true, load: () => Promise.resolve(), count: () => level.names().length
     };
     Object.keys(defaults).forEach(field => { if (!(field in level)) level[field] = defaults[field]; });
@@ -4110,7 +4115,7 @@
    * hyphenated ('north-america'), 'world', and every other level's card
    * key ('china-provinces', 'us-state', 'west-cities'). The Daily Five is
    * 'daily'. A link starts a fresh full round of its level straight away;
-   * &learn=1 opens a province level in Learn mode instead. The address bar
+   * &learn=1 opens a level that has a Learn ladder in Learn mode instead. The address bar
    * tracks the level in play, so copying it works too.
    * ========================================================= */
 
@@ -4158,7 +4163,7 @@
     if (!startArg || (level && !level.available)) {
       return { refused: level ? level.title + ' isn’t ready to play yet.' : 'That link doesn’t lead to a level.' };
     }
-    return { arg: startArg, opts: params.get('learn') === '1' && PROVINCE_ROUNDS[startArg] ? { learn: true } : null };
+    return { arg: startArg, opts: params.get('learn') === '1' && level && level.learn ? { learn: true } : null };
   }
 
   // Acts on what linkedLevel() found: starts the round, or says why not
@@ -4735,7 +4740,7 @@
       }
     }
     const hasBest = !!best;
-    const ladder = level.mode === 'province' ? getLearnProgress(level.arg) : null;
+    const ladder = level.learn ? getLearnProgress(level.key) : null;
     const untouched = !!summary && !summary.seen && !ladder && !levelPlayed(level);
     if (hasBest) {
       said.push('best ' + levelBestText(level, state.difficulty).replace(' / ', ' of '));
@@ -5109,8 +5114,8 @@
           ') · practice only'
       });
     }
-    if (level.mode === 'province') {
-      const ladder = getLearnProgress(level.arg);
+    if (level.learn) {
+      const ladder = getLearnProgress(level.key);
       ways.push({
         key: 'learn', icon: 'learn', title: ladder ? 'Keep Learning' : 'Learn Them',
         desc: (ladder ? 'Pick up at level ' + ladder.level + ' of ' + ladder.order.length + ' · ' : '') +
@@ -5126,7 +5131,7 @@
     if (!ways.some(way => way.key === sheet.way)) sheet.way = 'play';
     const bests = {};
     Object.keys(DIFFICULTY_INFO).forEach(d => { bests[d] = levelBestText(level, d); });
-    const ladder = level.mode === 'province' ? getLearnProgress(level.arg) : null;
+    const ladder = level.learn ? getLearnProgress(level.key) : null;
 
     document.getElementById('sheet-play').innerHTML =
       '<div>' +
@@ -5168,7 +5173,7 @@
       const focus = levelFocusList(level);
       what = focus ? focus.names.length + ' to revisit' : what;
     } else if (sheet.way === 'learn') {
-      const ladder = getLearnProgress(level.arg);
+      const ladder = getLearnProgress(level.key);
       what = ladder ? 'level ' + ladder.level + ' of ' + ladder.order.length : 'from one';
     }
     document.getElementById('sheet-start-btn').innerHTML =
@@ -6005,8 +6010,8 @@
 
     // Learn mode: the queue becomes the ladder order, quizzed one level at
     // a time (startLearnLevel builds each level's queue).
-    if (opts && opts.learn && mode === 'province') {
-      state.learn = createLearnRun(region, state.queue, !!opts.learnFresh);
+    if (opts && opts.learn && level && level.learn) {
+      state.learn = createLearnRun(level.key, state.queue, !!opts.learnFresh);
     }
     // Learn quizzes record no answers, so there is no gain to show after one
     state.gainStart = state.learn ? null : masterySnapshot();
@@ -13166,16 +13171,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   }
 
   /* =========================================================
-   * LEARN MODE (province ladder)
+   * LEARN MODE (a ladder through a level's names)
    *
-   * Level n: study the first n provinces of a shuffled order (named on the
-   * map, newest highlighted), then find all n in random order. One miss
-   * restarts the level with the same n; a clean pass adds the next one.
-   * Practice only: no records, no focus list, no per-item mastery. Each
-   * cleared level does count as a session in the activity log.
+   * For the levels marked learn in LEVELS: a continent's countries, the
+   * US states, a country's provinces. Level n: study the first n places
+   * of a shuffled order (named on the map, newest highlighted), then find
+   * all n in random order. One miss restarts the level with the same n; a
+   * clean pass adds the next one. Practice only: no records, no focus
+   * list, no per-item mastery. Each cleared level does count as a session
+   * in the activity log.
    *
-   * Progress persists per round under "atlas-learn" (synced; per round,
-   * whichever device saved last wins):
+   * Progress persists per level, by its key, under "atlas-learn" (synced;
+   * per level, whichever device saved last wins):
    *   { "china-provinces": { order: [...all names], level: 7, savedAt } }
    * level = the level to resume at. A finished ladder leaves
    * { done: true, savedAt } in its place, so that an older copy of the
@@ -13199,27 +13206,27 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     } catch (e) { /* storage blocked - ignore silently */ }
   }
 
-  function getLearnProgress(roundKey) {
-    const p = loadLearnAll()[roundKey];
+  function getLearnProgress(levelKey) {
+    const p = loadLearnAll()[levelKey];
     if (!p || !Array.isArray(p.order) || !p.order.length || !(p.level >= 1)) return null;
     return p;
   }
 
   function saveLearnProgress(run) {
     const all = loadLearnAll();
-    all[run.roundKey] = { order: run.order.slice(), level: run.level, savedAt: Date.now() };
+    all[run.levelKey] = { order: run.order.slice(), level: run.level, savedAt: Date.now() };
     saveLearnAll(all);
   }
 
-  function markLearnFinished(roundKey) {
+  function markLearnFinished(levelKey) {
     const all = loadLearnAll();
-    all[roundKey] = { done: true, savedAt: Date.now() };
+    all[levelKey] = { done: true, savedAt: Date.now() };
     saveLearnAll(all);
   }
 
   // Resume the saved ladder if it still matches the map; else a new shuffle.
-  function createLearnRun(roundKey, names, fresh) {
-    const saved = fresh ? null : getLearnProgress(roundKey);
+  function createLearnRun(levelKey, names, fresh) {
+    const saved = fresh ? null : getLearnProgress(levelKey);
     const nameSet = new Set(names);
     let order = null;
     let level = 1;
@@ -13229,15 +13236,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     }
     if (!order) order = shuffle(names);
     const run = {
-      roundKey: roundKey, order: order, level: level, phase: 'study', restarts: 0,
+      levelKey: levelKey, order: order, level: level, phase: 'study', restarts: 0,
       // Quiz answers and time since the last cleared level, for its session
-      asked: 0, found: 0, levelStart: Date.now()
+      asked: 0, found: 0, levelStart: Date.now(),
+      anchors: new Map()     // feature key -> where its name goes (see learnAnchor)
     };
     saveLearnProgress(run);
     return run;
   }
 
-  // Study phase: show the provinces of this level with their names
+  // Study phase: show the places of this level with their names
   function startLearnLevel() {
     const run = state.learn;
     if (!run) return;
@@ -13261,14 +13269,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     document.getElementById('learn-ready-btn').hidden = false;
 
     // The view is the player's between levels; it turns only if the new
-    // province is out of sight, and does not zoom in on a small one (the
+    // place is out of sight, and does not zoom in on a small one (the
     // other names would be lost)
     const feature = activeFeatureByCanonical().get(newest);
-    if (feature) bringIntoView(feature, { keepZoom: true });
+    const spot = feature && learnAnchor(feature);
+    if (spot) bringIntoView(spot.lonlat);
     updateStats();
   }
 
-  // Tints this level's provinces (the newest brightest, and outlined) and lays their names out
+  // Tints this level's places (the newest brightest, and outlined) and lays their names out
   function drawLearnStudy() {
     const run = state.learn;
     if (!run) return;
@@ -13285,16 +13294,72 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     placeLearnLabels();
   }
 
+  // Where a place's name goes, and how much room there is for it there (the
+  // radius in degrees of the clear circle round the spot). It is the globe's
+  // anchor for the place: the point of its largest piece furthest from its
+  // edges. On a continent that can lie outside what the round shows (Russia's
+  // is in Siberia, a turn of the globe away from Europe); the name then goes
+  // on the part of the country that the round's frame does hold.
+  function learnAnchor(feature) {
+    const run = state.learn;
+    const key = featureKey(feature);
+    if (run.anchors.has(key)) return run.anchors.get(key);
+    const g = map.globe;
+    const lonlat = g.anchor(map.layer, key);
+    let spot = lonlat ? { lonlat: lonlat, roomDeg: g.anchorRadiusDeg(map.layer, key) } : null;
+    const box = map.layer === 'world' ? CONTINENT_FRAMES[state.currentContinent] : null;
+    if (spot && box && (lonlat[0] < box[0] || lonlat[0] > box[1] || lonlat[1] < box[2] || lonlat[1] > box[3])) {
+      spot = anchorInBox(feature, box) || spot;
+    }
+    run.anchors.set(key, spot);
+    return spot;
+  }
+
+  // The point of a feature, inside a [west, east, south, north] box, that is
+  // furthest from the feature's edges and the box's: found on a grid laid
+  // over the box. Null when the feature has no grid point in the box.
+  function anchorInBox(feature, box) {
+    const n = 30;
+    const stepLon = (box[1] - box[0]) / n, stepLat = (box[3] - box[2]) / n;
+    const at = (i, j) => [box[0] + (i + 0.5) * stepLon, box[2] + (j + 0.5) * stepLat];
+    const inside = [];
+    for (let i = 0; i < n; i++) {
+      inside.push([]);
+      for (let j = 0; j < n; j++) inside[i].push(d3.geoContains(feature, at(i, j)));
+    }
+    // How many cells lie between this one and the nearest that is off the feature or outside the box
+    const depth = (i, j) => {
+      for (let r = 1; r < n; r++) {
+        for (let a = -r; a <= r; a++) {
+          for (const c of [[i + a, j - r], [i + a, j + r], [i - r, j + a], [i + r, j + a]]) {
+            if (c[0] < 0 || c[0] >= n || c[1] < 0 || c[1] >= n || !inside[c[0]][c[1]]) return r;
+          }
+        }
+      }
+      return n;
+    };
+    let best = null, bestDepth = 0;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        const d = inside[i][j] ? depth(i, j) : 0;
+        if (d > bestDepth) { bestDepth = d; best = at(i, j); }
+      }
+    }
+    if (!best) return null;
+    const cell = Math.min(stepLat, stepLon * Math.cos(best[1] * Math.PI / 180));
+    return { lonlat: best, roomDeg: (bestDepth - 0.5) * cell };
+  }
+
   // The font of a study name; the newest is larger
   function learnLabelFont(isNew) {
     return (isNew ? '700 16px ' : '600 13px ') + map.ink.font;
   }
 
   // Lays out this level's names for the globe as it stands. Each name
-  // anchors on its province's largest piece, at the point furthest from
+  // anchors on its place's largest piece, at the point furthest from
   // the edges (a centroid can fall outside a thin or scattered shape:
   // Puducherry's enclaves average out to the middle of Tamil Nadu). A name
-  // that fits sits on its province; one that doesn't gets a dot there and
+  // that fits sits on its place; one that doesn't gets a dot there and
   // sits beside it. Names are placed newest first, each taking the first
   // spot that collides with nothing placed before it. Between layouts a
   // name keeps its offset from its anchor as the globe turns.
@@ -13315,9 +13380,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     const items = [];
     run.order.slice(0, run.level).reverse().forEach((name, i) => {
       const feature = byName.get(name);
-      const key = feature && featureKey(feature);
-      const lonlat = key && g.anchor(map.layer, key);
-      if (!lonlat) return;
+      const spot = feature && learnAnchor(feature);
+      if (!spot) return;
+      const lonlat = spot.lonlat;
       const p = g.project(lonlat);
       if (!p.visible) return;     // round the back of the globe: not shown, and not missed
       const isNew = i === 0;
@@ -13327,7 +13392,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
       // Big enough to hold its name: the clear circle round the anchor, as
       // the globe's curve shows it, covers the text's height and most of
       // its width (wide, short text can run a little past a bend in the border)
-      const room = 2 * g.anchorRadiusDeg(map.layer, key) * Math.PI / 180 * radius * p.z;
+      const room = 2 * spot.roomDeg * Math.PI / 180 * radius * p.z;
       items.push({
         name: name, lonlat: lonlat, isNew: isNew, w: w, h: h, sx: p.x, sy: p.y,
         fits: room >= h * 1.2 && room >= w * 0.6, dx: 0, dy: 0, dot: false
@@ -13335,7 +13400,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     });
 
     // Placement order: the newest name, then names that sit inside their
-    // province (they have the fewest options), then the dotted ones
+    // place (they have the fewest options), then the dotted ones
     items.sort((a, b) => (b.isNew - a.isNew) || (b.fits - a.fits));
 
     // Dots go down before any text, so no name ever covers another's dot
@@ -13394,7 +13459,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     g.invalidate();
   }
 
-  // Draws the study names where the globe now shows their provinces
+  // Draws the study names where the globe now shows their places
   function drawLearnLabels(ctx) {
     if (!map.labels.length) return;
     const ink = map.ink;
@@ -13443,7 +13508,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     paintMap();
   }
 
-  // Study → quiz: hide the names, ask for each of this level's provinces
+  // Study → quiz: hide the names, ask for each of this level's places
   function beginLearnQuiz() {
     const run = state.learn;
     if (!run || run.phase !== 'study') return;
@@ -13487,10 +13552,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     startLearnLevel();
   }
 
-  // Ladder complete: every province of the round found in one clean pass
+  // Ladder complete: every place of the round found in one clean pass
   function finishLearn() {
     const run = state.learn;
-    markLearnFinished(run.roundKey);
+    markLearnFinished(run.levelKey);
     syncAfterGameEnd();
     state.lastWasLearn = true;
     state.roundNeedsWork = [];
@@ -13503,7 +13568,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     state.learn = null;
 
     renderResults({
-      label: GAME_MODES.province.label(run.roundKey) + ' · Learn',
+      label: GAME_MODES[state.gameMode].label(state.currentContinent) + ' · Learn',
       badge: null,
       ring: { first: total, second: 0, missed: 0, big: String(total), unit: 'learned', said: '' },
       title: 'Ladder Complete',
