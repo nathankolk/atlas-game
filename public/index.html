@@ -6546,7 +6546,7 @@
         : state.current);
     } else if (mode === 'us-capital-to-state') {
       // The quiz target is a state name; the prompt shows its capital
-      setPrompt('Find the state with this capital', US_CAPITALS[state.current]);
+      setPrompt('Which state’s capital is', US_CAPITALS[state.current]);
     } else if (mode === 'us-state-to-capital') {
       // The prompt shows the state, tinted on the map; the answer is one of four capitals
       setPrompt('Which capital belongs to', state.current);
