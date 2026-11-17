@@ -3049,24 +3049,28 @@
     canada: {
       name: 'Canada',
       dataUrl: '/data/provinces-canada.json',
+      parents: ['Canada'],   // what the world map calls the land this map covers
       noun: 'Provinces & Territories',
       parallels: [50, 70]
     },
     china: {
       name: 'China',
       dataUrl: '/data/provinces-china.json',
+      parents: ['China', 'Hong Kong', 'Macao'],   // what the world map calls the land this map covers
       noun: 'Provinces & Regions',
       parallels: [25, 47]
     },
     india: {
       name: 'India',
       dataUrl: '/data/provinces-india.json',
+      parents: ['India'],   // what the world map calls the land this map covers
       noun: 'States',
       parallels: [12, 28]
     },
     russia: {
       name: 'Russia',
       dataUrl: '/data/provinces-russia.json',
+      parents: ['Russia'],   // what the world map calls the land this map covers
       noun: 'Regions',
       parallels: [50, 70]
     }
@@ -3548,6 +3552,7 @@
 
       const store = {
         features: geojson.features.filter(f => featureName(f)),
+        borders: topojson.mesh(topology, topology.objects[key]),   // each border once, for the globe
         canonicalByFeature: new Map(),
         featureByCanonical: new Map()
       };
@@ -5438,8 +5443,6 @@
         showNotice('The United States map could not be loaded. Check your connection and try again.');
         return;
       }
-      hideLoadingOverlay();
-      if (state.roundId !== round) return;
     }
 
     // Lazy-load the country's province map on first play
@@ -5456,10 +5459,13 @@
           showNotice('The map of ' + country.name + ' could not be loaded. Check your connection and try again.');
           return;
         }
-        hideLoadingOverlay();
-        if (state.roundId !== round) return;
       }
     }
+
+    // The globe builds a map the first time it shows it; the round starts once that is drawn
+    if (playedOnGlobe(mode)) await syncMapLayers();
+    hideLoadingOverlay();
+    if (state.roundId !== round) return;
 
     state.correct = 0;
     state.wrong = 0;
@@ -5570,11 +5576,13 @@
     state.onGlobe = playedOnGlobe(mode);
     document.getElementById('map-wrap').classList.toggle('on-globe', state.onGlobe);
     sat.failed = false;
-    applyMapStyle();
     // The globe comes in already showing this round, near enough in place
     if (state.onGlobe) {
+      applyMapStyle();
       setupMap();
       frameMap();
+    } else {
+      applyMapStyle();
     }
 
     switchScreen('game');
@@ -5586,11 +5594,12 @@
 
     // Wait for screen transition, then render map
     roundTimeout(() => {
-      if (!state.onGlobe) renderMap();
+      // The opening view once more, now that the screen is up; the first
+      // question may then turn the globe from it (States → Capitals)
+      if (state.onGlobe) frameMap();
+      else renderMap();
       if (state.learn) startLearnLevel();
       else nextCountry();
-      // The opening view is fitted round the prompt card as the first question left it
-      if (state.onGlobe) frameMap();
     }, 80);
   }
 
@@ -5873,14 +5882,6 @@
       .on('zoom', (event) => {
         state.currentTransform = event.transform;
         g.attr('transform', event.transform);
-        // City dots live inside `g` so they get scaled along with the map.
-        // Counter-scale their radius and stroke so they stay at constant
-        // screen size like the country borders do.
-        if (state.gameMode === 'us-city') {
-          const invK = 1 / event.transform.k;
-          g.selectAll('.city-dot').attr('r', CITY_DOT_BASE_RADIUS * invK);
-        }
-        if (state.learn) scaleLearnLabels(event.transform.k);
         satOnZoom();
         if (state.pin) scalePinMarkers(event.transform.k);
       });
@@ -5948,8 +5949,7 @@
       .append('path')
       .attr('class', 'country-hitzone')
       .attr('d', f => state.pathGen(f))
-      .attr('data-fkey', f => featureKey(f))
-      .on('click', handleCountryClick);
+      .attr('data-fkey', f => featureKey(f));
 
     // All features (eligible ones colored as land, others grayed out)
     // Albers USA returns invalid paths (starting with NaN) for features
@@ -5964,8 +5964,7 @@
         return (d && d.indexOf('NaN') === -1) ? d : null;
       })
       .filter(function () { return this.getAttribute('d') != null; })
-      .attr('data-fkey', f => featureKey(f))
-      .on('click', handleCountryClick);
+      .attr('data-fkey', f => featureKey(f));
 
     // Pin the City: a tap anywhere (land or sea) aims the pin. Country
     // clicks bubble up here; d3.zoom swallows the click that ends a drag.
@@ -5974,39 +5973,8 @@
       drawPinLayer();
     }
 
-    // City-dot layer (us-city mode only). Sits on top of the country
-    // polygons so each city is clickable. Each dot's radius
-    // is set in map-space units, so on subsequent zoom events we
-    // counter-scale it (see zoomBehavior .on('zoom') above) to keep
-    // constant screen size.
-    if (state.gameMode === 'us-city') {
-      const cities = US_CITIES_BY_REGION[state.currentContinent] || [];
-      const k0 = (state.currentTransform && state.currentTransform.k) || 1;
-      g.selectAll('.city-dot')
-        .data(cities)
-        .enter()
-        .append('circle')
-        .attr('class', 'city-dot')
-        .attr('cx', d => {
-          const p = state.projection(d.coords);
-          return p ? p[0] : 0;
-        })
-        .attr('cy', d => {
-          const p = state.projection(d.coords);
-          return p ? p[1] : 0;
-        })
-        .attr('r', CITY_DOT_BASE_RADIUS / k0)
-        .attr('data-city', d => d.name)
-        .on('click', handleCityClick);
-    }
-
     satReset();
   }
-
-  // Base radius for city dots, in screen pixels at zoom k=1.
-  // The dots live inside the zoom-transformed group, so we divide by k
-  // on every zoom event to keep them visually constant.
-  const CITY_DOT_BASE_RADIUS = 6;
 
   function isEligible(feature) {
     if (state.activeDataset === 'us') {
@@ -6078,7 +6046,7 @@
       // The prompt shows the state, tinted on the map; the answer is one of four capitals
       setPrompt('Which capital belongs to', state.current);
       renderCapitalChoices(state.current);
-      highlightPromptedState(state.current);
+      setPromptFeature(state.usFeatureByCanonical.get(state.current) || null);
     } else {
       setPrompt(state.learn
         ? 'Level ' + state.learn.level + ' of ' + state.learn.order.length + ' · find'
@@ -6116,18 +6084,6 @@
     }
     const skill = roundSkill();
     if (skill) mastery.record(skill, state.current, Mastery.OUTCOMES[points]);
-  }
-
-  // Highlights the currently-prompted state in the state-to-capital mode
-  // so the user can see which state they're being asked about. Also pans
-  // to it if it's off-screen.
-  function highlightPromptedState(stateName) {
-    d3.selectAll('.country.prompt-highlight').classed('prompt-highlight', false);
-    const feature = state.usFeatureByCanonical.get(stateName);
-    if (!feature) return;
-    const targetKey = featureKey(feature);
-    d3.select('.country[data-fkey="' + CSS.escape(targetKey) + '"]').classed('prompt-highlight', true);
-    ensureFeatureVisible(feature);
   }
 
   // Builds 4 capital-choice buttons for state-to-capital mode: the correct
@@ -6208,33 +6164,9 @@
     return points === 2 ? 'found' : 'second';
   }
 
-  // The SVG map's classes for a mark and for an answer's flash
-  const SVG_MARK = { found: 'completed-correct', second: 'completed-second', missed: 'completed-wrong' };
-  const SVG_FLASH = { good: 'target-correct', bad: 'target-wrong' };
-
-  // True once an item on the SVG map carries its mark and takes no more answers
-  function isMarked(el) {
-    return el.classList.contains('completed-correct') || el.classList.contains('completed-second') ||
-      el.classList.contains('completed-wrong');
-  }
-
-  // The SVG map's shape for a feature
-  function svgFeature(key) {
-    return d3.select('.country[data-fkey="' + CSS.escape(key) + '"]');
-  }
-
   // Shows a feature in an answer's colour ('good' or 'bad') for ms. Given
   // a mark, the feature keeps it from then on.
   function flashFeature(key, style, ms, mark) {
-    if (!state.onGlobe) {
-      const shape = svgFeature(key);
-      shape.classed(SVG_FLASH[style], true);
-      roundTimeout(() => {
-        shape.classed(SVG_FLASH[style], false);
-        if (mark) shape.classed(SVG_MARK[mark], true);
-      }, ms);
-      return;
-    }
     if (mark) map.marks.set(key, mark);
     paintFeature(key);
     map.globe.flash(map.layer, key, style, ms);
@@ -6244,26 +6176,6 @@
       map.outlines.push({ feature: feature, kind: 'flash', until: performance.now() + ms * 0.6 });
       map.globe.animate(ms * 0.6 + 50);
     }
-  }
-
-  // A click on a shape of the SVG map
-  function handleCountryClick(event, f) {
-    if (state.gameMode === 'city-pin') return;   // the map-wide pin handler takes it
-    if (state.interactionLocked) return;
-    if (!state.current) return;
-    if (!isEligible(f)) return;
-    // In state-to-capital mode, clicking the map shouldn't register —
-    // the user answers via the capital choice buttons instead.
-    if (state.gameMode === 'us-state-to-capital') return;
-    // In cities mode, the city dots are the click target, not the
-    // state polygons under them.
-    if (state.gameMode === 'us-city') return;
-
-    // The click may have landed on the shape or on a tiny shape's unseen
-    // hit zone; either way the shape itself says whether it is answered
-    const el = svgFeature(featureKey(f)).node();
-    if (!el || isMarked(el)) return;
-    answerFeature(featureKey(f));
   }
 
   // An answer given on the map: the feature with this key was picked
@@ -6312,46 +6224,35 @@
     }
   }
 
-  // Prominently reveal a missed country: pan to it if off-screen,
-  // flash the country with a bright gold fill and thick navy outline,
-  // and draw a pulsing ring marker at its centroid.
+  // Shows a missed answer on the map for a while: its shape in gold with a
+  // heavy outline, rings pulsing on it, and the globe turned to it
   function revealTargetFeature(feature, toastHtml) {
     const key = featureKey(feature);
     showToast('wrong', toastHtml);
     updateStats();
     // The level restarts after a Learn miss, and Hard keeps no marks
     const mark = state.learn || state.hardMode ? null : 'missed';
-
-    if (state.onGlobe) {
-      map.shown.set(key, 'reveal');
-      paintFeature(key);
-      map.outlines.push({ feature: feature, kind: 'reveal', until: performance.now() + 2600 });
-      map.reveal = { lonlat: map.globe.anchor(map.layer, key) || d3.geoCentroid(feature), start: performance.now() };
-      map.globe.animate(2750);
-      bringIntoView(feature);
-    } else {
-      svgFeature(key).classed('reveal', true);
-      ensureFeatureVisible(feature);
-      showRevealMarker(feature);
-    }
+    map.shown.set(key, 'reveal');
+    paintFeature(key);
+    map.outlines.push({ feature: feature, kind: 'reveal', until: performance.now() + 2600 });
+    map.reveal = { lonlat: map.globe.anchor(map.layer, key) || d3.geoCentroid(feature), start: performance.now() };
+    map.globe.animate(2750);
+    const zoomBefore = bringIntoView(feature);
 
     roundTimeout(() => {
-      if (state.onGlobe) {
-        // The gold eases into the mark, or back to plain land
-        map.shown.delete(key);
-        if (mark) map.marks.set(key, mark);
-        paintFeature(key);
-        map.globe.flash(map.layer, key, 'reveal', 450);
-      } else {
-        const shape = svgFeature(key).classed('reveal', false);
-        if (mark) shape.classed(SVG_MARK[mark], true);
-      }
+      // The gold eases into the mark, or back to plain land
+      map.shown.delete(key);
+      if (mark) map.marks.set(key, mark);
+      paintFeature(key);
+      map.globe.flash(map.layer, key, 'reveal', 450);
+      // A speck was zoomed in on to show it: back out to where the player was
+      if (zoomBefore) map.globe.flyTo({ k: zoomBefore }, { duration: reducedMotion() ? 0 : 450 });
       if (state.learn) learnLevelFailed();
       else nextCountry();
     }, 2600);
   }
 
-  // Pan the map so the given feature is visible, if currently off-screen.
+  // Pan the SVG map so the given feature is visible, if currently off-screen.
   function ensureFeatureVisible(feature) {
     if (!state.svg || !state.zoomBehavior || !state.pathGen) return;
     const t = state.currentTransform || d3.zoomIdentity;
@@ -6382,63 +6283,22 @@
             d3.zoomIdentity.translate(newX, newY).scale(t.k));
   }
 
-  // Draw a pulsing ring marker at the centroid of the given feature.
-  // Size is zoom-compensated so it looks consistent in screen pixels.
-  function showRevealMarker(feature) {
-    if (!state.pathGen || !state.mapG) return;
-    const [cx, cy] = state.pathGen.centroid(feature);
-    if (isNaN(cx) || isNaN(cy)) return;
-
-    // Clean up any stray marker
-    state.mapG.selectAll('.reveal-marker').remove();
-
-    const k = (state.currentTransform && state.currentTransform.k) || 1;
-    const invK = 1 / k;
-
-    const marker = state.mapG.append('g')
-      .attr('class', 'reveal-marker')
-      .attr('transform', 'translate(' + cx + ',' + cy + ') scale(' + invK + ')');
-
-    marker.append('circle').attr('class', 'pulse-ring');
-    marker.append('circle').attr('class', 'pulse-ring delayed');
-    marker.append('circle').attr('class', 'center-dot').attr('r', 5);
-
-    roundTimeout(() => {
-      marker.transition().duration(300).style('opacity', 0).remove();
-    }, 2400);
-  }
-
-  // City-dot click (us-city mode only). Parallel to handleCountryClick
-  // but operates on data-city attributes instead of feature keys.
-  function handleCityClick(event, cityData) {
-    if (state.interactionLocked) return;
-    if (!state.current) return;
-
-    const dotEl = event.currentTarget;
-    if (!dotEl || isMarked(dotEl)) return;
-
-    const dotSel = d3.select(dotEl);
-    const clickedName = cityData.name;
-
+  // An answer given on a city's dot (US cities)
+  function answerCity(clickedName) {
     if (clickedName === state.current) {
       const pointsEarned = state.attempts === 0 ? 2 : 1;
       scoreAnswer(pointsEarned);
-      dotSel.classed('target-correct', true);
+      if (!state.hardMode) map.dotMarks.set(clickedName, foundMark(pointsEarned));
+      flashDot(clickedName, 'good', 900);
       const pointsLabel = pointsEarned === 2 ? '+2 pts' : '+1 pt';
       showToast('correct', 'Well done — <em>' + clickedName + '</em> · ' + pointsLabel);
       updateStats();
       flashScore();
-
-      roundTimeout(() => {
-        dotSel.classed('target-correct', false);
-        if (!state.hardMode) dotSel.classed(SVG_MARK[foundMark(pointsEarned)], true);
-        nextCountry();
-      }, 900);
+      roundTimeout(nextCountry, 900);
     } else {
       state.attempts++;
       state.picks.push(clickedName);
-      dotSel.classed('target-wrong', true);
-      roundTimeout(() => dotSel.classed('target-wrong', false), 700);
+      flashDot(clickedName, 'bad', 700);
       shakePrompt();
 
       if (state.attempts >= 2) {
@@ -6451,78 +6311,26 @@
     }
   }
 
-  // Reveal animation for a missed city: pan to it if off-screen, flash the
-  // dot, draw the pulsing ring marker, advance after a beat.
+  // Shows a missed city: its dot in gold, rings pulsing on it, the globe
+  // turned to it; then on to the next question
   function revealMissedCity(cityName) {
-    const cities = US_CITIES_BY_REGION[state.currentContinent] || [];
-    const cityData = cities.find(c => c.name === cityName);
-    if (!cityData) {
-      showToast('wrong', 'Not quite — this is <em>' + cityName + '</em>');
+    const dot = map.dots.find(d => d.name === cityName);
+    showToast('wrong', 'Not quite — this is <em>' + cityName + '</em>');
+    if (!dot) {
       roundTimeout(nextCountry, 1800);
       return;
     }
-
-    const dotSel = d3.select('.city-dot[data-city="' + CSS.escape(cityName) + '"]');
-    dotSel.classed('reveal', true);
-    showToast('wrong', 'Not quite — this is <em>' + cityName + '</em>');
     updateStats();
-
-    ensureCoordsVisible(cityData.coords);
-    showRevealMarkerAtCoords(cityData.coords);
+    flashDot(cityName, 'reveal', 2600);
+    map.reveal = { lonlat: dot.lonlat, start: performance.now() };
+    map.globe.animate(2750);
+    bringIntoView(dot.lonlat);
 
     roundTimeout(() => {
-      dotSel.classed('reveal', false);
-      if (!state.hardMode) dotSel.classed('completed-wrong', true);
+      if (!state.hardMode) map.dotMarks.set(cityName, 'missed');
+      map.globe.invalidate();
       nextCountry();
     }, 2600);
-  }
-
-  // Pan the map so the given [lng, lat] point is visible. Parallel to
-  // ensureFeatureVisible but for explicit points (cities have no polygon).
-  function ensureCoordsVisible(coords) {
-    if (!state.svg || !state.zoomBehavior || !state.projection) return;
-    const proj = state.projection(coords);
-    if (!proj) return;
-    const [cx, cy] = proj;
-    const t = state.currentTransform || d3.zoomIdentity;
-    const node = state.svg.node();
-    const width = node.clientWidth || node.getBoundingClientRect().width;
-    const height = node.clientHeight || node.getBoundingClientRect().height;
-    const sx = cx * t.k + t.x;
-    const sy = cy * t.k + t.y;
-    const marginX = width * 0.15;
-    const marginY = height * 0.15;
-    const inView = sx >= marginX && sx <= width - marginX &&
-                   sy >= marginY && sy <= height - marginY;
-    if (inView && t.k <= 1.2) return;
-    if (t.k <= 1.05 && inView) return;
-
-    const newX = width / 2 - cx * t.k;
-    const newY = height / 2 - cy * t.k;
-    state.svg.transition().duration(550)
-      .call(state.zoomBehavior.transform,
-            d3.zoomIdentity.translate(newX, newY).scale(t.k));
-  }
-
-  // Pulsing ring marker at an arbitrary [lng, lat] point. Parallel to
-  // showRevealMarker, which uses a feature's centroid.
-  function showRevealMarkerAtCoords(coords) {
-    if (!state.projection || !state.mapG) return;
-    const proj = state.projection(coords);
-    if (!proj) return;
-    const [cx, cy] = proj;
-    state.mapG.selectAll('.reveal-marker').remove();
-    const k = (state.currentTransform && state.currentTransform.k) || 1;
-    const invK = 1 / k;
-    const marker = state.mapG.append('g')
-      .attr('class', 'reveal-marker')
-      .attr('transform', 'translate(' + cx + ',' + cy + ') scale(' + invK + ')');
-    marker.append('circle').attr('class', 'pulse-ring');
-    marker.append('circle').attr('class', 'pulse-ring delayed');
-    marker.append('circle').attr('class', 'center-dot').attr('r', 5);
-    roundTimeout(() => {
-      marker.transition().duration(300).style('opacity', 0).remove();
-    }, 2400);
   }
 
   function handleSkip() {
@@ -7052,11 +6860,22 @@
   const map = {
     globe: null,
     layer: 'world',        // the layer the round in play is answered on
+    layerSet: '',          // which maps the globe has been given (see syncMapLayers)
+    drawn: false,          // those maps are built and on the globe
+    drawing: null,         // promise of that, for the set last asked for
+    provinces: null,       // the province store whose map is the 'prov' layer
     eligible: new Set(),   // keys of the features this round can ask for
     marks: new Map(),      // feature key -> 'found' | 'second' | 'missed', for the rest of the round
     shown: new Map(),      // feature key -> a style that overrides its mark for a moment
+    tints: new Map(),      // feature key -> 'learnKnown' | 'learnNew' while a Learn level is studied
+    promptKey: null,       // the feature the question is about (States → Capitals)
     outlines: [],          // { feature, kind, until }: shapes drawn over the map
     reveal: null,          // { lonlat, start }: rings pulsing where a missed answer is
+    dots: [],              // US cities: { name, lonlat } for each dot of the round
+    dotMarks: new Map(),   // city name -> 'found' | 'second' | 'missed'
+    dotShown: new Map(),   // city name -> { style, until }: an answer's flash, or the reveal
+    dotHover: null,        // name of the dot under the mouse
+    labels: [],            // Learn: the names laid out over the provinces being studied
     home: null,            // the view the round opened on
     clear: null,           // what the HUD leaves free, in the host's px: { left, right, top, bottom }
     ink: {},               // the map's colours for what is drawn over it
@@ -7075,10 +6894,17 @@
     'Oceania': [112, 180, -48, 0]
   };
   const WORLD_VIEW = { lon: 15, lat: 20 };   // where a whole-world round opens
+  // The United States open on the lower 48: at a size that shows them all,
+  // Alaska and Hawaii would shrink every other state by a third. They are a
+  // turn of the globe away.
+  const US_FRAME = [-125, -66.5, 24, 49.5];
+  const MAP_LAYERS = ['world', 'us', 'prov'];   // bottom to top
+  const DATASET_LAYER = { world: 'world', us: 'us', province: 'prov' };
+  const CITY_DOT_RADIUS = 6;                 // px, at every zoom
 
   // True for the modes drawn on the globe; the rest still use the SVG map
   function playedOnGlobe(mode) {
-    return mode === 'world-country' || mode === 'daily-five';
+    return mode !== 'city-pin';
   }
 
   // A CSS colour as [r, g, b, a]: r, g and b 0–255, a 0–1
@@ -7108,20 +6934,43 @@
     if (map.globe) return;
     const host = document.getElementById('globe-host');
     const g = map.globe = Globe.create(host, { dblClickZoom: false });
-    applyMapLook();
-    g.setLayers([{
-      id: 'world', features: state.allFeatures, key: featureKey, borders: state.worldBorders,
-      interactive: true, style: 'dim'
-    }]);
-    applyMapLook();     // the layer's borders take their colour once it exists
+    syncMapLayers();
     g.addOverlay(drawMapOverlay);
     g.on('click', onMapClick);
     g.on('hover', hit => {
+      if (state.gameMode === 'us-city') return;     // the dots have the cursor there (see onMapMove)
       // A hand over what can be picked; in Uncharted that would give the shapes away
       const pick = !!hit && hit.layerId === map.layer && state.difficulty !== 'uncharted' && canPick(hit.key);
       host.style.setProperty('--globe-cursor', pick ? 'pointer' : '');
     });
+    g.on('move', onMapMove);
+    // More room between provinces once a zoom has settled: lay the names out again
+    g.on('settle', placeLearnLabels);
     if (!document.getElementById('game-screen').classList.contains('active')) g.pause();
+  }
+
+  // Hands the globe every map there is to show: the world, the United
+  // States once loaded, and the provinces of the country played last. A
+  // map the globe already has is not built again, but every layer comes
+  // back plain, so a round is set up after this, never before. Resolves
+  // when the maps are drawn.
+  function syncMapLayers() {
+    const round = PROVINCE_ROUNDS[state.currentProvinceRound];
+    if (round && state.provinceStores[round.country]) map.provinces = state.provinceStores[round.country];
+    const layers = [{ id: 'world', features: state.allFeatures, key: featureKey, borders: state.worldBorders, style: 'dim' }];
+    if (state.usLoaded) layers.push({ id: 'us', features: state.usFeatures, key: featureKey, style: 'dim', visible: false });
+    if (map.provinces) {
+      layers.push({ id: 'prov', features: map.provinces.features, key: featureKey, borders: map.provinces.borders, style: 'dim', visible: false });
+    }
+    const set = layers.map(layer => layer.id + ':' + layer.features.length + ':' + featureKey(layer.features[0])).join('|');
+    if (set === map.layerSet) return map.drawing;
+    map.layerSet = set;
+    map.drawn = false;
+    map.drawing = map.globe.setLayers(layers).then(() => {
+      if (map.layerSet === set) map.drawn = true;
+    });
+    applyMapLook();     // the layers' borders take their colour once they exist
+    return map.drawing;
   }
 
   // Reads the map's colour tokens as they stand (theme, imagery, Uncharted)
@@ -7142,6 +6991,7 @@
       hover: token('--g-near'),
       found: token('--g-found'), second: token('--g-second'), missed: token('--g-missed'),
       good: veil(token('--m2')), bad: veil(token('--g-wrong')), reveal: veil(select),
+      prompt: mixRgba(select, land, 0.38), learnKnown: mixRgba(select, land, 0.3), learnNew: veil(select),
       hidden: [0, 0, 0, 0]
     };
     Object.keys(styles).forEach(name => { styles[name] = rgbaCss(styles[name]); });
@@ -7151,20 +7001,26 @@
       graticule: rgbaCss(token('--g-grat')), atmosphere: rgbaCss(token('--g-atmo')), limb: rgbaCss(token('--g-limb'))
     });
     g.setGraticule(!imagery);
-    g.updateLayer('world', {
+    MAP_LAYERS.forEach(id => g.updateLayer(id, {
       borderColor: rgbaCss(token('--g-border')),
       borderWidth: parseFloat(cs.getPropertyValue('--g-line')) || 0.6,
       bordersVisible: state.difficulty !== 'uncharted'
-    });
+    }));
     map.ink = {
       label: rgbaCss(token('--g-label')), halo: rgbaCss(token('--g-halo')),
-      select: rgbaCss(select), border: rgbaCss(token('--g-border'))
+      select: rgbaCss(select), border: rgbaCss(token('--g-border')),
+      good: rgbaCss(token('--good')), second: rgbaCss(token('--second')), bad: rgbaCss(token('--bad')),
+      hit: rgbaCss(token('--m2')), wrong: rgbaCss(token('--g-wrong')),
+      font: cs.getPropertyValue('--font-display').trim()
     };
+    // What lies under see-through land depends on the imagery
+    if (map.round) paintContext();
   }
 
   // The style a feature of the round's layer should be showing now
   function featureStyle(key) {
-    return map.shown.get(key) || map.marks.get(key) || (map.eligible.has(key) ? 'land' : 'dim');
+    return map.shown.get(key) || map.marks.get(key) || map.tints.get(key) ||
+      (key === map.promptKey ? 'prompt' : map.eligible.has(key) ? 'land' : 'dim');
   }
 
   function paintFeature(key) {
@@ -7179,6 +7035,25 @@
       styles[key] = featureStyle(key);
     });
     map.globe.setStyles(map.layer, styles);
+    paintContext();
+  }
+
+  // The world under a round played on another map: all of it out of play.
+  // The country itself lies under its own states or provinces; over imagery,
+  // where those are see-through, it is taken away so it does not darken them.
+  function paintContext() {
+    if (map.layer === 'world') return;
+    const g = map.globe;
+    g.resetStyles('world', 'dim');
+    if (!document.getElementById('map-wrap').classList.contains('sat-on')) return;
+    const round = PROVINCE_ROUNDS[state.currentProvinceRound];
+    const parents = round ? PROVINCE_COUNTRIES[round.country].parents : ['United States of America'];
+    parents.forEach(name => g.setStyle('world', 'name:' + name, 'hidden'));
+  }
+
+  // True when answers to the round in play are given by tapping its map's shapes
+  function answersOnShapes() {
+    return state.gameMode !== 'us-city' && state.gameMode !== 'us-state-to-capital' && !state.pin;
   }
 
   // True when a tap on this feature would count as an answer
@@ -7188,14 +7063,31 @@
 
   // Sets the globe up for the round about to start: what can be picked, and a clean picture
   function setupMap() {
-    map.layer = 'world';
+    const g = map.globe;
+    map.layer = DATASET_LAYER[state.activeDataset];
     map.eligible = new Set(state.eligibleFeatures.map(featureKey));
     map.marks.clear();
     map.shown.clear();
+    map.tints.clear();
+    map.promptKey = null;
     map.outlines = [];
     map.reveal = null;
+    map.labels = [];
+    map.dots = state.gameMode === 'us-city'
+      ? (US_CITIES_BY_REGION[state.currentContinent] || []).map(c => ({ name: c.name, lonlat: c.coords }))
+      : [];
+    map.dotMarks.clear();
+    map.dotShown.clear();
+    map.dotHover = null;
+    // The round's own map takes the taps; the world stays under it as scenery
+    const onShapes = answersOnShapes();
+    MAP_LAYERS.forEach(id => g.updateLayer(id, {
+      visible: id === map.layer || id === 'world',
+      interactive: id === map.layer && onShapes
+    }));
+    MAP_LAYERS.forEach(id => g.setHoverStyle(id, id === map.layer && onShapes ? 'hover' : null, canPick));
+    document.getElementById('globe-host').style.setProperty('--globe-cursor', '');
     paintMap();
-    map.globe.setHoverStyle(map.layer, 'hover', canPick);
   }
 
   // Sizes the globe's host so that its middle, where the globe sits, is the
@@ -7227,8 +7119,20 @@
 
   // What the round's opening view should hold, as GeoJSON; null for the whole globe
   function roundFrame() {
+    if (state.gameMode === 'us-city' || state.activeDataset === 'province') {
+      return { type: 'FeatureCollection', features: state.eligibleFeatures };
+    }
+    if (state.activeDataset === 'us') return boxOutline(US_FRAME);
     const box = CONTINENT_FRAMES[state.currentContinent];
     return state.gameMode === 'world-country' && box ? boxOutline(box) : null;
+  }
+
+  // Calls fn with every [lon, lat] of a GeoJSON object
+  function eachPosition(object, fn) {
+    const walk = a => { if (typeof a[0] === 'number') fn(a); else a.forEach(walk); };
+    if (object.type === 'FeatureCollection') object.features.forEach(f => eachPosition(f, fn));
+    else if (object.type === 'Feature') { if (object.geometry) eachPosition(object.geometry, fn); }
+    else walk(object.coordinates);
   }
 
   // The round's opening view: its frame fitted into what the HUD leaves
@@ -7251,7 +7155,7 @@
       const centreX = host.clientWidth / 2, centreY = host.clientHeight / 2, radius = g.radiusPx();
       let reachX = 0.01, reachY = 0.01;
       const p = { x: 0, y: 0, visible: false, z: 0 };
-      frame.coordinates.forEach(lonlat => {
+      eachPosition(frame, lonlat => {
         g.project(lonlat, p);
         reachX = Math.max(reachX, Math.abs(p.x - centreX) / radius);
         reachY = Math.max(reachY, Math.abs(p.y - centreY) / radius);
@@ -7274,26 +7178,28 @@
   }
 
   // Turns the globe to a place the player needs to see when it is out of
-  // sight, under the HUD, or too small to make out. Takes a feature of the
-  // round's layer or a [lon, lat].
-  function bringIntoView(target) {
+  // sight, under the HUD, or (unless opts.keepZoom) too small to make out.
+  // Takes a feature of the round's layer or a [lon, lat]. Returns the zoom
+  // it left behind when it zoomed in, else 0.
+  function bringIntoView(target, opts) {
     const g = map.globe;
     const view = g.getView();
     let lonlat = target, k = view.k;
     if (!Array.isArray(target)) {
       const key = featureKey(target);
       const info = g.featureInfo(map.layer, key);
-      if (!info) return;
+      if (!info) return 0;
       lonlat = g.anchor(map.layer, key) || info.centroid;
       const size = 2 * g.radiusPx() * Math.sin(Math.min(info.radiusDeg, 90) * Math.PI / 180);
-      if (size < 10) k = view.k * 24 / Math.max(size, 0.01);
+      if (size < 10 && !(opts && opts.keepZoom)) k = view.k * 24 / Math.max(size, 0.01);
     }
     const p = g.project(lonlat);
     const c = map.clear, edge = 36;
     const inSight = p.z > 0.35 && p.x >= c.left + edge && p.x <= c.right - edge &&
       p.y >= c.top + edge && p.y <= c.bottom - edge;
-    if (inSight && k === view.k) return;
+    if (inSight && k === view.k) return 0;
     g.flyTo({ lon: lonlat[0], lat: lonlat[1], k: k }, { duration: reducedMotion() ? 0 : 550 });
+    return k > view.k ? view.k : 0;
   }
 
   // A tap or click on the globe that was not a drag
@@ -7303,6 +7209,13 @@
     if (state.interactionLocked || !state.current) return;
     // A finger is less exact than a mouse: tiny places take a tap from further off
     const touch = !!e.originalEvent && e.originalEvent.pointerType !== 'mouse';
+    if (state.gameMode === 'us-city') {
+      // The nearest dot within reach takes the tap; an answered one takes it and does nothing
+      const dot = dotNear(e.x, e.y, touch ? 20 : 12);
+      if (dot && !map.dotMarks.has(dot.name)) answerCity(dot.name);
+      return;
+    }
+    if (!answersOnShapes()) return;
     const hit = map.globe.featureAt(e.x, e.y, {
       tolerance: touch ? 20 : 12,
       eligible: (layerId, key) => layerId === map.layer && map.eligible.has(key)
@@ -7312,13 +7225,52 @@
     answerFeature(hit.key);
   }
 
+  // The city dot nearest to a point of the host, if one is within reach px
+  function dotNear(x, y, reach) {
+    let best = null, bestD = reach;
+    const p = { x: 0, y: 0, visible: false, z: 0 };
+    map.dots.forEach(dot => {
+      map.globe.project(dot.lonlat, p);
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (p.visible && d <= bestD) { best = dot; bestD = d; }
+    });
+    return best;
+  }
+
+  // The mouse moved over the globe without a button down: the dot under it, if any
+  function onMapMove(e) {
+    if (state.gameMode !== 'us-city' || !state.onGlobe) return;
+    const dot = dotNear(e.x, e.y, CITY_DOT_RADIUS + 2);
+    const name = dot && !map.dotMarks.has(dot.name) && !state.interactionLocked ? dot.name : null;
+    if (name === map.dotHover) return;
+    map.dotHover = name;
+    document.getElementById('globe-host').style.setProperty('--globe-cursor', name ? 'pointer' : '');
+    map.globe.invalidate();
+  }
+
+  // Shows the state the question is about (States → Capitals), in view
+  function setPromptFeature(feature) {
+    const old = map.promptKey;
+    map.promptKey = feature ? featureKey(feature) : null;
+    map.outlines = map.outlines.filter(line => line.kind !== 'prompt');
+    if (old) paintFeature(old);
+    if (!feature) return;
+    paintFeature(map.promptKey);
+    map.outlines.push({ feature: feature, kind: 'prompt', until: Infinity });
+    bringIntoView(feature);
+  }
+
   // Everything drawn over the globe, bottom to top
   function drawMapOverlay(ctx, o) {
     const g = map.globe;
     const still = reducedMotion();
     map.outlines = map.outlines.filter(line => line.until > o.time);
     map.outlines.forEach(line => {
-      if (line.kind === 'reveal') {
+      if (line.kind === 'prompt') {
+        g.draw.outline(ctx, line.feature, { stroke: map.ink.select, width: 2 });
+      } else if (line.kind === 'learn') {
+        g.draw.outline(ctx, line.feature, { stroke: map.ink.label, width: 2 });
+      } else if (line.kind === 'reveal') {
         // The missed answer: a heavy outline with a glow, breathing
         ctx.globalAlpha = still ? 1 : 0.8 + 0.2 * Math.cos((line.until - o.time) / 1200 * 2 * Math.PI);
         ctx.shadowColor = map.ink.select;
@@ -7331,7 +7283,45 @@
         g.draw.outline(ctx, line.feature, { stroke: map.ink.border, width: 1.6 });
       }
     });
+    drawCityDots(ctx, o.time);
+    drawLearnLabels(ctx);
     drawRevealRings(ctx, o.time, still);
+  }
+
+  // US cities: a dot each, the same size at every zoom, in the colour of its state of play
+  function drawCityDots(ctx, now) {
+    if (!map.dots.length) return;
+    const ink = map.ink;
+    const p = { x: 0, y: 0, visible: false, z: 0 };
+    map.dots.forEach(dot => {
+      map.globe.project(dot.lonlat, p);
+      if (!p.visible) return;
+      let shown = map.dotShown.get(dot.name);
+      if (shown && shown.until <= now) { map.dotShown.delete(dot.name); shown = null; }
+      const mark = map.dotMarks.get(dot.name);
+      let fill = ink.label, stroke = ink.halo;
+      if (shown) {
+        fill = shown.style === 'good' ? ink.hit : shown.style === 'bad' ? ink.wrong : ink.select;
+        if (shown.style === 'reveal') stroke = ink.label;
+      } else if (mark) {
+        fill = mark === 'found' ? ink.good : mark === 'second' ? ink.second : ink.bad;
+      } else if (dot.name === map.dotHover) {
+        fill = ink.select;
+      }
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, CITY_DOT_RADIUS, 0, 2 * Math.PI);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = stroke;
+      ctx.stroke();
+    });
+  }
+
+  // Shows a city's dot in an answer's colour ('good' or 'bad'), or as the revealed answer, for ms
+  function flashDot(name, style, ms) {
+    map.dotShown.set(name, { style: style, until: performance.now() + ms });
+    map.globe.animate(ms + 50);
   }
 
   // Two rings spreading from a missed answer, round a dot that marks the spot
@@ -12476,10 +12466,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     state.totalQuestions = run.level;
     state.interactionLocked = true;
 
-    // Wipe last pass's green/red so the map is clean for studying
-    d3.selectAll('.country').classed('completed-correct', false)
-      .classed('completed-wrong', false).classed('target-correct', false)
-      .classed('target-wrong', false).classed('reveal', false);
+    // Last pass's marks go, so the map is clean for studying
+    map.marks.clear();
+    map.shown.clear();
 
     const newest = run.order[run.level - 1];
     drawLearnStudy();
@@ -12488,71 +12477,78 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     document.getElementById('skip-btn').hidden = true;
     document.getElementById('learn-ready-btn').hidden = false;
 
-    // Zoomed in: bring the new one into view. Zoomed out, the whole round
-    // is already on screen, so leave the framing alone.
+    // The view is the player's between levels; it turns only if the new
+    // province is out of sight, and does not zoom in on a small one (the
+    // other names would be lost)
     const feature = activeFeatureByCanonical().get(newest);
-    const k = (state.currentTransform && state.currentTransform.k) || 1;
-    if (feature && k > 1.05) ensureFeatureVisible(feature);
+    if (feature) bringIntoView(feature, { keepZoom: true });
     updateStats();
   }
 
-  // Tint and label this level's provinces (newest brightest)
+  // Tints this level's provinces (the newest brightest, and outlined) and lays their names out
   function drawLearnStudy() {
     const run = state.learn;
-    if (!run || !state.mapG || !state.pathGen) return;
+    if (!run) return;
     clearLearnStudy();
     const byName = activeFeatureByCanonical();
     run.order.slice(0, run.level).forEach((name, i) => {
       const feature = byName.get(name);
       if (!feature) return;
-      d3.select('.country[data-fkey="' + CSS.escape(featureKey(feature)) + '"]')
-        .classed(i === run.level - 1 ? 'learn-new' : 'learn-known', true);
+      const newest = i === run.level - 1;
+      map.tints.set(featureKey(feature), newest ? 'learnNew' : 'learnKnown');
+      if (newest) map.outlines.push({ feature: feature, kind: 'learn', until: Infinity });
     });
+    paintMap();
     placeLearnLabels();
   }
 
-  // Lay out this level's name labels for the current zoom. Each label
-  // anchors on the province's largest piece, at its most-inside point (a
-  // centroid can fall outside a thin or scattered shape — Puducherry's
-  // enclaves average out to the middle of Tamil Nadu). A name that fits
-  // sits on its province; one that doesn't gets a dot on the province and
-  // sits beside it. Labels are placed newest first, each taking the first
-  // spot that doesn't collide with one already placed.
+  // The font of a study name; the newest is larger
+  function learnLabelFont(isNew) {
+    return (isNew ? '700 16px ' : '600 13px ') + map.ink.font;
+  }
+
+  // Lays out this level's names for the globe as it stands. Each name
+  // anchors on its province's largest piece, at the point furthest from
+  // the edges (a centroid can fall outside a thin or scattered shape:
+  // Puducherry's enclaves average out to the middle of Tamil Nadu). A name
+  // that fits sits on its province; one that doesn't gets a dot there and
+  // sits beside it. Names are placed newest first, each taking the first
+  // spot that collides with nothing placed before it. Between layouts a
+  // name keeps its offset from its anchor as the globe turns.
   function placeLearnLabels() {
     const run = state.learn;
-    if (!run || run.phase !== 'study' || !state.mapG || !state.pathGen) return;
-    state.mapG.selectAll('.learn-labels').remove();
-    const labelG = state.mapG.append('g').attr('class', 'learn-labels');
-    const t = state.currentTransform || d3.zoomIdentity;
-    const k = t.k;
-    const svgNode = state.svg.node();
-    const viewW = svgNode.clientWidth || svgNode.getBoundingClientRect().width;
-    const viewH = svgNode.clientHeight || svgNode.getBoundingClientRect().height;
+    if (!run || run.phase !== 'study' || !state.onGlobe) return;
+    const g = map.globe;
+    const host = document.getElementById('globe-host');
+    // The part of the host that is on screen (it reaches past the stage's edge)
+    const viewW = host.clientWidth;
+    const viewTop = -host.offsetTop;
+    const viewBottom = viewTop + document.getElementById('map-wrap').clientHeight;
     const byName = activeFeatureByCanonical();
+    const measure = placeLearnLabels.ctx || (placeLearnLabels.ctx = document.createElement('canvas').getContext('2d'));
+    const radius = g.radiusPx();
 
-    // Build every label first (measured, not yet positioned), newest first
+    // Every name first (measured, not yet positioned), newest first
     const items = [];
     run.order.slice(0, run.level).reverse().forEach((name, i) => {
       const feature = byName.get(name);
-      const anchor = feature && learnLabelAnchor(feature);
-      if (!anchor) return;
-      const label = labelG.append('g')
-        .attr('class', 'learn-label' + (i === 0 ? ' new' : ''))
-        .attr('data-cx', anchor.x).attr('data-cy', anchor.y)
-        .attr('transform', 'translate(' + anchor.x + ',' + anchor.y + ') scale(' + (1 / k) + ')');
-      const text = label.append('text').text(name);
-      const bb = text.node().getBBox();
-      const w = bb.width + 8;    // room for the parchment halo
-      const h = bb.height + 2;
-      // Screen position of the anchor (the zoom transform applied)
-      const sx = anchor.x * k + t.x;
-      const sy = anchor.y * k + t.y;
-      // Big enough to hold its name: the clear area around the anchor
-      // covers the text height and most of its width (wide, short text
-      // can run a little past a curve in the border)
-      const room = anchor.radius * k * 2;
-      const fits = room >= h * 1.2 && room >= w * 0.6;
-      items.push({ label, text, w, h, sx, sy, fits, isNew: i === 0 });
+      const key = feature && featureKey(feature);
+      const lonlat = key && g.anchor(map.layer, key);
+      if (!lonlat) return;
+      const p = g.project(lonlat);
+      if (!p.visible) return;     // round the back of the globe: not shown, and not missed
+      const isNew = i === 0;
+      measure.font = learnLabelFont(isNew);
+      const w = measure.measureText(name).width + 8;    // room for the halo
+      const h = (isNew ? 20 : 16) + 2;
+      // Big enough to hold its name: the clear circle round the anchor, as
+      // the globe's curve shows it, covers the text's height and most of
+      // its width (wide, short text can run a little past a bend in the border)
+      const room = 2 * g.anchorRadiusDeg(map.layer, key) * Math.PI / 180 * radius * p.z;
+      items.push({
+        name: name, lonlat: lonlat, isNew: isNew, w: w, h: h, sx: p.x, sy: p.y,
+        fits: room >= h * 1.2 && room >= w * 0.6, dx: 0, dy: 0, dot: false
+      });
     });
 
     // Placement order: the newest name, then names that sit inside their
@@ -12561,26 +12557,26 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
 
     // Dots go down before any text, so no name ever covers another's dot
     const placed = [];
-    items.forEach(it => {
-      if (!it.fits) placed.push({ x0: it.sx - 5, y0: it.sy - 5, x1: it.sx + 5, y1: it.sy + 5 });
-    });
-    const overlapArea = (b) => placed.reduce((sum, p) => {
-      const ox = Math.min(b.x1, p.x1) - Math.max(b.x0, p.x0);
-      const oy = Math.min(b.y1, p.y1) - Math.max(b.y0, p.y0);
+    const dotBox = it => ({ x0: it.sx - 5, y0: it.sy - 5, x1: it.sx + 5, y1: it.sy + 5 });
+    items.forEach(it => { if (!it.fits) placed.push(dotBox(it)); });
+    const overlapArea = (b) => placed.reduce((sum, q) => {
+      const ox = Math.min(b.x1, q.x1) - Math.max(b.x0, q.x0);
+      const oy = Math.min(b.y1, q.y1) - Math.max(b.y0, q.y0);
       return sum + (ox > 0 && oy > 0 ? ox * oy : 0);
     }, 0);
     // Off-screen parts count as collisions, so names stay readable
     const offscreen = (b) => (Math.max(0, -b.x0) + Math.max(0, b.x1 - viewW)) * (b.y1 - b.y0) +
-      (Math.max(0, -b.y0) + Math.max(0, b.y1 - viewH)) * (b.x1 - b.x0);
+      (Math.max(0, viewTop - b.y0) + Math.max(0, b.y1 - viewBottom)) * (b.x1 - b.x0);
 
     let hidden = 0;
+    const labels = [];
     items.forEach(it => {
       const box = (dx, dy) => ({
         x0: it.sx + dx - it.w / 2, y0: it.sy + dy - it.h / 2,
         x1: it.sx + dx + it.w / 2, y1: it.sy + dy + it.h / 2
       });
       const gapX = it.w / 2 + 6;
-      const gapY = it.h / 2 + 4;
+      const gapY = it.h / 2 + 6;
       // [dx, dy, needsDot]: inside first when it fits, then beside a dot
       const candidates = (it.fits ? [[0, 0, false]] : []).concat([
         [gapX, 0, true], [-gapX, 0, true], [0, -gapY, true], [0, gapY, true],
@@ -12592,29 +12588,56 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       let leastCost = Infinity;
       for (const c of candidates) {
         const b = box(c[0], c[1]);
-        // A dot this label didn't reserve must also land somewhere clear
-        const dotBox = { x0: it.sx - 5, y0: it.sy - 5, x1: it.sx + 5, y1: it.sy + 5 };
-        const cost = overlapArea(b) + offscreen(b) + (c[2] && it.fits ? overlapArea(dotBox) : 0);
+        // A dot this name didn't reserve must also land somewhere clear
+        const cost = overlapArea(b) + offscreen(b) + (c[2] && it.fits ? overlapArea(dotBox(it)) : 0);
         if (cost === 0) { choice = c; leastCost = 0; break; }
         if (cost < leastCost) { leastCost = cost; choice = c; }
       }
       // A sliver of overlap still reads fine; a fifth of the name doesn't
       if (leastCost > it.w * it.h * 0.2 && !it.isNew) {
-        it.label.remove();
-        const onScreen = it.sx >= 0 && it.sx <= viewW && it.sy >= 0 && it.sy <= viewH;
-        if (onScreen) hidden++;
+        if (it.sx >= 0 && it.sx <= viewW && it.sy >= viewTop && it.sy <= viewBottom) hidden++;
         return;
       }
-      it.text.attr('x', choice[0]).attr('y', choice[1]);
-      if (choice[2]) {
-        it.label.insert('circle', 'text').attr('class', 'learn-dot').attr('r', it.isNew ? 4 : 3);
-        if (it.fits) placed.push({ x0: it.sx - 5, y0: it.sy - 5, x1: it.sx + 5, y1: it.sy + 5 });
-      }
-      placed.push(box(choice[0], choice[1]));
+      it.dx = choice[0];
+      it.dy = choice[1];
+      it.dot = choice[2];
+      if (it.dot && it.fits) placed.push(dotBox(it));
+      placed.push(box(it.dx, it.dy));
+      labels.push(it);
     });
-    // Newest label on top so it's never hidden under an older one
-    labelG.select('.learn-label.new').raise();
+    // The newest name is drawn last, over any older one
+    map.labels = labels.filter(it => !it.isNew).concat(labels.filter(it => it.isNew));
     setLearnHint(hidden > 0);
+    g.invalidate();
+  }
+
+  // Draws the study names where the globe now shows their provinces
+  function drawLearnLabels(ctx) {
+    if (!map.labels.length) return;
+    const ink = map.ink;
+    const p = { x: 0, y: 0, visible: false, z: 0 };
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    map.labels.forEach(label => {
+      map.globe.project(label.lonlat, p);
+      if (!p.visible) return;
+      if (label.dot) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, label.isNew ? 4 : 3, 0, 2 * Math.PI);
+        ctx.fillStyle = ink.label;
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = ink.halo;
+        ctx.stroke();
+      }
+      ctx.font = learnLabelFont(label.isNew);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = ink.halo;
+      ctx.strokeText(label.name, p.x + label.dx, p.y + label.dy);
+      ctx.fillStyle = ink.label;
+      ctx.fillText(label.name, p.x + label.dx, p.y + label.dy);
+    });
   }
 
   // "Zoom in" pill over the map for as long as some study names are left off
@@ -12628,104 +12651,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       (run.level === 1 ? ' · study it' : ' · study all ' + run.level);
   }
 
-  // Label anchor for a province, in projected (zoom 1) map units:
-  // { x, y, radius }, where radius is how far the point sits from the
-  // nearest edge. Cached per projection, since resizes rebuild it.
-  function learnLabelAnchor(feature) {
-    if (state.learnAnchorProjection !== state.projection) {
-      state.learnAnchorCache = new Map();
-      state.learnAnchorProjection = state.projection;
-    }
-    const key = featureKey(feature);
-    if (state.learnAnchorCache.has(key)) return state.learnAnchorCache.get(key);
-
-    // Outer ring of the largest piece, projected to screen units
-    const g = feature.geometry;
-    const polys = !g ? [] : g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
-    let best = null;
-    let bestArea = 0;
-    polys.forEach(poly => {
-      const ring = poly[0].map(pt => state.projection(pt)).filter(pt => pt && isFinite(pt[0]) && isFinite(pt[1]));
-      if (ring.length < 3) return;
-      const area = Math.abs(d3.polygonArea(ring));
-      if (area > bestArea) { bestArea = area; best = ring; }
-    });
-
-    let anchor = null;
-    if (best) anchor = poleOfInaccessibility(best);
-    if (!anchor) {
-      const c = state.pathGen.centroid(feature);
-      anchor = isNaN(c[0]) ? null : { x: c[0], y: c[1], radius: 0 };
-    }
-    state.learnAnchorCache.set(key, anchor);
-    return anchor;
-  }
-
-  // Point inside a ring farthest from its edges (coarse grid search, then
-  // two refinements around the best point). Plenty for label placement.
-  function poleOfInaccessibility(ring) {
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    ring.forEach(p => {
-      if (p[0] < x0) x0 = p[0];
-      if (p[1] < y0) y0 = p[1];
-      if (p[0] > x1) x1 = p[0];
-      if (p[1] > y1) y1 = p[1];
-    });
-    const edgeDist = (x, y) => {
-      let min = Infinity;
-      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-        const ax = ring[j][0], ay = ring[j][1];
-        const dx = ring[i][0] - ax, dy = ring[i][1] - ay;
-        const len2 = dx * dx + dy * dy;
-        let t = len2 ? ((x - ax) * dx + (y - ay) * dy) / len2 : 0;
-        t = Math.max(0, Math.min(1, t));
-        const ex = ax + t * dx - x, ey = ay + t * dy - y;
-        const d = ex * ex + ey * ey;
-        if (d < min) min = d;
-      }
-      return Math.sqrt(min);
-    };
-    let bestPt = null;
-    let bestD = -1;
-    const search = (cx0, cy0, cx1, cy1, n) => {
-      for (let i = 0; i <= n; i++) {
-        for (let j = 0; j <= n; j++) {
-          const x = cx0 + (cx1 - cx0) * i / n;
-          const y = cy0 + (cy1 - cy0) * j / n;
-          if (!d3.polygonContains(ring, [x, y])) continue;
-          const d = edgeDist(x, y);
-          if (d > bestD) { bestD = d; bestPt = [x, y]; }
-        }
-      }
-    };
-    search(x0, y0, x1, y1, 24);
-    if (!bestPt) return null;
-    let step = Math.max(x1 - x0, y1 - y0) / 24;
-    for (let r = 0; r < 2; r++) {
-      const [bx, by] = bestPt;
-      search(bx - step, by - step, bx + step, by + step, 8);
-      step /= 4;
-    }
-    return { x: bestPt[0], y: bestPt[1], radius: bestD };
-  }
-
+  // Takes the study phase's tints, outline and names off the map
   function clearLearnStudy() {
     setLearnHint(false);
-    d3.selectAll('.country.learn-new, .country.learn-known')
-      .classed('learn-new', false).classed('learn-known', false);
-    if (state.mapG) state.mapG.selectAll('.learn-labels').remove();
-  }
-
-  // Keep labels a constant screen size while zooming, then re-lay them out
-  // once the zoom settles (more room between provinces when zoomed in)
-  function scaleLearnLabels(k) {
-    if (!state.mapG) return;
-    state.mapG.selectAll('.learn-label').attr('transform', function () {
-      return 'translate(' + this.getAttribute('data-cx') + ',' + this.getAttribute('data-cy') +
-        ') scale(' + (1 / k) + ')';
-    });
-    clearTimeout(scaleLearnLabels._t);
-    scaleLearnLabels._t = setTimeout(placeLearnLabels, 150);
+    map.tints.clear();
+    map.labels = [];
+    map.outlines = map.outlines.filter(line => line.kind !== 'learn');
+    paintMap();
   }
 
   // Study → quiz: hide the names, ask for each of this level's provinces
@@ -13614,6 +13546,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
         if (!gameActive) return;
         if (mapAtHome()) frameMap();
         else placeGlobeHost();
+        placeLearnLabels();
         return;
       }
       if (!gameActive || !state.svg) return;
