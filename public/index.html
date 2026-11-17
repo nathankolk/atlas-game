@@ -1153,6 +1153,8 @@
      (see placeGlobeHost). Its colours are the --g-* tokens as they stand
      on the stage, handed over by applyMapLook(). */
   .globe-host { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+  /* A level link's first moments: the globe alone, while its map loads */
+  #game-screen.is-opening > :not(.stage) { visibility: hidden; }
   .stage.no-borders .globe-host, #game-screen.pin-mode .globe-host { --globe-cursor: crosshair; }
 
   /* ===== Game: satellite imagery =====
@@ -1273,6 +1275,9 @@
     text-align: center;
     pointer-events: auto;
   }
+  /* Pin the City: wide enough that the line under the name, which grows by
+     the miss and the points at each drop, rarely widens the card */
+  #game-screen.pin-mode .prompt { min-width: min(100%, 420px); }
   .prompt .eyebrow { white-space: nowrap; }
   .prompt .eyebrow i { font-style: normal; margin: 0 6px; opacity: 0.6; }
   .prompt-try { color: var(--bad); }
@@ -1605,6 +1610,7 @@
     opacity: 1;
     pointer-events: auto;
   }
+  .loading-overlay--bare { align-items: flex-end; padding-bottom: 12vh; background: none; }
 
   .loading-inner {
     padding: 20px 28px;
@@ -3326,6 +3332,9 @@
   // The world map rounds are played on: Natural Earth at 1:50m, where
   // coastlines and the smallest countries still look right zoomed in
   const WORLD_URL = '/data/countries-50m.json';
+  // The same world at 1:110m, a seventh of the size: what the globe shows
+  // while the detailed map is on its way (see showOpeningGlobe)
+  const WORLD_SKETCH_URL = '/data/countries-110m.json';
 
   async function loadWorldData() {
     const res = await fetch(WORLD_URL);
@@ -3401,6 +3410,18 @@
     }
   }
 
+  // The coarse world map as { features, borders }: scenery only, never played on
+  async function loadWorldSketch() {
+    const res = await fetch(WORLD_SKETCH_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const topology = await res.json();
+    const countries = topology.objects.countries;
+    return {
+      features: topojson.feature(topology, countries).features.filter(f => featureName(f)),
+      borders: topojson.mesh(topology, countries)
+    };
+  }
+
   // Fetch the world map and index its countries by key and canonical name
   async function loadWorldFeatures() {
     const topology = await loadWorldData();
@@ -3423,13 +3444,17 @@
   }
 
   async function init() {
+    const link = linkedLevel();
     try {
       state.worldLoading = loadWorldFeatures();
+      // A level link leads straight to the map, so the globe goes up at
+      // once (not for a Daily Five already played: that link ends on Home)
+      if (link && link.arg && !(link.arg === 'daily-five' && getDailyAttempt(todayUtcKey()))) showOpeningGlobe();
       await state.worldLoading;
 
       refreshView();
       initGlobe();
-      openLinkedLevel();
+      openLinkedLevel(link);
 
       // Fire-and-forget: pull latest records from server if a sync token is set.
       // syncOnAppLoad re-renders the menu when data arrives.
@@ -3437,8 +3462,28 @@
     } catch (err) {
       console.error(err);
       state.worldFailed = true;
+      if (document.getElementById('game-screen').classList.contains('is-opening')) {
+        hideLoadingOverlay();
+        switchScreen('menu');
+      }
       refreshView();
     }
+  }
+
+  // Puts the globe on screen, alone, with the coarse world map, while the
+  // detailed map a linked level is played on loads. The round's own start
+  // takes over from there (setGameChrome brings the rest of the screen in).
+  function showOpeningGlobe() {
+    loadWorldSketch().then(sketch => {
+      if (state.allFeatures.length || state.worldFailed) return;    // the detailed map got here first
+      map.sketch = sketch;
+      initGlobe();
+      map.globe.resetStyles('world', 'land');
+      map.globe.setView({ lon: WORLD_VIEW.lon, lat: WORLD_VIEW.lat, k: 1 });
+      document.getElementById('game-screen').classList.add('is-opening');
+      switchScreen('game');
+      showLoadingOverlay('Loading the map');
+    }).catch(() => { /* the detailed map will do */ });
   }
 
   /* =========================================================
@@ -3615,23 +3660,31 @@
     } catch (e) { /* some embedded browsers block this - harmless */ }
   }
 
-  // On load: start the level named in ?play=. A slug that is no playable
-  // level stays on the menu and says so.
-  function openLinkedLevel() {
+  // What the ?play= link the page was opened with asks for: { arg, opts }
+  // to start a level, { refused: why } for a slug that is no playable
+  // level, null when there is no link
+  function linkedLevel() {
     let params;
-    try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+    try { params = new URLSearchParams(window.location.search); } catch (e) { return null; }
     const slug = (params.get('play') || '').toLowerCase();
-    if (!slug) return;
+    if (!slug) return null;
     const startArg = linkSlugs()[slug];
     const level = startArg ? levelForStartArg(startArg) : null;
     if (!startArg || (level && !level.available)) {
+      return { refused: level ? level.title + ' isn’t ready to play yet.' : 'That link doesn’t lead to a level.' };
+    }
+    return { arg: startArg, opts: params.get('learn') === '1' && PROVINCE_ROUNDS[startArg] ? { learn: true } : null };
+  }
+
+  // Acts on what linkedLevel() found: starts the round, or says why not
+  function openLinkedLevel(link) {
+    if (!link) return;
+    if (link.refused) {
       setAddressBar(baseUrl());
-      showNotice(level
-        ? level.title + ' isn’t ready to play yet.'
-        : 'That link doesn’t lead to a level.');
+      showNotice(link.refused);
       return;
     }
-    startGame(startArg, params.get('learn') === '1' && PROVINCE_ROUNDS[startArg] ? { learn: true } : null);
+    startGame(link.arg, link.opts);
   }
 
   /* =========================================================
@@ -5416,6 +5469,7 @@
   // Back to the menu with a word of explanation, for a level that can't
   // be played (level is null when the name matched none)
   function refuseLevel(level) {
+    hideLoadingOverlay();
     switchScreen('menu');
     showNotice((level ? level.title : 'That level') + ' isn’t ready to play yet.');
   }
@@ -5435,6 +5489,8 @@
       document.body.appendChild(el);
     }
     el.innerHTML = '<div class="loading-inner">' + text + '<span class="loading-dots"></span></div>';
+    // Over the opening globe the card stands alone, with no veil over the map
+    el.classList.toggle('loading-overlay--bare', document.getElementById('game-screen').classList.contains('is-opening'));
     el.classList.add('visible');
   }
   function hideLoadingOverlay() {
@@ -5498,6 +5554,7 @@
     const learn = !!state.learn;
     const pin = !!state.pin;
     const screen = document.getElementById('game-screen');
+    screen.classList.remove('is-opening');
     screen.classList.toggle('pin-mode', pin);
     // Hard: no borders on the chart (Uncharted's imagery has none anyway)
     screen.classList.toggle('pin-hard', pin && state.difficulty === 'hard');
@@ -6460,6 +6517,7 @@
     drawn: false,          // those maps are built and on the globe
     drawing: null,         // promise of that, for the set last asked for
     provinces: null,       // the province store whose map is the 'prov' layer
+    sketch: null,          // the coarse world map, shown until the detailed one is in (see showOpeningGlobe)
     eligible: new Set(),   // keys of the features this round can ask for
     marks: new Map(),      // feature key -> 'found' | 'second' | 'missed', for the rest of the round
     shown: new Map(),      // feature key -> a style that overrides its mark for a moment
@@ -6522,9 +6580,10 @@
 
   // Creates the globe and gives it the world. Called once, when the world map is in.
   function initGlobe() {
-    if (map.globe) return;
+    if (map.globe) { syncMapLayers(); return; }
     const host = document.getElementById('globe-host');
     const g = map.globe = Globe.create(host, { dblClickZoom: false });
+    applyMapMotion();
     syncMapLayers();
     g.addOverlay(drawMapOverlay);
     g.on('click', onMapClick);
@@ -6537,8 +6596,14 @@
     g.on('move', onMapMove);
     // More room between provinces once a zoom has settled: lay the names out again
     g.on('settle', placeLearnLabels);
-    // A lost WebGL context that does not come back leaves the Canvas 2D renderer: no imagery from then on
-    g.on('renderer', applyImagerySupport);
+    // A lost WebGL context that does not come back leaves the Canvas 2D
+    // renderer, which has no imagery: a round on satellite goes on on the chart
+    g.on('renderer', () => {
+      const shown = document.getElementById('map-wrap').classList.contains('sat-on');
+      applyImagerySupport();
+      applyMapStyle();
+      if (shown && !satEnabled()) showToast('wrong', 'Satellite imagery couldn’t load — showing the parchment map');
+    });
     applyImagerySupport();
     if (!document.getElementById('game-screen').classList.contains('active')) g.pause();
   }
@@ -6551,7 +6616,9 @@
   function syncMapLayers() {
     const round = PROVINCE_ROUNDS[state.currentProvinceRound];
     if (round && state.provinceStores[round.country]) map.provinces = state.provinceStores[round.country];
-    const layers = [{ id: 'world', features: state.allFeatures, key: featureKey, borders: state.worldBorders, style: 'dim' }];
+    // Until the detailed world is in, the coarse one stands in for it
+    const world = state.allFeatures.length ? { features: state.allFeatures, borders: state.worldBorders } : map.sketch;
+    const layers = [{ id: 'world', features: world.features, key: featureKey, borders: world.borders, style: 'dim' }];
     if (state.usLoaded) layers.push({ id: 'us', features: state.usFeatures, key: featureKey, style: 'dim', visible: false });
     if (map.provinces) {
       layers.push({ id: 'prov', features: map.provinces.features, key: featureKey, borders: map.provinces.borders, style: 'dim', visible: false });
@@ -6764,6 +6831,14 @@
     g.setHome(view);
     map.home = g.getView();
     map.round = state.roundId;
+  }
+
+  // Tells the globe what the app's Reduce motion setting says (the globe
+  // glides after a drag and eases a wheel zoom by itself); null leaves it
+  // to the device's own setting
+  function applyMapMotion() {
+    const set = document.documentElement.getAttribute('data-motion');
+    if (map.globe) map.globe.setOptions({ reducedMotion: set ? set === 'reduce' : null });
   }
 
   // True while the globe still shows the round's opening view
@@ -7058,7 +7133,7 @@
  * Depends on the globals `d3` (d3-array + d3-geo) and `earcut`.
  *
  *   const globe = Globe.create(hostElement, { minZoom, maxZoom, dblClickZoom,
- *                                             theme, forceCanvas2D });
+ *                                             reducedMotion, theme, forceCanvas2D });
  *
  * Layers    setLayers([{ id, features, key, interactive, borders,
  *           borderColor, borderWidth, bordersVisible, visible, style }])
@@ -8576,7 +8651,11 @@ const Globe = (function () {
     // Reused for every 'view' event; listeners copy the values if they keep them
     const viewEvent = { lon: 0, lat: 0, k: 1 };
     const viewInfo = { moving: false };
-    const reducedMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+    const systemMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+    let motionChoice = null;                   // the caller's say on reduced motion; null follows the system's
+
+    // True when movement should be instant: no eased flights or zooms, no glide after a drag.
+    function reducedMotion() { return motionChoice === null ? systemMotion.matches : motionChoice; }
 
     /* ----- Events ----- */
 
@@ -8718,7 +8797,7 @@ const Globe = (function () {
       };
       const duration = o && o.duration !== undefined ? o.duration : 700;
       const still = wrapLon(to.lon) === view.lon && to.lat === view.lat && to.k === view.k;
-      if (still || duration <= 0 || reducedMotion.matches || !scene.w || paused) {
+      if (still || duration <= 0 || reducedMotion() || !scene.w || paused) {
         setViewRaw(to.lon, to.lat, to.k);
         return Promise.resolve(true);
       }
@@ -8750,7 +8829,7 @@ const Globe = (function () {
       }
       let active = false;
       if (zoom.active) {
-        const step = reducedMotion.matches ? 1 : 1 - Math.exp(-dt / ZOOM_TAU_MS);
+        const step = reducedMotion() ? 1 : 1 - Math.exp(-dt / ZOOM_TAU_MS);
         let k = view.k * Math.pow(zoom.target / view.k, step);
         if (Math.abs(Math.log(zoom.target / k)) < 0.002) { k = zoom.target; zoom.active = false; }
         zoomAbout(k, zoom);
@@ -8793,9 +8872,11 @@ const Globe = (function () {
       zoomToward((zoom.active ? zoom.target : view.k) * factor);
     }
 
-    // Changes the options that can change after creation: { dblClickZoom, minZoom, maxZoom }.
+    // Changes the options that can change after creation: { dblClickZoom, minZoom, maxZoom,
+    // reducedMotion }. reducedMotion is true or false, or null to follow the system's setting.
     function setOptions(o) {
       if (o.dblClickZoom !== undefined) dblClickZoom = !!o.dblClickZoom;
+      if (o.reducedMotion !== undefined) motionChoice = o.reducedMotion === null ? null : !!o.reducedMotion;
       if (o.minZoom !== undefined) minZoom = o.minZoom;
       if (o.maxZoom !== undefined) maxZoom = Math.min(o.maxZoom, ZOOM_LIMIT);
       if (homeFit && scene.w) home.k = fitZoom(homeFit);
@@ -9528,7 +9609,7 @@ const Globe = (function () {
 
     // Starts the glide after a drag from the pointer's velocity over its last 120 ms.
     function startInertia(now) {
-      if (reducedMotion.matches || trackCount < 2) return;
+      if (reducedMotion() || trackCount < 2) return;
       const newest = ((trackCount - 1) % 8) * 3;
       if (now - track[newest] > 100) return;      // the pointer rested before lifting
       let oldest = newest;
@@ -12580,6 +12661,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     } catch (e) { /* private mode or disabled storage - it lasts for this visit */ }
     document.documentElement.setAttribute('data-motion', pref);
     syncMotionControl();
+    applyMapMotion();
   }
 
   // Bring Settings' switch in line with whether motion is reduced right now
