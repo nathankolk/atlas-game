@@ -92,7 +92,6 @@
 
     /* Parchment theme: surfaces */
     --bg: #f7f1e3;
-    --bg-glass: rgba(247, 241, 227, 0.86);
     --surface: #fdfaf2;
     --surface-glass: rgba(253, 250, 242, 0.94);
     --surface-sunk: #f0e8d6;
@@ -108,9 +107,10 @@
     --text-2: #4b566a;
     --text-3: #6b6453;
 
-    /* Hairlines */
+    /* Hairlines; the edge of a field, radio or switch (3:1 on every surface) */
     --rule: rgba(31, 42, 58, 0.12);
     --rule-strong: rgba(31, 42, 58, 0.28);
+    --control-border: rgba(31, 42, 58, 0.56);
 
     /* The one accent */
     --accent: #c8953c;
@@ -150,7 +150,6 @@
     --stage-1: #fdf9ee;
     --stage-2: #f1e7d2;
     --stage-3: #e3d5b6;
-    --g-ocean-1: #cfe0e4;
     --g-ocean-2: #a7c0c9;
     --g-ocean-3: #7d9fab;
     --g-land: #f5ebd4;
@@ -159,17 +158,16 @@
     --g-grat: rgba(255, 255, 255, 0.34);
     --g-limb: rgba(31, 42, 58, 0.3);
     --g-shade: rgba(22, 36, 54, 0.34);
-    --g-gloss: rgba(255, 255, 255, 0.5);
     --g-atmo: rgba(122, 155, 166, 0.4);
+    /* The three marks differ in lightness as well as hue (second try lightest, missed darkest) */
     --g-found: #a9c394;
-    --g-second: #e6c98a;
-    --g-missed: #e0b3a4;
+    --g-second: #ecd192;
+    --g-missed: #d29684;
     --g-wrong: #c4573f;
     --g-select: #c8953c;
     --g-near: #ead9ae;
     --g-label: #1f2a3a;
     --g-halo: rgba(253, 250, 242, 0.92);
-    --g-shadow: 0 48px 90px -30px rgba(31, 42, 58, 0.42);
 
     /* Elevation */
     --shadow-1: 0 1px 2px rgba(31, 42, 58, 0.06);
@@ -177,7 +175,9 @@
     --shadow-3: 0 32px 80px -24px rgba(31, 42, 58, 0.45), 0 6px 18px rgba(31, 42, 58, 0.1);
     --scrim: rgba(31, 42, 58, 0.42);
     --flag-edge: rgba(31, 42, 58, 0.3);
-    --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+    /* The focus ring: the accent, deepened until it stands 3:1 off every light surface */
+    --focus-color: #9c6a12;
+    --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus-color);
   }
 
   /* Night Chart theme: only the semantic layer changes */
@@ -185,7 +185,6 @@
     color-scheme: dark;
 
     --bg: #101824;
-    --bg-glass: rgba(16, 24, 36, 0.86);
     --surface: #172131;
     --surface-glass: rgba(23, 33, 49, 0.94);
     --surface-sunk: #0c131d;
@@ -202,6 +201,7 @@
 
     --rule: rgba(236, 228, 208, 0.12);
     --rule-strong: rgba(236, 228, 208, 0.3);
+    --control-border: rgba(236, 228, 208, 0.42);
 
     --accent: #e0a84a;
     --accent-text: #e0a84a;
@@ -235,7 +235,6 @@
     --stage-1: #1a2740;
     --stage-2: #101824;
     --stage-3: #090e16;
-    --g-ocean-1: #2a5270;
     --g-ocean-2: #183650;
     --g-ocean-3: #0c1f33;
     --g-land: #485a73;
@@ -244,23 +243,22 @@
     --g-grat: rgba(180, 205, 230, 0.13);
     --g-limb: rgba(170, 200, 230, 0.4);
     --g-shade: rgba(3, 8, 16, 0.6);
-    --g-gloss: rgba(160, 200, 235, 0.2);
     --g-atmo: rgba(96, 150, 200, 0.36);
     --g-found: #5c8553;
     --g-second: #a98843;
-    --g-missed: #7c4a44;
-    --g-wrong: #d9634a;
+    --g-missed: #693532;
+    --g-wrong: #e2725a;
     --g-select: #e0a84a;
     --g-near: #5f5c49;
     --g-label: #f4ecd9;
     --g-halo: rgba(12, 19, 29, 0.9);
-    --g-shadow: 0 0 120px -10px rgba(70, 130, 190, 0.3);
 
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-2: 0 12px 28px -12px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.25);
     --shadow-3: 0 32px 80px -24px rgba(0, 0, 0, 0.8), 0 6px 18px rgba(0, 0, 0, 0.35);
     --scrim: rgba(4, 8, 14, 0.62);
     --flag-edge: rgba(0, 0, 0, 0.55);
+    --focus-color: #e0a84a;
   }
 
   /* Surfaces that stay dark in both themes read the night theme's text,
@@ -276,6 +274,7 @@
     --text-3: #9aa5b6;
     --rule: rgba(244, 236, 217, 0.16);
     --rule-strong: rgba(244, 236, 217, 0.34);
+    --focus-color: #e0a84a;
   }
 
   /* ===== Base ===== */
@@ -310,7 +309,9 @@
   table { border-collapse: collapse; width: 100%; }
   [hidden] { display: none !important; }
 
-  :focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--r-xs); }
+  /* The ring is a shadow; the transparent outline takes its place where the
+     system forces its own colours and drops shadows */
+  :focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--focus); border-radius: var(--r-xs); }
 
   .icon { display: block; width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
   .icon--sm { width: 16px; height: 16px; }
@@ -319,7 +320,7 @@
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   /* ===== Type ===== */
-  .display-xl, .display-l, .display-m, .display-s, .num {
+  .display-xl, .display-l, .display-m, .num {
     font-family: var(--font-display);
     font-weight: 600;
     font-variant-numeric: lining-nums;
@@ -328,7 +329,6 @@
   .display-xl { font-size: 76px; line-height: 0.96; letter-spacing: -0.022em; }
   .display-l { font-size: 48px; line-height: 1.02; letter-spacing: -0.018em; }
   .display-m { font-size: 34px; line-height: 1.08; }
-  .display-s { font-size: 26px; line-height: 1.12; }
   .num { font-feature-settings: 'lnum' 1; }
 
   /* Small-caps label used above titles and figures */
@@ -342,7 +342,6 @@
   }
   .eyebrow b { font-weight: 600; color: var(--accent-text); }
   .muted { color: var(--text-3); }
-  .tnum { font-variant-numeric: tabular-nums; }
 
   /* Country flags come from a font of their own, so they look the same
      everywhere (Windows draws none by itself). It is fetched the first time
@@ -448,7 +447,7 @@
     height: 26px;
     border-radius: var(--r-pill);
     background: var(--m0);
-    box-shadow: inset 0 0 0 1px var(--rule);
+    box-shadow: inset 0 0 0 1px var(--control-border);
     transition: background-color 0.2s;
   }
   .switch::after {
@@ -573,7 +572,7 @@
     margin: 0 auto;
     padding: 0 var(--gutter);
   }
-  .brand { display: inline-flex; align-items: center; gap: 10px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; }
   .brand-mark { display: block; width: 30px; height: 30px; }
   .brand-mark .bm-ring { fill: none; stroke: var(--text); stroke-width: 1.2; }
   .brand-mark .bm-tick { stroke: var(--text); stroke-width: 1.2; stroke-linecap: round; }
@@ -673,7 +672,7 @@
   }
 
   /* A view is a screen that scrolls as a page under the navigation */
-  .view { display: block; overflow-y: auto; overscroll-behavior: contain; }
+  .view { display: block; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
   .view.is-entering > .page { animation: viewIn 0.35s ease both; }
   @keyframes viewIn {
     from { opacity: 0; transform: translateY(8px); }
@@ -1006,7 +1005,7 @@
   .mode strong { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
   .mode-text > span { display: block; font-size: 13px; color: var(--text-2); }
   .mode .count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--r-pill); background: var(--accent-wash); color: var(--accent-text); font-size: 11.5px; font-weight: 600; font-style: normal; }
-  .radio { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--rule-strong); }
+  .radio { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--control-border); }
   .mode[aria-checked="true"] { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
   .mode[aria-checked="true"] .mode-icon { background: var(--primary); color: var(--on-primary); }
   .mode[aria-checked="true"] .radio { border: 6px solid var(--text); }
@@ -1348,7 +1347,7 @@
     height: 52px;
     padding: 0 14px;
     border-radius: var(--r-sm);
-    border: 1px solid var(--rule-strong);
+    border: 1px solid var(--control-border);
     background: var(--surface);
     font-family: var(--font-display);
     font-size: 30px;
@@ -1360,7 +1359,7 @@
     transition: background-color 0.15s, border-color 0.15s;
   }
   .answer-field::placeholder { font-family: var(--font-ui); font-size: 15px; font-weight: 400; letter-spacing: 0; color: var(--text-3); }
-  .answer-field:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus); }
+  .answer-field:focus { outline: 2px solid transparent; border-color: var(--focus-color); box-shadow: var(--focus); }
   .answer-go { display: grid; place-items: center; flex: none; width: 52px; height: 52px; border-radius: var(--r-sm); background: var(--primary); color: var(--on-primary); }
   @media (hover: hover) {
     .answer-go:hover { background: var(--primary-hover); }
@@ -1566,6 +1565,7 @@
   .results-hero, .results-summary { display: grid; justify-items: center; text-align: center; }
   .results-hero { padding-top: 8px; }
   .results-summary { width: 100%; }
+  .results-summary:focus-visible { box-shadow: none; }
 
   .badge-record {
     display: inline-flex;
@@ -1754,7 +1754,7 @@
   .difflist b { font-weight: 600; color: var(--text); }
 
   /* Text field */
-  .input { min-width: 0; height: 44px; padding: 0 14px; border-radius: var(--r-sm); border: 1px solid var(--rule-strong); background: var(--surface); font: inherit; font-size: 15px; color: var(--text); }
+  .input { min-width: 0; height: 44px; padding: 0 14px; border-radius: var(--r-sm); border: 1px solid var(--control-border); background: var(--surface); font: inherit; font-size: 15px; color: var(--text); }
   .input::placeholder { color: var(--text-3); opacity: 1; }
   .input:focus-visible { border-radius: var(--r-sm); }
   .input--code { font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.04em; }
@@ -1817,7 +1817,7 @@
     border-radius: var(--r-md);
   }
   .explore-search > .icon { color: var(--text-3); }
-  .explore-search:focus-within { border-color: var(--accent); }
+  .explore-search:focus-within { border-color: var(--focus-color); box-shadow: 0 0 0 2px var(--focus-color), var(--shadow-2); }
   .explore-field { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: none; font: inherit; color: var(--text); }
   .explore-field::placeholder { color: var(--text-3); opacity: 1; }
   .explore-field:focus { outline: none; box-shadow: none; }
@@ -1942,6 +1942,20 @@
     .sheet-info { padding: 32px 28px; }
     .sheet-play { padding: 32px 24px 20px; }
     .sheet-start { padding: 0 24px 24px; }
+  }
+
+  /* The records table needs about 820px: narrower than that, each record is a row of its own */
+  @media (max-width: 900px) {
+    .records { display: none; }
+    .recs { display: block; }
+    .recs .btn { margin-top: 8px; min-height: 48px; }
+    .recs li { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 12px; padding: 12px 0; border-top: 1px solid var(--rule); }
+    .recs strong { font-family: var(--font-display); font-size: 20px; font-weight: 600; line-height: 1.15; }
+    .recs strong .tag { margin-left: 8px; vertical-align: 3px; font-family: var(--font-ui); }
+    .recs-score { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .recs small { grid-column: 1 / -1; font-size: 12.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+    .recs .recs-group { display: block; padding: 18px 0 8px; border-top-color: var(--rule-strong); }
+    .recs .recs-group:first-child { padding-top: 0; border-top: 0; }
   }
 
   /* ===== Phone ===== */
@@ -2140,17 +2154,6 @@
     .cols-plot { padding: 0 2px; }
     .cols-plot b { font-size: 10.5px; }
 
-    .records { display: none; }
-    .recs { display: block; }
-    .recs .btn { margin-top: 8px; min-height: 48px; }
-    .recs li { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 12px; padding: 12px 0; border-top: 1px solid var(--rule); }
-    .recs strong { font-family: var(--font-display); font-size: 20px; font-weight: 600; line-height: 1.15; }
-    .recs strong .tag { margin-left: 8px; vertical-align: 3px; font-family: var(--font-ui); }
-    .recs-score { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .recs small { grid-column: 1 / -1; font-size: 12.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
-    .recs .recs-group { display: block; padding: 18px 0 8px; border-top-color: var(--rule-strong); }
-    .recs .recs-group:first-child { padding-top: 0; border-top: 0; }
-
     .pintable, .pintable tbody { display: block; }
     .pintable thead, .pintable tfoot { display: none; }
     .pintable tr { display: flex; flex-wrap: wrap; align-items: baseline; padding: 6px 0; }
@@ -2235,6 +2238,13 @@
     .explore-search { position: absolute; left: 12px; right: 12px; top: 12px; }
     .explore-field { font-size: 16px; }
     .explore-tools { left: 12px; right: 12px; top: 68px; padding: 10px 12px 12px; }
+    #explore-screen.is-searching .explore-tools { visibility: hidden; }
+    /* A country's sheet takes the foot of the map. Where that leaves the
+       map controls no room under the Colour by panel, the panel stands
+       down until the sheet is closed. */
+    @media (max-height: 780px) {
+      #explore-screen.has-sheet .explore-tools { display: none; }
+    }
     .explore-legend { justify-content: space-between; gap: 4px 8px; margin-top: 10px; font-size: 11.5px; }
     .explore-legend > span { gap: 4px; }
     .place {
@@ -2242,7 +2252,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      max-height: 46%;
+      max-height: 44%;
       padding: 12px 20px 20px;
       border-width: 1px 0 0;
       border-radius: var(--r-lg) var(--r-lg) 0 0;
@@ -2556,7 +2566,7 @@
     </div>
     <div class="results">
       <div class="results-hero">
-        <div class="results-summary" id="results-summary"></div>
+        <div class="results-summary" id="results-summary" tabindex="-1"></div>
         <div class="results-actions">
           <button type="button" class="btn btn--primary" id="review-next-btn" hidden></button>
           <button type="button" class="btn btn--secondary" id="practice-btn" hidden></button>
@@ -2782,7 +2792,8 @@
   /* =========================================================
    * WORLD FACTS (capitals, ISO codes, typed spellings of country names)
    *
-   * Kept as the file the data checks run against, two spaces in.
+   * Checked on its own: tools/tests/world-facts.test.js reads this section
+   * out of the page, down to its END marker.
    * ========================================================= */
 
   // Capital, ISO 3166-1 alpha-2 code, and (optional) other capitals a quiz should accept.
@@ -3855,7 +3866,7 @@
     startArg: null,           // What startGame() was called with, so replays restart the same level
     roundId: 0,               // Goes up when a round starts and when one is left (see roundTimeout)
     practice: false,          // True for a focus round (subset of a level; skips records)
-    learn: null,              // Learn mode run (province ladder), see LEARN MODE section
+    learn: null,              // the Learn run in play (a level's ladder), see LEARN MODE section
     pin: null,                // Pin the City round: { phase, guess, results }
     quiz: null,               // Country quiz round: { rng, pool } for capital choices, { matcher } for typed names
     flagsOff: false,          // true once this browser is known to draw no flags (see flagsReady)
@@ -4694,10 +4705,6 @@
     }
 
     const pct = attempt.total > 0 ? Math.round((attempt.correct / attempt.total) * 100) : 0;
-    const said = { 2: 'first try', 1: 'second try', 0: 'missed' };
-    const marks = (attempt.sequence || []).map(points =>
-      '<li class="mark mark--' + (points === 2 ? 'first' : points === 1 ? 'second' : 'missed') + '" aria-label="' + said[points] + '">' +
-        (points === 2 ? icon('check') : points === 1 ? '2' : icon('close')) + '</li>').join('');
     return '<article class="daily is-done" data-daily="played">' + art +
       '<div class="daily-top">' + eyebrow +
         '<span class="daily-count">' + icon('clock', 'icon--sm') + 'Next puzzle in <span data-countdown="clock"></span></span>' +
@@ -4705,7 +4712,7 @@
       '<div class="daily-body">' +
         '<h3 class="daily-title">Today’s puzzle complete</h3>' +
         '<div class="daily-result">' +
-          '<ol class="marks" aria-label="Your five answers">' + marks + '</ol>' +
+          dailyMarks(attempt.sequence) +
           '<p class="daily-score"><b>' + attempt.correct + '/' + attempt.total + ' found</b> · ' + attempt.score + ' pts · ' + pct + '%</p>' +
         '</div>' +
       '</div>' +
@@ -4720,11 +4727,12 @@
 
   // Keeps every countdown to the next Daily Five (UTC midnight) current:
   // "5 h 12 m" on the card still to play, HH:MM:SS once played and on the
-  // results screen. Each redraw restarts it; it stops when none is left.
+  // results screen. Each redraw restarts it; it stops when the screen
+  // that is showing has none (Home and the results draw again on the way in).
   function startDailyCountdown() {
     clearTimeout(startDailyCountdown._t);
     function tick() {
-      const els = document.querySelectorAll('[data-countdown]');
+      const els = document.querySelectorAll('.screen.active [data-countdown]');
       if (!els.length) return;
       const next = new Date();
       next.setUTCHours(24, 0, 0, 0);
@@ -7527,11 +7535,16 @@
     'South America': [-82, -34, -56, 13],
     'Oceania': [112, 180, -48, 0]
   };
-  // On a stage taller than it is wide a continent opens on the width its
-  // countries take up across its middle: the box's corners, open sea for
-  // the most part, run off the sides or under the card. Europe's countries
-  // also lie in a narrower band than its box, which reaches out to Iceland.
-  const TALL_FRAMES = { 'Europe': [-12, 42, 35, 71] };
+  // On a stage taller than it is wide (a phone held upright) a box drawn
+  // for a wide one leaves the countries small, or its width cuts an island
+  // state off. These continents open instead on the places that mark how
+  // far their countries reach: [lon, lat] of capes, corners and outlying
+  // islands. The far north of Canada and Russia is left to run under the card.
+  const TALL_FRAMES = {
+    'Europe': [[-24.5, 65.5], [-10.5, 52], [-9.6, 38.7], [-9, 37], [14.4, 35.8], [24, 34.8], [28.3, 36], [40.3, 48.5], [26, 71.2]],
+    'Africa': [[-25.4, 16], [-17.6, 14.7], [-6, 35.9], [10, 37.4], [51.4, 11.8], [55.6, -4.6], [57.8, -20.3], [20, -34.9]],
+    'North America': [[-168.1, 65.6], [-124.7, 48.4], [-117.1, 32.5], [-92.2, 14.5], [-77.9, 7.2], [-61, 10], [-59.4, 13.1], [-52.6, 47.5], [-95, 70]]
+  };
   const WORLD_VIEW = { lon: 15, lat: 20 };   // where a whole-world round opens
   // The United States open on the lower 48: at a size that shows them all,
   // Alaska and Hawaii would shrink every other state by a third. They are a
@@ -7783,11 +7796,27 @@
     return { type: 'MultiPoint', coordinates: points };
   }
 
-  // The middle of each edge of a longitude/latitude box: fitted to these, a
-  // view holds the box's width and height across its middle, not its corners
-  function boxCross(box) {
-    const lon = (box[0] + box[1]) / 2, lat = (box[2] + box[3]) / 2;
-    return { type: 'MultiPoint', coordinates: [[box[0], lat], [box[1], lat], [lon, box[2]], [lon, box[3]]] };
+  // Where to centre a view so that a handful of places sit evenly about
+  // its middle: the centre moves to the middle of the box they are drawn
+  // in, a few times over, since the box changes as the globe turns
+  function balancedCentre(places, start) {
+    const rad = Math.PI / 180;
+    let lon = start.lon, lat = start.lat;
+    for (let i = 0; i < 4; i++) {
+      const lat0 = lat * rad;
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      places.forEach(p => {
+        const dLon = (p[0] - lon) * rad, pLat = p[1] * rad;
+        const x = Math.cos(pLat) * Math.sin(dLon);
+        const y = Math.cos(lat0) * Math.sin(pLat) - Math.sin(lat0) * Math.cos(pLat) * Math.cos(dLon);
+        x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+      });
+      // The middle of that box, as a place on the globe
+      const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, mz = Math.sqrt(Math.max(0, 1 - mx * mx - my * my));
+      lon += Math.atan2(mx, mz * Math.cos(lat0) - my * Math.sin(lat0)) / rad;
+      lat = Math.asin(Math.max(-1, Math.min(1, mz * Math.sin(lat0) + my * Math.cos(lat0)))) / rad;
+    }
+    return { lon: lon, lat: lat };
   }
 
   // What the round's opening view should hold, as GeoJSON; null for the whole globe
@@ -7801,7 +7830,9 @@
     const box = CONTINENT_FRAMES[state.currentContinent];
     if (!box) return null;
     const tall = !!map.clear && map.clear.right - map.clear.left < map.clear.bottom - map.clear.top;
-    return tall ? boxCross(TALL_FRAMES[state.currentContinent] || box) : boxOutline(box);
+    const places = tall && TALL_FRAMES[state.currentContinent];
+    // (balance: the view is centred on the places as they are drawn, see frameMap)
+    return places ? { type: 'MultiPoint', coordinates: places, balance: true } : boxOutline(box);
   }
 
   // Calls fn with every [lon, lat] of a GeoJSON object
@@ -7826,6 +7857,10 @@
     const frame = roundFrame();
     if (frame) {
       g.fitTo(frame, { padding: 0 });
+      if (frame.balance) {
+        const centre = balancedCentre(frame.coordinates, g.getView());
+        g.setView({ lon: centre.lon, lat: centre.lat, k: g.getView().k });
+      }
       const fitted = g.getView();
       // How far the frame reaches from the centre of that view, in globe radii
       const host = document.getElementById('globe-host');
@@ -8701,13 +8736,15 @@
     }
   }
 
-  // Tells the stylesheet how much of the screen's foot the card's sheet
-  // covers on a phone (0 on a wide screen, where it stands at the side), so
-  // that the map controls and the imagery credit stand clear of it
+  // Tells the stylesheet whether the card is a sheet across the screen's
+  // foot (a phone; .has-sheet) and how much it covers (0 on a wide screen,
+  // where it stands at the side), so that the map controls and the imagery
+  // credit stand clear of it
   function setPlaceHeight() {
     const screen = document.getElementById('explore-screen');
     const card = document.getElementById('place-card');
     const sheet = !card.hidden && card.offsetWidth > screen.clientWidth * 0.7;
+    screen.classList.toggle('has-sheet', sheet);
     screen.style.setProperty('--place-h', (sheet ? card.offsetHeight : 0) + 'px');
   }
 
@@ -8753,7 +8790,7 @@
     const list = document.getElementById('explore-results');
     const typed = Quiz.fold(input.value) !== '';
     document.getElementById('explore-search-clear').hidden = input.value === '';
-    list.hidden = !typed;
+    showExploreResults(typed);
     input.setAttribute('aria-expanded', String(typed && explore.results.length > 0));
     if (explore.active >= 0) input.setAttribute('aria-activedescendant', 'explore-result-' + explore.active);
     else input.removeAttribute('aria-activedescendant');
@@ -8762,6 +8799,13 @@
           '<li role="option" id="explore-result-' + i + '" data-action="explore-pick" data-name="' + escapeHtml(result.name) +
             '" aria-selected="' + (i === explore.active) + '">' + escapeHtml(result.name) + '<small>' + escapeHtml(result.note) + '</small></li>').join('')
       : (typed ? '<li class="explore-none" role="presentation">No country by that name in this atlas</li>' : '');
+  }
+
+  // Shows the list or puts it away. On a phone it opens over the Colour by
+  // panel, which steps aside for as long as the list is there (.is-searching).
+  function showExploreResults(open) {
+    document.getElementById('explore-results').hidden = !open;
+    document.getElementById('explore-screen').classList.toggle('is-searching', open);
   }
 
   function closeExploreResults() {
@@ -8786,7 +8830,7 @@
   // A click anywhere else puts the list away (what was typed stays in the field)
   document.addEventListener('click', (e) => {
     if (!explore.on || !e.target.closest || e.target.closest('.explore-search')) return;
-    document.getElementById('explore-results').hidden = true;
+    showExploreResults(false);
     document.getElementById('explore-search').setAttribute('aria-expanded', 'false');
   });
 
@@ -12888,7 +12932,7 @@ const Mastery = (function () {
 if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
 /* ===== END OF MASTERY MODULE ===== */
 
-/* ===== QUIZ LOGIC (quiz.js): typed-answer matching, capital choices, flags, level lists. Pasted byte for byte from the tested module. ===== */
+/* ===== QUIZ LOGIC (quiz.js): typed-answer matching, capital choices, flags, level lists. Stands on its own; tools/tests/quiz.test.js runs against this section. ===== */
 const Quiz = (function () {
   'use strict';
 
@@ -13488,8 +13532,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   /* =========================================================
    * MASTERY — the game's store and how rounds feed it
    *
-   * The module above is kept byte for byte as the file its tests run
-   * against, which is why it keeps its own indentation.
+   * The module above stands on its own, at the left margin: its tests
+   * (tools/tests/mastery.test.js) load it out of this page.
    *
    * Skills (each level names its own in LEVELS; levels that teach the same
    * thing share one):
@@ -15160,6 +15204,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     if (view) playEntrance(target);
     // Leaving the game lets go of the field a name was typed in, so a phone's keyboard closes
     if (name !== 'game') document.getElementById('answer-input').blur();
+    // The results are read from the top: the summary takes the focus, which
+    // is also what makes a screen reader say it
+    if (name === 'results') document.getElementById('results-summary').focus({ preventScroll: true });
+    // A countdown on the screen that has just come up starts ticking
+    startDailyCountdown();
     followKeyboard();
     // The globe draws and listens only while it is on show
     if (map.globe) {
@@ -15372,6 +15421,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     } else if (e.key === 'Escape') {
       switchScreen('menu');
     }
+  });
+
+  // Escape leaves the results too (a dialog or sheet over them takes it first)
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || dialog.open || sheet.level) return;
+    if (document.getElementById('results-screen').classList.contains('active')) switchScreen('menu');
   });
 
   // A new window size (a phone turned on its side, or its keyboard coming
