@@ -1522,6 +1522,10 @@
   }
   /* Uncharted is always imagery: nothing to switch */
   .stage.no-borders ~ .mapctl .mapctl-solo { display: none; }
+  /* Keyboard focus: the floating controls carry a shadow of their own, and
+     the grouped ones are clipped to the group's corners, so each states its ring */
+  .skip:focus-visible, .game-go:focus-visible, .mapctl-solo:focus-visible { box-shadow: var(--focus); }
+  .mapctl-group button:focus-visible { border-radius: 0; box-shadow: inset 0 0 0 2px var(--accent); }
 
   /* What the marks on the map mean, each with the round's count so far */
   .game-legend {
@@ -6889,7 +6893,7 @@
     return '<li>' +
       '<span class="revisit-mark' + (row.second ? ' is-second' : '') + '" aria-hidden="true">' + (row.second ? (row.glyph || '2') : icon('close')) + '</span>' +
       '<div><strong>' + escapeHtml(row.name) + '</strong><small>' + escapeHtml(row.story) + '</small></div>' +
-      '<span class="revisit-tally">' + (item && item.seen ? (row.tally || 'first try') + ' ' + item.first + ' of ' + item.seen : '') + '</span>' +
+      '<span class="revisit-tally">' + (item && item.seen ? item.first + ' of ' + item.seen + ' ' + (row.tally || 'first try') : '') + '</span>' +
       '<span class="level-pill"><i class="swatch' + swatch + '"></i>' + level.charAt(0).toUpperCase() + level.slice(1) + '</span>' +
     '</li>';
   }
@@ -8565,7 +8569,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
         rows: worst.map(r => ({
           second: r.pts >= 40,
           glyph: '≈',
-          tally: '80 or more',
+          tally: 'at 80+',
           name: r.name,
           story: r.km == null ? 'Skipped' : formatKm(r.km) + ' off · +' + r.pts
         })),
