@@ -59,17 +59,10 @@
 
     /* Brand palette */
     --parchment: #f1e7d2;
-    --parchment-deep: #e8dcc0;
-    --parchment-shadow: #d9c9a5;
     --ink: #1f2a3a;
     --ink-soft: #3a4a60;
     --ink-faded: #6b6250;
     --sepia: #6b4423;
-    --sepia-soft: #8a6239;
-    --ocean: #a7c0c9;
-    --ocean-deep: #7a9ba6;
-    --land: #f5ebd4;
-    --land-border: #b29e72;
     --gold: #c8953c;
     --gold-bright: #e0a84a;
     --sienna: #a0311e;
@@ -1550,6 +1543,10 @@
   .game-legend .is-missed i { background: var(--g-missed); }
   .game-legend b { font-weight: 600; color: var(--text); }
   #game-screen.pin-mode .game-legend, #game-screen.learn-mode .game-legend { display: none; }
+  /* City rounds mark dots, which take the stronger outcome colours */
+  #game-screen.city-mode .game-legend i { border-radius: 50%; background: var(--good); }
+  #game-screen.city-mode .game-legend .is-second i { background: var(--second); }
+  #game-screen.city-mode .game-legend .is-missed i { background: var(--bad); }
 
   /* A word about the map, above the actions */
   .map-hint {
@@ -2426,7 +2423,7 @@
           <button type="button" class="btn btn--ghost" id="view-map-btn" data-action="view-map" hidden><svg class="icon" aria-hidden="true"><use href="#i-map"/></svg>View on the map</button>
         </div>
       </div>
-      <div class="results-detail" id="results-detail"></div>
+      <div id="results-detail"></div>
     </div>
   </div>
 
@@ -2812,7 +2809,7 @@
     });
   })();
 
-  // Maps the data-region attribute on a menu card to the region label.
+  // Maps the data-region attribute on a level card to the region label.
   // Lets startGame dispatch us-city mode from a single button click.
   const US_CITY_REGION_KEYS = {
     'northeast-cities': 'Northeast',
@@ -3058,7 +3055,7 @@
     }
   };
 
-  // One entry per playable round. The key doubles as the menu card's
+  // One entry per playable round. The key doubles as the level card's
   // data-region and as the records region, so renaming a label never
   // orphans anyone's saved bests. Russia's 83 federal subjects are split
   // into three rounds along federal-district lines (`group` matches the
@@ -3282,66 +3279,47 @@
   /* =========================================================
    * GAME MODE DEFINITIONS
    *
-   * Each mode tells the engine:
-   *   - dataset: which map data source to use
-   *   - promptType: what the header displays
-   *   - eligibility: which features count for this quiz
-   *   - getPromptText(feature): what text appears above the map
+   * Each mode names its map data (dataset) and how a round of it is
+   * titled in the game bar, on the results screen and in records (label).
    * ========================================================= */
 
   const GAME_MODES = {
     'world-country': {
       dataset: 'world',
       label: (continent) => continent === 'World' ? 'The Entire World' : continent,
-      promptLabel: 'Find on the map',
-      recordsLabelSuffix: '',
     },
     'daily-five': {
       dataset: 'world',
       label: () => 'Daily Five',
-      promptLabel: 'Find on the map',
-      recordsLabelSuffix: ' · Daily',
     },
     'us-state': {
       dataset: 'us',
       label: () => 'The United States',
-      promptLabel: 'Find the state',
-      recordsLabelSuffix: ' · States',
     },
     'us-capital-to-state': {
       dataset: 'us',
       label: () => 'US Capitals → States',
-      promptLabel: 'Click the state whose capital is',
-      recordsLabelSuffix: ' · Capitals→States',
     },
     'us-state-to-capital': {
       dataset: 'us',
       label: () => 'US States → Capitals',
-      promptLabel: 'Which capital belongs to',
-      recordsLabelSuffix: ' · States→Capitals',
     },
     'us-city': {
       dataset: 'us',
       // Region (Northeast / Midwest / South / West) is supplied as the
       // continent label at startGame time, so use it directly in records.
       label: (region) => (region || 'US') + ' Cities',
-      promptLabel: 'Find the city',
-      recordsLabelSuffix: ' · Cities',
     },
     'city-pin': {
       dataset: 'world',
       // currentContinent is the region ('Europe', 'World', ...)
       label: (region) => 'Pin the City · ' + (region || 'World'),
-      promptLabel: 'Pin the city',
-      recordsLabelSuffix: ' · Pin',
     },
     'province': {
       dataset: 'province',
       // currentContinent holds the PROVINCE_ROUNDS key (e.g. 'russia-west');
       // map it to the round's display title.
       label: (roundKey) => (PROVINCE_ROUNDS[roundKey] || {}).label || 'Provinces',
-      promptLabel: 'Find on the map',
-      recordsLabelSuffix: ' · Provinces',
     },
   };
 
@@ -3995,12 +3973,15 @@
       ';--c:' + share(summary.mastered + summary.familiar + summary.learning) + '"><b>' + pct + '</b></span>';
   }
 
-  // Bar for a summary: mastered, familiar, learning, new, each as wide as its count
-  function renderMasteryBar(summary, extraClass) {
+  // Bar for a summary: mastered, familiar, learning, new, each as wide as
+  // its count. `fresh` of the mastered (those just reached) are set apart.
+  function renderMasteryBar(summary, extraClass, fresh) {
     const part = (n, cls) => n > 0 ? '<i' + (cls ? ' class="' + cls + '"' : '') + ' style="--n:' + n + '"></i>' : '';
+    fresh = fresh || 0;
     return '<span class="mbar' + (extraClass ? ' ' + extraClass : '') + '" role="img" aria-label="' +
       summary.mastered + ' mastered, ' + summary.familiar + ' familiar, ' + summary.learning + ' learning, ' + summary.new + ' new">' +
-      part(summary.mastered, 'm3') + part(summary.familiar, 'm2') + part(summary.learning, 'm1') + part(summary.new, '') +
+      part(summary.mastered - fresh, 'm3') + part(fresh, 'm3 is-new') + part(summary.familiar, 'm2') +
+      part(summary.learning, 'm1') + part(summary.new, '') +
       '</span>';
   }
 
@@ -4171,7 +4152,7 @@
       '</div>' +
       '<div class="daily-foot">' + renderDailyWeek(streak) +
         '<div class="daily-actions">' +
-          '<button type="button" class="btn btn--inverse daily-share-btn" data-action="share-daily">Share Result</button>' +
+          '<button type="button" class="btn btn--inverse" data-action="share-daily">Share Result</button>' +
           '<button type="button" class="btn btn--secondary" data-action="replay-daily">Practice Replay</button>' +
         '</div>' +
       '</div>' +
@@ -5353,7 +5334,7 @@
    * GAME
    * ========================================================= */
 
-  // Map a menu card's data-region value to { mode, region }. `region` is
+  // Map a level card's data-region value to { mode, region }. `region` is
   // what records and focus lists are keyed by (and becomes currentContinent).
   function resolveGameTarget(regionOrMode) {
     if (regionOrMode === 'daily-five') {
@@ -5685,6 +5666,7 @@
     // Hard: no borders on the chart (Uncharted's imagery has none anyway)
     screen.classList.toggle('pin-hard', pin && state.difficulty === 'hard');
     screen.classList.toggle('learn-mode', learn);
+    screen.classList.toggle('city-mode', mode === 'us-city');
 
     document.getElementById('region-tag').textContent = mode === 'daily-five'
       ? 'Daily #' + dailyPuzzleNumber(state.dailyDateKey)
@@ -6830,7 +6812,8 @@
 
   // How the level's mastery moved over the round, as the results screen
   // shows it: the count newly mastered when there is one, otherwise how
-  // many names moved a step, over a bar of where every name stands now
+  // many names moved a step (any that slipped are said beside it), over a
+  // bar of where every name stands now
   function renderGain() {
     const start = state.gainStart;
     if (!start || !start.names.length) return '';
@@ -6858,22 +6841,17 @@
       text = 'slipped back a step in ' + start.title;
       flat = true;
     } else {
-      figure = '+0';
-      text = 'No change in ' + start.title;
+      figure = '±0';
+      text = 'held steady in ' + start.title;
       flat = true;
     }
-    const tally = fresh > 0
+    const tally = (!flat && down > 0 ? down + ' slipped back · ' : '') + (fresh > 0
       ? (sum.mastered - fresh) + ' → ' + sum.mastered + ' of ' + sum.total
-      : sum.mastered + ' of ' + sum.total + ' mastered';
-    const part = (n, cls) => n > 0 ? '<i class="' + cls + '" style="--n:' + n + '"></i>' : '';
+      : sum.mastered + ' of ' + sum.total + ' mastered');
     return '<div class="gain">' +
       '<span class="num gain-num' + (flat ? ' is-flat' : '') + '">' + figure + '</span>' +
       '<div class="gain-text"><strong>' + escapeHtml(text) + '</strong><span>' + tally + '</span></div>' +
-      '<div class="mbar" role="img" aria-label="' + sum.mastered + ' mastered, ' + sum.familiar + ' familiar, ' +
-        sum.learning + ' learning, ' + sum.new + ' new">' +
-        part(sum.mastered - fresh, 'm3') + part(fresh, 'm3 is-new') + part(sum.familiar, 'm2') +
-        part(sum.learning, 'm1') + part(sum.new, '') +
-      '</div>' +
+      renderMasteryBar(sum, '', fresh) +
     '</div>';
   }
 
@@ -9139,7 +9117,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       bests: null,
       revisit: null,
       note: 'Learn rounds are practice. A full round of the level is what goes on your record and starts each name’s mastery.',
-      actions: { practice: 0, full: 'Play the full round', replay: 'Learn again', dailyReplay: false, viewMap: false, share: false }
+      actions: { practice: 0, full: 'Full round', replay: 'Learn again', dailyReplay: false, viewMap: false, share: false }
     });
     switchScreen('results');
   }
