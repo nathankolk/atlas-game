@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Flag check</title>
+<style>
+  :root { --ink: #2b2117; --parchment: #f4ead5; --sepia: #8a6d4b; --wax: #a8322a; }
+  body { margin: 16px; background: var(--parchment); color: var(--ink); font: 13px/1.25 Georgia, serif; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p { margin: 0 0 12px; color: var(--sepia); }
+  #sheet { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
+  .cell { border: 1px solid var(--sepia); border-radius: 4px; padding: 6px 4px 4px; text-align: center; min-height: 88px; }
+  .cell.missing { border: 2px solid var(--wax); }
+  .cell.stale { border: 2px dashed var(--wax); }
+  .flag { font-size: 40px; line-height: 46px; height: 46px; }
+  .name { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .code { font-size: 10px; color: var(--sepia); }
+</style>
+<script>
+  // ?font=ok (default) declares the web font the way the game will; ?font=broken points it at a file
+  // that does not exist; ?font=none declares nothing.
+  (function () {
+    var mode = (location.search.match(/font=(\w+)/) || [0, 'ok'])[1];
+    if (mode === 'none') return;
+    var src = mode === 'broken' ? 'pkg/no-such-font.woff2' : 'pkg/x/package/dist/TwemojiCountryFlags.woff2';
+    var style = document.createElement('style');
+    style.textContent = "@font-face { font-family: 'Atlas Flags'; src: url('" + src + "') format('woff2'); unicode-range: U+1F1E6-1F1FF; font-display: swap; }";
+    document.head.appendChild(style);
+  })();
+</script>
+<script src="quiz.js"></script>
+</head>
+<body>
+<h1 id="title">Flag check</h1>
+<p id="summary"></p>
+<div id="sheet"></div>
+</body>
+</html>
