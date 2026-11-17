@@ -3405,6 +3405,7 @@
     review: null,             // Smart Review in progress: { queue: [{ level, names }] } still to play
 
     onGlobe: false,           // the round in play is drawn on the globe (see playedOnGlobe)
+    roundSeconds: 0,          // how long the round just finished took
     worldBorders: null,       // every border and coastline of the world map, each once (GeoJSON lines)
 
     svg: null,
@@ -6457,7 +6458,7 @@
 
   function finishGame() {
     state.lastWasLearn = false;
-    const elapsed = Math.round((Date.now() - state.startTime) / 1000);
+    const elapsed = state.roundSeconds = Math.round((Date.now() - state.startTime) / 1000);
     const total = state.correct + state.wrong;
     const pct = total > 0 ? Math.round((state.correct / total) * 100) : 0;
     const maxScore = state.totalQuestions * 2;
@@ -12221,15 +12222,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
         ctx.fill();
         ctx.lineWidth = 1.5;
         ctx.stroke();
+        // The name sits over the spot, or under it when the pin stands in that place
+        const q = pin.guess ? g.project(pin.guess) : null;
+        const under = !!q && q.visible && Math.abs(q.x - p.x) < 60 && q.y > p.y - 34 && q.y < p.y + 22;
+        const y = under ? p.y + 26 : p.y - 14;
         ctx.font = '700 16px ' + ink.font;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'alphabetic';
         ctx.lineJoin = 'round';
         ctx.lineWidth = 3;
         ctx.strokeStyle = ink.halo;
-        ctx.strokeText(city.name, p.x, p.y - 14);
+        ctx.strokeText(city.name, p.x, y);
         ctx.fillStyle = ink.label;
-        ctx.fillText(city.name, p.x, p.y - 14);
+        ctx.fillText(city.name, p.x, y);
       }
     }
     if (pin.guess) {
@@ -12908,7 +12913,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     else region = state.currentContinent === 'World' ? 'The World' : state.currentContinent;
     const total = state.correct + state.wrong;
     const maxScore = state.totalQuestions * 2;
-    const elapsed = Math.round((Date.now() - state.startTime) / 1000);
+    const elapsed = state.roundSeconds;
     const mins = Math.floor(elapsed / 60);
     const secs = elapsed % 60;
     const timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
