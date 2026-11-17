@@ -1295,9 +1295,11 @@
   /* Pin the City: wide enough that the line under the name, which grows by
      the miss and the points at each drop, rarely widens the card */
   #game-screen.pin-mode .prompt { min-width: min(100%, 420px); }
-  .prompt .eyebrow { white-space: nowrap; }
+  /* One line: on a narrow card a long label gives way, never "Second try" */
+  .prompt .eyebrow { display: flex; justify-content: center; max-width: 100%; white-space: nowrap; }
+  .prompt .eyebrow > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .prompt .eyebrow i { font-style: normal; margin: 0 6px; opacity: 0.6; }
-  .prompt-try { color: var(--bad); }
+  .prompt-try { flex: none; color: var(--bad); }
   .prompt-name {
     display: grid;
     align-items: center;
@@ -1329,7 +1331,7 @@
   .prompt-note b { font-weight: 600; color: var(--text); }
 
   /* A flag is the question: large, since some differ by a star */
-  .prompt-name.is-flag { min-height: 96px; font-family: var(--font-flags); font-size: 92px; font-weight: 400; line-height: 1; letter-spacing: 0; filter: drop-shadow(0 1px 2px var(--flag-edge)); }
+  .prompt-name.is-flag { min-height: 122px; font-family: var(--font-flags); font-size: 120px; font-weight: 400; line-height: 1; letter-spacing: 0; filter: drop-shadow(0 1px 2px var(--flag-edge)); }
   .flag--inline { margin-right: 8px; font-size: 1.35em; line-height: 1; vertical-align: -0.12em; }
 
   /* Name It: the name is typed where the other rounds show one */
@@ -2111,7 +2113,7 @@
     .prompt-name.is-xlong { font-size: 19px; }
     .choices { width: 100%; gap: 6px; min-height: 94px; margin-top: 6px; }
     .choice-btn { min-height: 44px; padding: 3px 8px; font-size: 14px; }
-    .prompt-name.is-flag { min-height: 76px; font-size: 72px; }
+    .prompt-name.is-flag { min-height: 98px; font-size: 96px; }
     .answer { width: 100%; }
     .answer-field { height: 48px; font-size: 26px; }
     .answer-go { width: 48px; height: 48px; }
@@ -4027,7 +4029,7 @@
       const round = QUIZ_ROUNDS[key];
       const kind = QUIZ_KINDS[round.mode];
       const level = {
-        key: key, collection: kind.collection, variant: kind.variant,
+        key: key, collection: kind.collection, variant: kind.variant || null,
         title: round.region === 'World' ? 'The World' : round.region,
         arg: key, mode: round.mode, skill: kind.skill, noun: kind.noun,
         names: () => quizNames(round.mode, round.region),
@@ -4037,7 +4039,7 @@
       if (round.mode === 'flag') {
         // Whether flags can be drawn is only known once one has been tried (see flagsReady)
         Object.defineProperty(level, 'available', { enumerable: true, get: () => !state.flagsOff });
-        level.why = 'This browser can’t draw flags';
+        level.why = 'This browser draws no flags';
       }
       return level;
     }),
@@ -4048,7 +4050,10 @@
       names: () => pinCitiesFor(PIN_ROUNDS[key]).map(c => c.name)
     }))
   ).map(level => {
-    const defaults = { available: true, ready: () => true, load: () => Promise.resolve(), count: () => level.names().length };
+    const defaults = {
+      variant: null, available: true, why: null,
+      ready: () => true, load: () => Promise.resolve(), count: () => level.names().length
+    };
     Object.keys(defaults).forEach(field => { if (!(field in level)) level[field] = defaults[field]; });
     return level;
   });
@@ -4079,6 +4084,12 @@
         state.flagsOff = off;
         if (off && sheet.level && sheet.level.mode === 'flag') closeLevelSheet();
         refreshView();
+        // The font may only have been slow: once it is in, look again
+        if (off && document.fonts) {
+          document.fonts.load("32px 'Atlas Flags'", Quiz.flagEmoji('FR')).then(faces => {
+            if (faces.length) flagsReady();
+          }, () => { /* no font: the levels stay out of play */ });
+        }
       }
       return !off;
     });
@@ -4784,9 +4795,10 @@
           '<h3 class="collection-title" id="collection-' + collection.key + '-title">' + escapeHtml(collection.title) + '</h3>' +
           '<p class="collection-desc">' + escapeHtml(collection.desc) + '.</p>' +
           way +
-          '<span class="collection-sum">' + renderMasteryBar(sum) +
+          // Nothing to tally where no level of the collection can be played
+          (sum.total ? '<span class="collection-sum">' + renderMasteryBar(sum) +
             '<span><b>' + sum.mastered.toLocaleString('en-US') + '</b> of ' + sum.total.toLocaleString('en-US') + '<span class="x"> mastered</span></span>' +
-          '</span>' +
+          '</span>' : '') +
         '</header>' +
         '<div class="levels' + (three ? ' levels--three' : '') + '">' +
           levels.map((level, i) => renderLevelCard(level, lead && i === 0)).join('') +
@@ -5392,7 +5404,9 @@
 
     const groups = COLLECTIONS.map(collection => {
       const levels = LEVELS.filter(level => level.collection === collection.key && level.available);
-      if (!statsOpen.has(collection.key)) statsOpen.set(collection.key, wide);
+      // The country quizzes go over the continents again, so their levels start
+      // folded away: the collection's own row says how each of them stands
+      if (!statsOpen.has(collection.key)) statsOpen.set(collection.key, wide && !levels.some(level => QUIZ_KINDS[level.mode]));
       const open = statsOpen.get(collection.key);
       return '<tbody>' +
         '<tr class="mtable-group"><th scope="row">' +
@@ -6302,9 +6316,9 @@
       renderCapitalChoices(state.current);
       setPromptFeature(state.featureByCanonical.get(state.current) || null);
     } else if (mode === 'capital-find') {
-      setPrompt('Find the country whose capital is', capitalFor(state.current));
+      setPrompt('Which country’s capital is', capitalFor(state.current));
     } else if (mode === 'flag') {
-      setPrompt('Find the country that flies this flag', Quiz.flagPrompt(WORLD_FACTS, state.current).flag);
+      setPrompt('Which country’s flag is this', Quiz.flagPrompt(WORLD_FACTS, state.current).flag);
     } else if (mode === 'name-it') {
       // The globe turns to the country; its name is typed into the card
       setPrompt('Name this country', '');
@@ -14317,7 +14331,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
       if (e.key === 'Escape') {
         e.preventDefault();
         handleSkip();
-      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.target.tagName !== 'BUTTON') {
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !(e.key === ' ' && e.target.tagName === 'BUTTON')) {
         focusAnswerField();
       }
       return;
