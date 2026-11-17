@@ -1,10 +1,10 @@
 export const meta = {
   name: 'atlas-final-review',
-  description: 'Four independent reviews of the finished app, then fixes, then an independent check of the fixes',
+  description: 'Independent reviews of the finished app (play and progress, the globe), then fixes with a regression check for each',
   phases: [
-    { title: 'Review', detail: 'four reviewers, one after another, each with its own lens' },
-    { title: 'Fix', detail: 'reproduce and fix confirmed findings' },
-    { title: 'Verify', detail: 'independent re-check of every fix, then one more fix round if needed' },
+    { title: 'Review', detail: 'two reviewers, one after another: play and progress, then the globe' },
+    { title: 'Fix', detail: 'reproduce and fix confirmed findings, each with a check that would catch it again' },
+    { title: 'Verify', detail: 'only in a full run: independent re-check of every fix' },
   ],
 }
 
@@ -19,6 +19,10 @@ const PIN_REVIEWS = PIN.reviews || {}
 // What an interrupted attempt at a stage left behind, written by the orchestrator at relaunch.
 const RESUME = (args && args.resumeNotes) || {}
 const resumeNote = t => t ? '\nWHERE THE ATTEMPT BEFORE YOURS STOPPED (written by the orchestrator):\n' + t + '\n' : ''
+// The owner chose the lean review: two reviewers, and the orchestrator re-checks the fixes from the suites.
+// args.reviewers names other lenses to run (learning, craft); args.full adds the Verify phase.
+const WANT = (args && args.reviewers) || ['play', 'globe']
+const FULL = !!(args && args.full)
 
 const FINDINGS = {
   type: 'object',
@@ -44,7 +48,7 @@ const FINDINGS = {
 }
 
 const reviewBase = key => `
-You are one of four independent reviewers of a finished overhaul of a geography quiz web app: repo ${REPO},
+You are an independent reviewer of a finished overhaul of a geography quiz web app: repo ${REPO},
 branch ${BRANCH}. The app is ONE file, ${REPO}/public/index.html (CSS, markup, one IIFE script with a WebGL
 globe engine, a learning-history module and a quiz logic module pasted in), plus public/vendor/ and
 public/data/ and a small Pages Function, functions/api/records.js. The app before the overhaul is commit
@@ -97,7 +101,19 @@ YOUR LENS: does everything work, and is a player's progress safe?
   256 KB limit. Trace the merge and reset code by hand for a way to lose progress.
 - Mastery: each resolved question recorded once with the right skill and name, never in Learn quizzes;
   sessions counted once; due counts on Home, the Smart Review card and Stats agree with the store.
-- localStorage throwing (blocked or full) must not break play.` },
+- localStorage throwing (blocked or full) must not break play.
+- Facts, by script and not by eye (no other reviewer checks them): write ONE script that takes the app's
+  own data from the page (window.__atlas and the WORLD FACTS section) and compares it with an independent
+  published dataset from npm (the network reaches package registries; world-countries is one): every
+  country's capital and accepted alternates, ISO code (and so its flag), continent, and the US state
+  capitals. Where the two disagree, work out which is right and say how you know. Borders and names that
+  are a deliberate choice (CLAUDE.md lists them) are not findings. Then, through the page's own Quiz
+  module, check that every country's name and every typed alias resolves to that country and to no other
+  in its level and in The World; a name accepted for the wrong country is a blocker. Type twenty of them
+  through the real field as well, with a misspelling each, and check what is shown and recorded.
+- The owner banned hints: is there anything that works as one? Suggestions while typing in Name It, a
+  hover or focus state or an accessible name on the map that gives the asked place away, a label drawn
+  before the answer, any title= attribute.` },
   { key: 'globe', prompt: `
 YOUR LENS: the globe, in every mode. The engine source and its tests are in ${S}/work/globe/ (the app holds
 a pasted copy); the game's side is the MAP section of index.html.
@@ -171,7 +187,7 @@ YOUR LENS: design quality, accessibility, code and docs.
 // ---------- Review ----------
 phase('Review')
 const reviews = []
-for (const l of lenses) {
+for (const l of lenses.filter(x => WANT.indexOf(x.key) !== -1)) {
   const r = PIN_REVIEWS[l.key] || await agent(reviewBase(l.key) + l.prompt + resumeNote(RESUME['review:' + l.key]),
     { label: 'review:' + l.key, phase: 'Review', schema: FINDINGS })
   if (!r) throw new Error('review ' + l.key + ' returned nothing')
@@ -220,6 +236,12 @@ Rules:
   progress.md says). After a change to one, run its tests.
 - Never change what existing levels write to or read from the progress stores. Never weaken a check to
   make it pass. Comments describe the code, not the history of the change.
+- No one re-checks your fixes by hand after you, so each fix must leave a check behind: for every finding
+  you fix, add a check to the suite that covers that part of the app (or to tools/tests/ for a module)
+  that fails on the old behaviour and passes on the new, and prove it by running it once against the
+  tree before your fix (git stash, or git show of the previous commit into a scratch folder) where that is
+  practical. Name the check in the finding's outcome note. Where no check is practical (a purely visual
+  fix), give the screenshot path that shows it instead.
 - After the fixes: node --check on the script blocks, then every suite progress.md lists (smoke at desktop
   and --mobile, shell, stats, settings, game, globe, edges, the new modes' and Explore's suites, the logic
   tests, the module tests), and a fresh look at screenshots of every screen you touched in both themes.
@@ -239,6 +261,8 @@ const fix1 = PIN.fix1 || await agent(fixRules + resumeNote(RESUME.fix1) + '\nFin
   { label: 'fix-findings', phase: 'Fix', schema: FIX_SCHEMA })
 if (!fix1) throw new Error('fix stage returned nothing')
 log('Fix: ' + fix1.commit + ', ' + fix1.outcomes.filter(o => o.outcome === 'fixed').length + ' fixed of ' + all.length)
+const reviewSummary = reviews.map(r => ({ lens: r.lens, checked: r.checked, notChecked: r.notChecked, findings: r.findings.length }))
+if (!FULL) return { reviews: reviewSummary, findings: all, fix1, stoppedAfter: 'Fix' }
 
 // ---------- Verify ----------
 phase('Verify')
@@ -296,4 +320,4 @@ if (open.length || verify.newProblems.length) {
   if (fix2) log('Fix round 2: ' + fix2.commit)
 }
 
-return { reviews: reviews.map(r => ({ lens: r.lens, checked: r.checked, notChecked: r.notChecked, findings: r.findings.length })), findings: all, fix1, verify, fix2 }
+return { reviews: reviewSummary, findings: all, fix1, verify, fix2 }

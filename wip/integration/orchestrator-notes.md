@@ -29,3 +29,9 @@
 - Pin the City, Europe (shots/app/globe/m3-pin-europe-drop-d-light.png): after a drop the view sits with Europe in
   the lower half and the prompt card over Scandinavia. Check the opening frame and the after-drop frame are
   centred on the clear area.
+
+## Owner decision, 2026-11-17 (about 17:35 UTC): lean final review
+The owner chose the lean review. atlas-final-review.js now runs two reviewers by default (play, which also does
+the scripted fact check and the no-hints check; and globe), then one fix stage in which every fix leaves a
+regression check behind, and stops. The orchestrator re-checks the fixes from the suites. The learning and craft
+lenses stay in the script (args.reviewers) and the Verify phase is behind args.full, should the owner ask later.
