@@ -637,6 +637,12 @@ group('drag', async ({ page }) => {
   await page.waitForTimeout(300);
   check('drag: no glide when the user prefers reduced motion', (await getView(page)).lon === still.lon);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  // The caller's own switch says the same thing, whatever the system says
+  await page.evaluate(() => globe.setOptions({ reducedMotion: true }));
+  const stillByOption = await flick();
+  await page.waitForTimeout(300);
+  check('drag: no glide with the reducedMotion option on', (await getView(page)).lon === stillByOption.lon);
+  await page.evaluate(() => globe.setOptions({ reducedMotion: null }));
 
   // Dragging from empty space beside the globe rotates too
   await page.evaluate(() => { globe.setView({ lon: 0, lat: 0, k: 1 }); });
@@ -936,7 +942,31 @@ group('view', async ({ page }) => {
     return { ms: performance.now() - started, done, view: globe.getView() };
   });
   check('flyTo: instant when the user prefers reduced motion', reduced.done === true && reduced.ms < 30 && reduced.view.lon === 90, fmt(reduced.ms, 1) + ' ms');
+  // The reducedMotion option overrides the system's setting either way; null follows it again
+  const flight = () => page.evaluate(async () => {
+    globe.setView({ lon: 0, lat: 0, k: 1 });
+    const started = performance.now();
+    await globe.flyTo({ lon: 90, lat: 10, k: 2 }, { duration: 300 });
+    const zoomStarted = performance.now();
+    globe.zoomBy(2);
+    // An eased zoom takes many frames; a reduced one is all there on the next
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const k = globe.getView().k;
+    await T.settled();
+    return { ms: zoomStarted - started, zoomedAtOnce: Math.abs(k - 4) < 1e-9 };
+  });
+  await page.evaluate(() => globe.setOptions({ reducedMotion: false }));
+  const forcedFull = await flight();
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.evaluate(() => globe.setOptions({ reducedMotion: true }));
+  const forcedStill = await flight();
+  await page.evaluate(() => globe.setOptions({ reducedMotion: null }));
+  const followed = await flight();
+  check('setOptions: reducedMotion false keeps the animations though the system asks for less',
+    forcedFull.ms > 150 && !forcedFull.zoomedAtOnce, fmt(forcedFull.ms, 0) + ' ms');
+  check('setOptions: reducedMotion true makes flights and zooms instant though the system does not ask',
+    forcedStill.ms < 30 && forcedStill.zoomedAtOnce, fmt(forcedStill.ms, 1) + ' ms');
+  check('setOptions: reducedMotion null follows the system again', followed.ms > 150 && !followed.zoomedAtOnce, fmt(followed.ms, 0) + ' ms');
 
   // Resizing the host keeps a fitted view fitted
   const resized = await page.evaluate(async () => {

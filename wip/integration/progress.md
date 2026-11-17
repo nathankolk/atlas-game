@@ -168,7 +168,7 @@ and seed-rich-unplayed.json). It plays ten weeks through the real mastery module
 
 ## Stage: game screen chrome and results screen
 
-Status: IN PROGRESS (started from 231dffc, tree clean).
+Status: DONE (see "Final state of the game chrome and results stage" below). Started from 231dffc.
 Working files: `$S/work/integration/game/` (CSS/markup fragments, splice scripts, shot driver). Screenshots: `$S/shots/app/game/`.
 
 ### Plan
@@ -179,3 +179,349 @@ Working files: `$S/work/integration/game/` (CSS/markup fragments, splice scripts
 3. JS: updateStats (progress, clock, legend), setPrompt, showToast icon, completed-second mark, picks log,
    mastery gain, stageInsets() for fitExtent, renderResults(r) fed by finishGame/finishPinGame/finishLearn.
 4. Sweep dead CSS/JS, screenshots, smoke + suites, commit + push after each coherent piece.
+
+### Second attempt (fresh agent, 2026-11-17) — what was found on arrival
+- Checkpoint 95173e8 already holds step 1 (all game/results CSS spliced: sections "Game: ..." and "Results",
+  phone block, tail) AND step 2 (markup: #game-screen and #results-screen are byte-identical to
+  game/body-game.html). The fragments css-*.css, body-game.html and splice-css.py are SPENT; edit index.html directly.
+- Uncommitted on arrival (JS only, parses with node --check): state.picks/roundLog/gainStart/clock, setGameChrome,
+  setPrompt/setPromptTry/shakePrompt, startClock/stopClock, stageClearArea + fitExtent, roundProgress/updateStats,
+  toast icon, foundMark/isMarked (completed-second), scoreAnswer(points, skipped), finishGame/finishPinGame/
+  finishLearn all calling renderResults(r), the RESULTS section (js-results.js is spliced in; spent).
+- NOT yet done on arrival (found by grep, see below as it is closed): handlers for the new buttons/data-actions,
+  review mode against the new markup, leftovers that reference deleted ids, screenshots, suites, sweep.
+
+- Orchestrator note, 00:02 UTC: the edits that were uncommitted when the first attempt was cut off are now commit 28d0c88 (a checkpoint on top of 95173e8, pushed). If the working tree looked dirty when you started and is clean now, that is why; `git diff 95173e8 28d0c88` shows that part.
+
+- Orchestrator note, 00:14 UTC: a session hook requires a clean tree whenever the orchestrator pauses, so it committed your in-progress public/index.html as checkpoint e5d2554 and pushed it. Nothing in the file was changed. Your next commit will simply hold the changes made after it; describe the whole piece of work in its message all the same.
+- 00:15 UTC: steps 1–3 are DONE and in the tree (orchestrator checkpoint e5d2554 holds them; smoke 13/13 desktop on it).
+  Finished since arrival: results actions wired (`share-results`, `view-map` data-actions; `flashCopied`), review mode
+  (`showRoundMap`), clock stop on leaving, resize keeps `.completed-second`, phone layout (controls stay a column
+  lower right, tally lower left), countdown fills every `[data-countdown]`, `.outcomes` `--cols`, Learn results get a
+  note and a "Play the full round" action (`#full-btn`), wrong-tap toast reads "Not quite — that’s X".
+- Shot driver: `game/shoot.js` (see its header; uses logic-tests/lib.js with software compositing). Shots in shots/app/game/.
+- logic-tests/lib.js: the "wrong target" pickers now skip `.completed-second` too (new mark class — adapter change).
+- REMAINING (step 4): dead CSS/JS sweep, hardcoded colours, check script game/check-game.js, final shots in both
+  themes and sizes, smoke desktop + mobile, logic suites, shell/pages checks, final commit + push, report.
+- 00:33 UTC: commit f483d1b "Finish the game screen chrome and the results screen" pushed. On that tree:
+  smoke 13/13 desktop and 13/13 --mobile (run just before the last small edits: tally swatches for city rounds,
+  "Full round" label, dropped classes), game/check-game.js 109 desktop / 114 phone, logic suites t1–t7 green
+  (t6 expectation updated: the pin country is in #prompt-note now), pages/check-stats 112, check-settings 93.
+  Suite adapters updated for intended changes: lib.js (completed-second), t6 (prompt note), check-shell.js and
+  check-stats.js (Next button uses the hidden attribute; kind tag #game-kind; .results-bar; share-daily action).
+  The dated seeds were regenerated (the day rolled over at 00:00 UTC): harness/scratch/seed-rich*.json, shell/seed-*.json.
+- STILL TO DO: rerun shell/check-shell.js desktop + mobile, smoke both once more on the final tree, the full
+  screenshot matrix (game/shoot-all.sh), look at the dark/phone ones not yet seen, final report.
+
+### Final state of the game chrome and results stage
+- Status: DONE (see the commits after 231dffc: orchestrator checkpoints 95173e8, 28d0c88, e5d2554, then f483d1b and 794cdf9 (the closing commit; tree clean after it).
+  All pushed to claude/determined-hamilton-w2lcbm.
+- Checks on the final tree: smoke.js 13/13 desktop and --mobile; game/check-game.js 109 desktop, 114 --mobile;
+  shell/check-shell.js 183 desktop, 179 --mobile; pages/check-stats.js 112 / 114; pages/check-settings.js 93 / 93;
+  logic-tests t1–t7 and v-b4-learn green; syntax and mastery paste checks pass.
+- Screenshots: shots/app/game/NN-<scene>-<d|m>-<light|dark>.png (16 scenes x 4), made by game/shoot-all.sh;
+  t10-* are landscape phone and tablet.
+
+### Notes for the globe stage (what the chrome expects of the map)
+- `#map-wrap.stage` is absolute, inset 0, under the HUD. Put the globe canvas + overlay canvas inside it (the SVG
+  `#world-map` and `#sat-canvas` can go). `.sat-credit` lives inside the stage and shows on `.stage.sat-on`.
+- `stageClearArea(width, height)` returns the rectangle the HUD leaves free ({left, right, top, bottom} in stage
+  px): fit / fly-to should aim at its centre, not the stage's (on a short window the card covers the middle top).
+  It reads the laid-out HUD, so call it after `setGameChrome()` and `switchScreen('game')`.
+- Map colours: `--g-*` tokens on :root / [data-theme=dark]; over imagery `.stage.sat-on` redefines them (and
+  `--good/--second/--bad` for dots). `.stage.no-borders` = Uncharted. Pin Hard = `#game-screen.pin-hard`.
+- Marks are still DOM classes on the SVG: `completed-correct` (first try), `completed-second` (NEW: second try),
+  `completed-wrong`, `target-correct`, `target-wrong`, `reveal`, `prompt-highlight`, `learn-known`, `learn-new`.
+  `foundMark(points)` picks the found class; `isMarked(el)` says an item takes no more answers. The resize handler
+  re-applies them from the DOM; review mode ("View on the map", `showRoundMap()`) relies on the map being left as
+  the round ended. A canvas globe needs this kept in JS.
+- HUD API: `setGameChrome()` (title, tags, which figures/buttons, card shape; classes pin-mode, pin-hard,
+  learn-mode, city-mode on #game-screen), `setPrompt(label, name)`, `setPromptTry(on)`, `shakePrompt()`,
+  `updateStats()` (counter, progress line, score, tally), `roundProgress()`, `startClock()` / `stopClock(final)`,
+  `showToast(kind, html)`, `setPinButton(label, disabled)`, `setLearnHint(on)`.
+- Results API: `renderResults(r)` (shape documented above the function); `state.roundLog` (name -> {picks, skipped}),
+  `state.picks`, `state.gainStart` (mastery snapshot at round start), `masterySnapshot()`, `renderGain()`.
+- `zoom-hint` is `.map-hint--once` (fades once); `learn-hint` is a plain `.map-hint` (stays while shown).
+- Known leftovers of the SVG map that the globe replaces: Europe frames the whole world (Russia crosses the
+  antimeridian) and the sphere's edge shows inside the stage; the pin reveal centres on the stage, not on the
+  clear area; zoom transitions ignore reducedMotion().
+- Test adapters that know the SVG: logic-tests/lib.js (pathFor, wrongPath, clientPoint), harness/smoke.js MAP
+  ADAPTER, game/check-game.js (uses lib.js; selectors `.country.completed-*`, `.city-dot.completed-second`).
+
+## Stage: the game on the globe (M1–M5; several engineers in turn)
+
+Working files of this stage: `$S/work/integration/globe-stage/` — `gshot.js` (screenshots; flags in its header,
+`--plan=f,s,m,k,w` plays answers with real clicks through the smoke adapter, `--nogl` makes WebGL unavailable so the
+engine's Canvas 2D renderer runs), `check-globe.js` (`--mobile`, `--only=picking,tiny,hard,input,view,review,imageryfail`),
+logs `*.log`. Screenshots: `$S/shots/app/globe/`. Engine paste check: `logic-tests/check-globe-paste.js`.
+
+### Round 1 (2026-11-17)
+
+**M1 — DONE (world, the six continents, Daily Five on the globe).**
+What exists in public/index.html now:
+- The engine is pasted byte for byte between `/* ===...  * GLOBE ENGINE` and `/* ===== END OF GLOBE ENGINE ===== */`
+  (just before the MASTERY module). `<script>` tags for /vendor/d3-array, d3-geo, topojson-client, earcut come first;
+  the cdnjs d3 + topojson tags are STILL there for the SVG map (remove in M4).
+- `#globe-host` inside `#map-wrap` (after `#world-map`). `.stage.on-globe` shows the host and hides the SVG and
+  `#sat-canvas`. `state.onGlobe` is set per round in `startGame` from `playedOnGlobe(mode)` — **the switch to widen
+  in M2/M3** (today: world-country and daily-five) and to delete in M4.
+- New `MAP` section (before SATELLITE IMAGERY): `const map = { globe, layer, eligible, marks, shown, outlines, reveal,
+  home, clear, ink, round }`; `initGlobe()` (called from `init()` once the 50m world is in; layer `world`, key
+  `featureKey`, borders `state.worldBorders` = `topojson.mesh`), `applyMapLook()` (reads the `--g-*` tokens off the
+  stage and calls `defineStyles` / `setTheme` / `setGraticule` / `updateLayer('world', borders…)`; called on theme
+  change, map-style change, imagery failure), `featureStyle(key)` / `paintFeature(key)` / `paintMap()`, `canPick(key)`,
+  `setupMap()` (per round: eligible set, clears marks, paints, hover rule), `placeGlobeHost()`, `boxOutline()`,
+  `roundFrame()` (CONTINENT_FRAMES boxes; null = whole globe), `frameMap()`, `mapAtHome()`, `bringIntoView(target)`,
+  `onMapClick(e)`, `drawMapOverlay` (reveal outline, Uncharted flash outline, reveal rings).
+- Style names: land, dim, hover, found, second, missed (marks), good, bad (flashes), reveal, hidden. Marks live in
+  `map.marks` (key -> 'found' | 'second' | 'missed'); `map.shown` overrides a mark for a moment (the reveal).
+- **The globe's middle is the middle of the clear area**: `placeGlobeHost()` makes `#globe-host` reach past the
+  stage's top or bottom edge by the difference (the engine always centres the globe in its host). So host px ≠
+  stage px vertically; `map.clear` is the clear box in HOST px. `frameMap()` measures the frame's reach with
+  `project()` and sets k itself (the engine's single `padding` cannot express an off-centre clear area), then
+  `setOptions({ minZoom: min(1, whole), maxZoom: max(80, 60k) })`, `setView`, `setHome`. The whole-globe view lets the
+  globe sit 10% under the prompt card and the actions (polar sea).
+- `startGame`: `setupMap()` + `frameMap()` run before `switchScreen('game')` (so the globe fades in already right),
+  and `frameMap()` again in the 80 ms start timer, BEFORE the first prompt (see M2). `switchScreen` pauses the globe
+  off the game screen.
+- Renderer-neutral verbs used by the answer handlers: `flashFeature(key, 'good'|'bad', ms, mark)`,
+  `answerFeature(key)` (the old body of handleCountryClick), `revealTargetFeature(feature, toast)`; each has an
+  `if (!state.onGlobe)` SVG branch (classes via `svgFeature(key)`, `SVG_MARK`, `SVG_FLASH`) to delete in M4.
+  `foundMark(points)` now returns 'found' | 'second' (city dots map it through `SVG_MARK`).
+- Satellite on the globe already works for globe rounds: `applyMapStyle()` → `applyMapClasses()` + `applyMapLook()` +
+  `globe.setImagery(...)`; `onImageryStatus(status)` drives "Loading imagery…", the failure toast and the fall back
+  to the chart look. Uncharted on the globe: borders off, no hover hand, flash outline on the overlay.
+- zoomBy / zoomReset / the resize handler branch on `state.onGlobe`.
+- Hook: `window.__atlas.map` and `window.__atlas.globe` (getter).
+- Hint pill now reads "… drag to turn the globe".
+
+Tests changed for the globe (none weakened):
+- `harness/smoke.js` MAP ADAPTER has a globe half (gLocate / gAim / gAtHome …) chosen per round by `state.onGlobe`;
+  the SVG half stays until M4. Globe: no trial tap, no view reset after an aimed answer, no synthetic fallback.
+  Pin (`pinPoint`, `farPoint`) and city dots are SVG-only so far — **extend in M2/M3** (dots: expose their lon/lat,
+  e.g. on `map`). A copy of the file from before: `harness/smoke.before-globe.js`.
+- `logic-tests/lib.js`: `T.keyFor`, `T.tapAt` (dispatched PointerEvents on the host), `T.aimKey`, `T.tapKey`,
+  `T.wrongKey`, `T.marks()`, `T.mapEl()`; `T.attempt` and `startLevel` branch on `state.onGlobe` (ready = map.round
+  matches AND the layer is built: `globe.stats().triangles > 0` — a tap before the build finds nothing).
+- `t3-links-b4-d6.js` and `game/check-game.js` read marks through `T.marks()` and the map's box through `T.mapEl()`
+  ("the map covers the stage" instead of "fills": the host overhangs by design).
+
+Verified (logs in globe-stage/): smoke 13/13 desktop and 13/13 --mobile; check-globe 39/39 desktop, 37/37 phone
+(picking rules incl. Barbados / Bahrain / Greenland, Hard keeps no marks, double tap = two answers and no zoom, a drag
+answers nothing, hover hand, + - 0 and the buttons, Europe's frame inside the clear area, M keeps marks, resize refit,
+review mode inert with marks, imagery failure). Screenshots looked at: m1-world-d-light, m1-africa-d-light,
+m1-europe-m-dark, m1-reveal-d-light, m1-africa-sat-d, m1-unch-d, m1-world-m-light.
+
+**Traps found**
+- A tap in the first ~200 ms after page load, before the 50m layer is built, hits nothing (tests must wait for
+  `globe.stats().triangles > 0`).
+- With `fast: 25` in lib.js the 2600 ms reveal lasts 104 ms: read reveal state in the same `evaluate` as the tap.
+- Do not edit public/index.html while a suite is running: the harness serves the file live.
+
+**M1 committed and pushed: 57951e4.**
+
+**M2 — DONE, committed and pushed: 568c5ed.** Verified on that tree: smoke 13/13 desktop and 13/13 --mobile (real
+clicks and taps, 0 synthetic); check-globe 56/56 desktop, 54/54 phone; check-game 110/110 desktop, 115/115 phone;
+logic run-all (t1–t6) all pass; both paste checks pass.
+What M2 added to public/index.html:
+- `playedOnGlobe(mode)` is now `mode !== 'city-pin'`: only Pin the City still uses the SVG map.
+- Layers: `syncMapLayers()` hands the globe `world`, `us` (once `state.usLoaded`; polygon rings as borders) and `prov`
+  (the store of the province country played last, `map.provinces`; `store.borders` = `topojson.mesh`, kept by
+  `loadProvinceData`). It calls `globe.setLayers`, which resets EVERY layer's config, styles and hover — so it runs
+  before a round is set up, never during one; `map.layerSet` makes it a no-op when nothing changed; `map.drawn` is
+  true once the maps are built. `startGame` awaits it (the "Loading…" overlay stays up) before the round begins.
+- `setupMap()` now: `map.layer = DATASET_LAYER[state.activeDataset]`; the round's layer visible and (when answers are
+  given on shapes: `answersOnShapes()`) interactive with the hover style; `world` visible under it as scenery;
+  `paintContext()` paints that world layer all `dim`, and over imagery sets the parent country `hidden`
+  (`PROVINCE_COUNTRIES[*].parents`, or the USA) so it does not darken the see-through states above it.
+- Frames (`roundFrame()`): US modes open on the lower 48 (`US_FRAME`; Alaska and Hawaii are a turn away — looked at on
+  desktop and phone; on a phone Alaska is in view); cities and provinces fit their eligible features.
+  `frameMap()` measures any GeoJSON with `eachPosition`. In the 80 ms start timer `frameMap()` now runs BEFORE the
+  first prompt, so the turn a first prompt asks for (States → Capitals: Hawaii) is not undone.
+- States → Capitals: `setPromptFeature(feature)` (`map.promptKey` → style `prompt`, an outline of kind `prompt`,
+  `bringIntoView`). A mark shows before the prompt tint (B5).
+- City dots: `map.dots` ({ name, lonlat }), `map.dotMarks`, `map.dotShown` (flash / reveal with an end time),
+  `map.dotHover`; `drawCityDots`, `dotNear(x, y, reach)` (nearest dot wins: B9), `answerCity(name)`,
+  `revealMissedCity(name)`, `flashDot`, `onMapMove` (hover via the engine's `move` event).
+- Learn: `map.tints` (learnKnown / learnNew), outline of kind `learn` on the newest, `map.labels` laid out by
+  `placeLearnLabels()` with `globe.anchor` + `anchorRadiusDeg` (room × the anchor's facing `p.z`), re-laid on the
+  engine's `settle`, on resize and at each level; `drawLearnLabels`; `clearLearnStudy()`. `gapY` is now `h/2 + 6`
+  (the checklist's quirk fix). Names behind the globe are neither drawn nor counted for the pill.
+- `bringIntoView(target, { keepZoom })` returns the zoom it left when it zoomed in on a speck; a reveal flies back
+  out to it when it ends. Learn level starts pass `keepZoom`.
+- Gone with their last users: `handleCountryClick`, `handleCityClick`, `highlightPromptedState`, `isMarked`,
+  `svgFeature`, `SVG_MARK`, `SVG_FLASH`, `showRevealMarker`, `showRevealMarkerAtCoords`, `ensureCoordsVisible`,
+  `learnLabelAnchor`, `poleOfInaccessibility`, `scaleLearnLabels`, `CITY_DOT_BASE_RADIUS`, the SVG branches of
+  `flashFeature` and `revealTargetFeature`, the city-dot block and click bindings in `renderMap`.
+  STILL THERE for Pin the City: `renderMap`, `ensureFeatureVisible`, d3.zoom, the whole SATELLITE IMAGERY CPU code,
+  the SVG CSS (incl. now-dead `.city-dot`, `.learn-label`, `.reveal-marker`, hit-zone rules), the resize handler's
+  SVG branch, the cdnjs tags, `ensureTopojson`, the us-atlas CDN fallbacks, `parallels` in PROVINCE_COUNTRIES.
+
+Tests changed in M2 (none weakened): smoke adapter — dots (`gLocateDot`, `gDotAt`), ready = `map.round` matches and
+`map.drawn`; lib.js — us-city taps on the globe, `T.marks()` counts dot marks, `T.zoom()`; check-game.js — capitals B5
+is now "the prompted state takes its mark at once" read from `map`, marks through `T.marks()` / `map.dotMarks`, the
+clock checks set `startTime` absolutely and the zoom check waits for the eased view (software rendering stretches
+animations: the engine caps a frame's dt at 50 ms); t3 aborts `/countries-(50|110)m.json` for D6; t6's copy links
+`vendor/`. check-globe.js gained groups `us` and `provinces` (prompted state in view incl. Hawaii and Alaska, DC is
+no answer, nearest of two crowded dots, Lakshadweep / Puducherry / Andaman tappable at the opening view, a province
+of another Russia round is no answer, Learn names / pill / zoom-in / quiz clears them).
+
+Screenshots looked at for M2: m2-us-d-light, m2-capitals-m-light, m2-cities-d-light, m2-india-learn24-d-light,
+m2-russia-south-sat-d.
+
+Known warts so far
+- Russia rounds over imagery: Crimea (in the world file's Russia, not in the province file) shows as untinted
+  imagery, the same brightness as the round's own provinces. A tap there does nothing.
+- check-game "hud: the prompt card kept its size" compares width too and fails when one of the first questions has a
+  long name (the card widens for it). Seen once on desktop; not caused by the globe.
+- After a reveal that zoomed in on a speck the globe zooms back out but stays centred on the place.
+
+**Remaining (in order)**
+- M3: Pin the City on the globe, then satellite / Uncharted checked in every mode. A recipe for the pin part:
+  - `playedOnGlobe` → true for every mode (then delete it and `state.onGlobe` in M4).
+  - `onMapClick`: before the `interactionLocked` test, `if (state.pin) { if (state.pin.phase === 'aim' && state.current
+    && e.lonlat) { state.pin.guess = e.lonlat; setPinButton('Drop pin', false); map.globe.invalidate(); } return; }`
+    (`e.lonlat` is null for a tap off the globe). `handlePinClick` and its round-trip test go.
+  - `drawPinLayer()` becomes an overlay step reading `state.pin` each frame (checklist 4.3: teardrop
+    `new Path2D('M0,0 C-2,-6 -8,-10 -8,-16 A8,8 0 1 1 8,-16 C8,-10 2,-6 0,0 Z')` translated to the guess, truth ring +
+    dot + name label, `globe.draw.geoLine(ctx, guess, truth, { color: map.ink.label, width: 1.5, dash: [5, 4] })`);
+    its four call sites become `map.globe.invalidate()`. Colours: the CSS rules `.pin-guess`, `.pin-truth-*`,
+    `.pin-line` name the tokens (`--g-wrong`, `--g-halo`, `--g-label`, `--g-select`); add what is missing to `map.ink`.
+  - `roundFrame()`: `pinFitGeometry(region)` for a continent, null (whole globe) for World.
+  - `applyMapLook()`: `bordersVisible` also false for Pin on Hard (`#game-screen.pin-hard`).
+  - `pinReveal`: replace the `currentTransform` / `ensureFeatureVisible` lines: when guess and truth are under ~120°
+    apart bring both into view (fit the two points, never zooming in past the current zoom), else
+    `bringIntoView(truth)`.
+  - Tests: smoke adapter `pinPoint` / `farPoint` need globe versions (`project` / `invert`, turn with `setView` when
+    the place is hidden); lib.js `T.clientPoint` and the pin click dispatch in `answer()` (use `T.tapAt`);
+    check-game.js lines that click `#world-map` for pin.
+  - `supportsImagery()` false (Canvas 2D): show Satellite and Uncharted as unavailable with a short reason (Home's
+    Library controls, the level sheet, Settings' default map style, the in-game layers button, the M key).
+- M4: delete the SVG renderer, d3.zoom, projections, CPU satellite code and CSS, the CDN tags, `ensureTopojson`,
+  the SVG halves of the test adapters; 110m first paint then 50m; resize / rotation; reduced motion (the engine only
+  reads the OS setting — the game passes `animate: false` / `duration: 0` from `reducedMotion()`; inertia and wheel
+  easing still follow the OS setting only); lost WebGL context; a full round with Canvas 2D (`gshot.js --nogl`).
+- M5: measurements, and the old app at commit 1c74e1d for comparison.
+- Docs: CLAUDE.md / atlas_handoff.md still describe the SVG map and the CPU satellite canvas.
+
+### State at hand-over (end of round 1)
+- Branch `claude/determined-hamilton-w2lcbm` is pushed at 568c5ed; the working tree is clean. M1 and M2 are done.
+- Next engineer: start at **M3** (recipe above), then M4, M5. Nothing of M3–M5 has been started.
+- `startGame` now awaits `syncMapLayers()` for every globe round, so a round never begins on a map that is still being
+  built (an intermittent lost first tap on phones came from that; fixed and re-run).
+- Trap: `startGame` is asynchronous for every globe round (one await, even when the map is already built), so test
+  code must wait for `state.current`, never read it straight after calling `startGame`.
+- Not yet looked at as screenshots: review mode ("View on the map"), the Canvas 2D fallback (`gshot.js --nogl`),
+  Hard, Daily Five in dark (taken, not opened), US capitals in dark (taken, not opened), a phone on its side.
+- CLAUDE.md and atlas_handoff.md are untouched and now wrong about the map (SVG, projections, CPU satellite canvas,
+  CDN libraries); fix them in the docs pass after M4.
+
+- Orchestrator note, 05:03 UTC: round 2 was cut off by the usage limit about four minutes in (02:27 to 02:31 UTC). Its uncommitted edits (the first steps of the Pin the City recipe; both script blocks parse) are now checkpoint 49ca4bd on top of 568c5ed, pushed. Not tested.
+
+### Round 2 (2026-11-17, replacement for the engineer cut off at 02:31 UTC)
+Found on arrival: tree clean at checkpoint 49ca4bd (568c5ed + an untested draft of the first Pin the City steps:
+`playedOnGlobe` true for all modes, pin branch in `onMapClick`, `drawPins(ctx)` overlay step, `showPinMiss`,
+`restorePinView`, `roundFrame()` via `pinFitGeometry`, borders off for Pin Hard). Nothing in it had been run; the Pin
+test adapters (smoke `pinPoint` / `farPoint`, lib.js `T.clientPoint`, check-game pin lines) were untouched.
+Plan for this round: review + run the draft (M3 pin), satellite/Uncharted per mode + "unavailable" on Canvas 2D,
+commit; then M4 (delete SVG renderer etc.), M5.
+
+- Orchestrator note, 05:08 UTC: a session hook requires a clean tree whenever the orchestrator pauses, so it committed your in-progress public/index.html as checkpoint bcf49f1 and pushed it. Nothing in the file was changed. Your next commit will hold the changes made after it; describe the whole piece of work in its message all the same.
+
+**M3 — DONE, committed and pushed (see `git log`: "Play Pin the City on the globe; lock Satellite and Uncharted…").**
+- Pin the City on the globe: `onMapClick` pin branch, `drawPins(ctx)` (overlay; the name goes under the spot when the
+  pin stands over it), `showPinMiss(guess, truth)` (fly so truth — and the guess when < ~120° apart — is in the clear
+  area, never zooming in), `restorePinView()` (back to the pre-reveal view for the next city unless the player moved
+  the globe: `state.pin.back = { view, shown }`), `roundFrame()` → `pinFitGeometry`, borders off for Pin Hard.
+- No imagery (Canvas 2D): `imageryAvailable()`, `applyImagerySupport()` (called from `initGlobe`, the engine's
+  `renderer` event and `startGame`), `NO_IMAGERY_NOTE`, `[data-imagery-note]` in Home's playbar, the level sheet and
+  Settings; `syncPlayControls()` disables Uncharted and Satellite; `satEnabled()` is false; `#map-style-btn` hidden;
+  a saved Uncharted plays as Hard for the visit (not saved).
+- Share text time: `state.roundSeconds` (set in `finishGame`) instead of the clock at the moment Share is pressed.
+- Tests: lib.js is globe-only now (`T.pinTap`, no SVG helpers, `noPaint` ignored); check-game pin lines and
+  v-b4-learn read the globe; check-globe.js has new groups `pin`, `imagerymodes` (7 round kinds × satellite and
+  Uncharted), `noimagery`; gshot.js has `--pin=near,off,far,drop,next,skip` and `--off=`.
+- Verified on that tree: smoke 13/13 desktop and --mobile; check-globe 123/123 desktop, 121/121 phone; check-game
+  110 desktop (after the share fix; one run under load had failed on the share time), 115 phone; logic t1–t6,
+  v-b4-learn, both paste checks. Screenshots looked at: m3-pin-europe-drop-d-light, m3-pin-world-far-d-dark,
+  m3-pin-asia-unch-m, m3-pin-europe-hard-d-dark, m3-pin-asia-near-m, m3-us-sat-d-dark, m3-capitals-unch-d,
+  m3-nogl-world-d-light.
+- STILL IN THE FILE (dead now, delete in M4): `playedOnGlobe`, `state.onGlobe`, `renderMap`, `ensureFeatureVisible`,
+  the CPU satellite code, SVG CSS, `#world-map`, `#sat-canvas`, cdnjs tags, `ensureTopojson`, us-atlas fallbacks,
+  `parallels`, the resize handler's SVG branch.
+
+**M4 — DONE, committed and pushed in two commits ("Remove the SVG map and the CPU satellite renderer", "Globe edges: …").**
+- Gone: `renderMap`, `ensureFeatureVisible`, d3.zoom and every projection, the CPU satellite code (`sat` keeps only
+  `failed`), `#world-map`, `#sat-canvas`, all SVG map CSS, `.on-globe`, `playedOnGlobe`, `state.onGlobe`, the SVG state
+  fields, `ensureTopojson`, the cdnjs tags, the us-atlas CDN fallbacks (`US_STATES_URL` only), `parallels`.
+  The page loads scripts from /vendor/ only (check-edges `network`).
+- 110m first paint: only for a level link. `linkedLevel()` parses `?play=` once in `init()`; `showOpeningGlobe()` fetches
+  `/data/countries-110m.json` (`loadWorldSketch()` → `map.sketch`), creates the globe with it, shows the game screen
+  with `#game-screen.is-opening` (everything but the stage hidden) and a bare loading card; when 50m is in,
+  `initGlobe()` → `syncMapLayers()` swaps the world layer (the engine keeps drawing the old layer until the new one is
+  built) and `startGame` takes over (`setGameChrome` removes `is-opening`). A Home-first visit never fetches 110m.
+- Engine change (globe.js, pasted again; `globe.before-motion.js` is the copy from before): `setOptions({ reducedMotion:
+  true | false | null })`, also at create. Engine tests: full run 290/291 with my own new check wrong (it read the
+  zoom synchronously); fixed and the two groups touched re-run (view 22/22, drag 10/10). The app: `applyMapMotion()`
+  (called from `initGlobe` and `setMotionPref`).
+- Renderer fallback mid-round: the `renderer` handler in `initGlobe` re-applies the map style and shows the imagery
+  notice.
+- Resize handler is globe-only (refit when `mapAtHome()`, else `placeGlobeHost()`; Learn labels laid out again).
+- New suite `globe-stage/check-edges.js` (`--only=opening,network,resize,motion,context`), 37 checks.
+- check-game.js: the two "card kept its size" checks for the find-a-place and pin cards now compare height only (a
+  long name widens the card by design; it had failed intermittently since round 1); `on-globe` dropped from two
+  expected class lists.
+- Verified on the final M4 tree: smoke 13/13 desktop and --mobile; check-globe 123 / 121; check-game 110 / 115;
+  check-shell 183 / 179; check-stats 112 / 114; check-settings 93 / 93; logic t1–t6, v-b4-learn, both paste checks;
+  check-edges 37/37 (resize group re-run alone after one timing failure under three parallel suites).
+- Screenshots looked at: m4-opening-d, m4-opening-m, m4-rotated-m, m4-review-d-dark, m4-nogl-us-cities-d-dark.
+
+**M5 — DONE (measured; nothing in the app changed for it).** Tools: `globe-stage/measure.js` (flags in its header;
+`--stock-gpu` keeps the harness's Chromium flags), `globe-stage/tmp/timeline.js`; raw output `measure-softcomp.log`,
+`measure-results-softcomp.json`, `measure-results-stock.jsonl`. Old app = commit 1c74e1d extracted to
+`globe-stage/old-app/public`. Same in-page input for both apps: a 120-frame drag (4 px a frame) and 120 wheel notches,
+one event per animation frame, on `?play=world`. This machine has no GPU: WebGL runs on SwiftShader (software).
+
+Per frame while turning and zooming the 50m world (new app; identical within noise for desktop 1280×800 and phone
+390×844 @2x, chart and satellite):
+- engine's own draw call (`stats().lastFrameMs`): median 0.2 ms, p95 0.3–1.3 ms;
+- all script on the main thread: 0.4–0.7 ms per frame; all main-thread work: 2.3–2.6 ms per frame (stock flags);
+- after the gesture ends (3 s): 2–8 ms of script (imagery window rebuild included).
+Old app, same input: script 0.2–0.4 ms per frame, main thread 3–20 ms per frame (style, layout and paint of the SVG);
+after the gesture 8 ms (chart) / 47–51 ms (satellite reprojection) of script.
+
+Frame intervals IN THIS SANDBOX (not what a device with a GPU does):
+| flags | new, chart | new, satellite | old, chart | old, satellite |
+| software compositing (`--disable-gpu-compositing`, what the suites use) | 350–420 ms | 270–470 ms | 16.7 ms turn, 33 ms zoom (p95 100) desktop; 16.7 phone | 16.7 ms |
+| harness stock (GPU compositing on the software GL driver) | ~200–217 ms | ~200 ms (desktop chart trial) | turn: median 2.8 s, p95 6.1 s; zoom: median 50 ms, p95 18 s (desktop chart; the other three old cases were not waited for) | not run |
+With software compositing every WebGL frame is drawn by the CPU and read back on the main thread (main-thread task
+≈ the whole frame, 350–420 ms); the old app's SVG is cached as tiles there and pans at the display rate. With the
+stock flags the globe's main thread is nearly idle (2.3–2.6 ms) and the 200 ms is the software GL driver; the old
+app's raster goes through the same driver and takes seconds per frame.
+
+Navigation → first question answerable (`?play=world`, local server, median of 3):
+| flags | new desktop | new phone | old desktop | old phone |
+| stock, chart | 793 ms | 825 ms | 578 ms | not run |
+| stock, satellite | 889 ms | 920 ms | not run | not run |
+| software compositing, chart | 2307 ms | 2347 ms | 679 ms | 574 ms |
+| software compositing, satellite | 2734 ms | 3092 ms | 684 ms | 625 ms |
+Timeline, stock flags, 3 runs each (ms after navigation): with the opening globe the globe is on screen at 360–551,
+the 50m map is built at 634–893, first prompt at 719–979; without it (commit 70b7af5) the game screen comes up at
+676–725 and the first prompt at 762–808. So the opening globe costs the first prompt nothing measurable and shows a
+globe about 300 ms sooner even with no network delay. Engine build of the 50m world: 147–160 ms of CPU.
+The old app's figure does not include its first paint (its paths exist and the prompt is up before they are drawn).
+
+### State at the end of round 2 — the globe stage is COMPLETE (M1–M5)
+- Branch pushed at ff7c3e7 (902fde5 M3, 70b7af5 + 7793090 M4, ff7c3e7 CLAUDE.md map sections); tree clean.
+- Final-tree runs: smoke 13/13 desktop and 13/13 --mobile (logs `globe-stage/smoke-final-*.log`); the other suites as
+  listed under M4 (the only app change after them was none; CLAUDE.md is not served).
+- Not done: atlas_handoff.md (still describes the SVG map); CLAUDE.md is updated for the map, satellite, level-link
+  and Pin the City paragraphs only (older drift listed by earlier stages remains). The engine's source and tests
+  live only in `$S/work/globe/` — the repo holds the pasted copy.
+- Not verified: a real GPU, real Esri tiles, the live site. Engine full test file was run once after the
+  reducedMotion change (290 of 291; the one failure was the new check itself, fixed, and only the `view` and `drag`
+  groups were re-run). Screenshots taken but not opened: m4-context-restored-d, m4-context-fallback-d,
+  m4-hard-asia-m-light, m4-review-rotated-m, m3-cities-sat-m, m3-india-unch-d-reveal.
+- Known warts unchanged: Crimea in Russia rounds over imagery; on a phone on its side the prompt card covers the top
+  of the map's clear area (stageClearArea's short-window rule); the found mark over imagery cannot be judged on the
+  green stand-in tiles.

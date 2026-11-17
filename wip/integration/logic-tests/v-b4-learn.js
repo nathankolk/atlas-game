@@ -20,8 +20,10 @@ const { launchApp, startLevel, snap, reporter } = require('./lib.js');
     await page.waitForTimeout(3500);
     let s = await snap(page);
     r.eq('A: the new round still shows its first question', [s.current, s.seq, s.learnPhase, s.screen], [first.current, 0, null, 'game-screen']);
-    r.eq('A: no marks or reveal left on the new map', await page.evaluate(() =>
-      document.querySelectorAll('.country.reveal, .country.completed-wrong, .country.completed-correct, .country.target-wrong').length), 0);
+    r.eq('A: no marks or reveal left on the new map', await page.evaluate(() => {
+      const m = window.__t.marks(), map = window.__atlas.map;
+      return [m.found + m.second + m.missed + m.reveal, map.shown.size, map.outlines.length, !!map.reveal];
+    }), [0, 0, 0, false]);
     r.eq('A: no session and no items were recorded', await page.evaluate(() => [window.__atlas.mastery.totals().games, window.__atlas.mastery.totals().itemsSeen]), [0, 0]);
 
     // ---- B. Learn quiz miss -> leave -> resume the ladder ----
@@ -49,8 +51,10 @@ const { launchApp, startLevel, snap, reporter } = require('./lib.js');
     await page.waitForTimeout(3500);
     s = await snap(page);
     r.eq('C: the new cities round still shows its first question', [s.current, s.seq, s.locked], [firstCity.current, 0, false]);
-    r.eq('C: no dot is marked on the new map', await page.evaluate(() =>
-      document.querySelectorAll('.city-dot.reveal, .city-dot.completed-wrong, .city-dot.completed-correct').length), 0);
+    r.eq('C: no dot is marked on the new map', await page.evaluate(() => {
+      const m = window.__t.marks(), map = window.__atlas.map;
+      return [m.found + m.second + m.missed + m.reveal, map.dotShown.size, !!map.reveal];
+    }), [0, 0, false]);
     r.eq('C: the skipped city kept its outcome; the abandoned round is no session', await page.evaluate(() =>
       [window.__atlas.mastery.skills(), window.__atlas.mastery.totals().itemsSeen, window.__atlas.mastery.totals().games]), [['us-city'], 1, 0]);
     r.eq('no page errors', h.errors, []);

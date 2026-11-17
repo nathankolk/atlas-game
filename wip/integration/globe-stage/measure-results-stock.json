@@ -1,0 +1,45 @@
+[
+ {
+  "app": "new",
+  "size": "desktop",
+  "style": "chart",
+  "interactive": [
+   1012
+  ],
+  "painted": [
+   2046
+  ],
+  "imagery": [],
+  "gesture": {
+   "script": 0.62,
+   "task": 2.32,
+   "styleLayout": 0.31
+  },
+  "afterGesture": {
+   "scriptMs": 2,
+   "taskMs": 18
+  },
+  "turn": {
+   "frameMedian": 216.6,
+   "frameP95": 433.3,
+   "engineMedian": 0.2,
+   "engineP95": 0.6
+  },
+  "zoom": {
+   "frameMedian": 200,
+   "frameP95": 416.7,
+   "engineMedian": 0.2,
+   "engineP95": 0.3
+  },
+  "engine": {
+   "renderer": "webgl",
+   "buildMs": 196,
+   "triangles": 169701,
+   "segments": 78396,
+   "imagery": null
+  },
+  "errors": [],
+  "interactiveMedian": 1012,
+  "paintedMedian": 2046
+ }
+]

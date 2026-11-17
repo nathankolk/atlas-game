@@ -119,7 +119,7 @@ const checks = {
       caps: document.querySelector('[data-level="us-capital-to-state"] .level-best').textContent, caps2: document.querySelector('[data-level="us-state-to-capital"] .level-best').textContent,
       europe: document.querySelector('[data-level="europe"] .level-best').textContent, pin: document.querySelector('[data-level="pin-europe"] .level-best').textContent,
       figures: Array.from(document.querySelectorAll('.summary dd')).map(d => d.textContent), chip: document.getElementById('streak-chip').textContent, daily: document.querySelector('.daily').dataset.daily,
-      marks: document.querySelectorAll('.daily .mark').length, share: !!document.querySelector('.daily-share-btn'), countdown: document.querySelector('[data-countdown]').textContent }));
+      marks: document.querySelectorAll('.daily .mark').length, share: !!document.querySelector('.daily [data-action="share-daily"]'), countdown: document.querySelector('[data-countdown]').textContent }));
     eq(a.africa, 'Best49 / 54', 'Africa best');
     ok(/due$/.test(a.africaDue), 'Africa due pill: ' + a.africaDue);
     eq(a.caps, 'Best44 / 50', 'Capitals → States best (D3)');
@@ -274,7 +274,7 @@ const checks = {
     let s = await st(page);
     ok(s.practice && s.review !== null && s.total > 0, 'review round is a practice round: ' + JSON.stringify(s));
     const first = s.total, playlist = s.review;
-    ok(/Review$/.test(await page.locator('#region-tag').textContent()), 'header says Review');
+    eq(await page.locator('#game-kind').textContent(), 'Review', 'the game bar says Review');
     let seen = first, rounds = 1;
     for (let guard = 0; guard < 12; guard++) {
       // skip through the round
@@ -284,7 +284,7 @@ const checks = {
         await page.waitForTimeout(250);
       }
       await page.waitForFunction(() => document.body.dataset.screen === 'results', null, { timeout: 20000 });
-      const next = await page.evaluate(() => { const b = document.getElementById('review-next-btn'); return b.style.display === 'none' ? null : b.textContent; });
+      const next = await page.evaluate(() => { const b = document.getElementById('review-next-btn'); return b.hidden ? null : b.textContent; });
       s = await st(page);
       if (s.review === 0) { ok(next === null, 'no Next after the last round'); break; }
       ok(/^Next: \d+ /.test(next || ''), 'Next action names the coming round: ' + next);
@@ -349,7 +349,7 @@ const checks = {
     for (let i = 0; i < 200; i++) { if (await page.evaluate(() => document.body.dataset.screen === 'results')) break; await page.keyboard.press('s'); await page.waitForTimeout(250); }
     await page.waitForFunction(() => document.body.dataset.screen === 'results');
     await page.waitForTimeout(400);
-    const r = await page.evaluate(() => { const v = document.getElementById('results-screen'); return { taller: v.scrollHeight > v.clientHeight, top: v.scrollTop, kicker: document.querySelector('.results-kicker').getBoundingClientRect().top }; });
+    const r = await page.evaluate(() => { const v = document.getElementById('results-screen'); return { taller: v.scrollHeight > v.clientHeight, top: v.scrollTop, kicker: document.querySelector('.results-bar').getBoundingClientRect().top }; });
     ok(r.taller && r.top === 0 && r.kicker >= 0, 'results taller than the window still shows its top: ' + JSON.stringify(r));
     await h.close();
   }

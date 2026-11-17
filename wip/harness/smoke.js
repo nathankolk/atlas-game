@@ -48,11 +48,10 @@ const { launch } = require('./atlas-harness.js');
 /* =====================================================================
  * MAP ADAPTER — the only code in this file that knows how the map is drawn
  *
- * Today's map is an SVG built by d3: every country / state / province is a
- * <path class="country"> with its GeoJSON feature bound as __data__, tiny
- * ones also get an invisible <path class="country-hitzone">, US cities are
- * <circle class="city-dot"> with { name } bound, and Pin the City reads a
- * click anywhere on #world-map through state.projection.
+ * The map is one WebGL globe (window.__atlas.globe, the engine) with the game's own map
+ * data beside it (window.__atlas.map): countries, states and provinces are features of the
+ * round's layer, keyed 'name:' + the feature's raw name; US cities are dots drawn over the
+ * globe (map.dots); Pin the City takes a tap anywhere on the globe.
  *
  * Contract with the rest of the suite (keep these when rewriting):
  *   install(context)            once per browser context, before any page loads
@@ -65,23 +64,19 @@ const { launch } = require('./atlas-harness.js');
  *                               resolves to { lon, lat, km }
  *   resetView(page)             back to the round's opening view
  *   counts                      { clicks, zoomed, synthetic } for the end-of-run summary
- * All clicks are real pointer input at a point where the item is the topmost
- * thing under the pointer; a synthetic event is the counted last resort.
+ * All clicks are real pointer input at a point where globe.featureAt() says the item is the
+ * thing under the pointer. A place that is hidden, covered or tiny is brought to the middle
+ * with globe.setView (aim); the click itself is still real input. There is no synthetic
+ * fallback (counts.synthetic stays 0).
  * ===================================================================== */
 
 // The in-page half: installed on every page load as window.__smokeMap
 function installMapProbe() {
   const state = () => window.__atlas.state;
-  const svgEl = () => document.getElementById('world-map');
-
-  // The part of the map that is on screen, in client px
-  function viewRect() {
-    const r = svgEl().getBoundingClientRect();
-    return {
-      left: Math.max(r.left, 0) + 2, top: Math.max(r.top, 0) + 2,
-      right: Math.min(r.right, window.innerWidth) - 2, bottom: Math.min(r.bottom, window.innerHeight) - 2
-    };
-  }
+  const globe = () => window.__atlas.globe;
+  const gmap = () => window.__atlas.map;
+  const hostEl = () => document.getElementById('globe-host');
+  const keyOf = f => 'name:' + (f.properties.name || f.properties.NAME || f.properties.NAME_LONG);
 
   // name -> feature lookup for the dataset in play
   function featuresByName(name) {
@@ -97,134 +92,6 @@ function installMapProbe() {
     return s.featureByCanonical;
   }
 
-  // The elements that stand for `name` in this round, and a test for "this element is that item"
-  function targetsFor(name) {
-    const s = state();
-    const svg = svgEl();
-    if (s.gameMode === 'us-city') {
-      const dots = Array.from(svg.querySelectorAll('.city-dot')).filter(e => e.__data__ && e.__data__.name === name);
-      return { els: dots, is: e => dots.indexOf(e) !== -1 };
-    }
-    const feature = featuresByName(name).get(name);
-    if (!feature) return { els: [], is: () => false };
-    const els = Array.from(svg.querySelectorAll('.country')).filter(e => e.__data__ === feature);
-    // The invisible hit zone of a tiny feature is bound to the same feature and counts too
-    return { els: els, is: e => !!e && e.__data__ === feature && svg.contains(e) };
-  }
-
-  // A whole-pixel client point where a real click lands on the named item: { x, y, score },
-  // or { miss, onScreen, cx, cy } when no point in view is good enough, with (cx, cy) on the
-  // item (the place to zoom in on). score (0-8) counts how many of the eight points 2 px
-  // around the point hit the item too; minScore is the least acceptable.
-  function locate(name, minScore) {
-    const t = targetsFor(name);
-    if (!t.els.length) return { error: 'nothing on the map is bound to "' + name + '"' };
-    const view = viewRect();
-    const inView = (x, y) => x >= view.left && x <= view.right && y >= view.top && y <= view.bottom;
-    const hit = (x, y) => inView(x, y) && t.is(document.elementFromPoint(x, y));
-    const ring = [[-2, 0], [2, 0], [0, -2], [0, 2], [-2, -2], [2, -2], [-2, 2], [2, 2]];
-    let best = null, onScreen = false, cx = 0, cy = 0;
-    const consider = (fx, fy) => {
-      const x = Math.round(fx), y = Math.round(fy);
-      if (!hit(x, y)) return false;
-      let score = 0;
-      ring.forEach(d => { if (hit(x + d[0], y + d[1])) score++; });
-      if (!best || score > best.score) best = { x: x, y: y, score: score };
-      return score === 8;
-    };
-    for (const el of t.els) {
-      const r = el.getBoundingClientRect();
-      const x0 = Math.max(r.left, view.left), x1 = Math.min(r.right, view.right);
-      const y0 = Math.max(r.top, view.top), y1 = Math.min(r.bottom, view.bottom);
-      if (x1 < x0 || y1 < y0) {
-        if (!onScreen) { cx = (r.left + r.right) / 2; cy = (r.top + r.bottom) / 2; }
-        continue;
-      }
-      onScreen = true;
-      cx = (x0 + x1) / 2;
-      cy = (y0 + y1) / 2;
-      let done = consider(cx, cy);
-      for (const n of [5, 11]) {
-        for (let i = 0; i < n && !done; i++) {
-          for (let j = 0; j < n && !done; j++) {
-            done = consider(x0 + (i + 0.5) * (x1 - x0) / n, y0 + (j + 0.5) * (y1 - y0) / n);
-          }
-        }
-      }
-      // Slivers, specks and scattered islands: walk the outline, which the hit zone around a
-      // tiny feature covers. A point of the item itself is also the place to zoom in on.
-      if (!done && el.getTotalLength) {
-        const len = el.getTotalLength(), m = el.getScreenCTM();
-        let anchored = !!best;
-        if (best) { cx = best.x; cy = best.y; }
-        for (let i = 0; i < 96 && !done; i++) {
-          const p = el.getPointAtLength(len * (i + 0.5) / 96);
-          const px = p.x * m.a + p.y * m.c + m.e, py = p.x * m.b + p.y * m.d + m.f;
-          if (!anchored && inView(px, py)) { cx = px; cy = py; anchored = true; }
-          done = consider(px, py);
-        }
-      }
-      if (done) break;
-    }
-    if (best && best.score >= (minScore || 0)) return best;
-    return { miss: true, onScreen: onScreen, cx: cx, cy: cy };
-  }
-
-  // Touch only. A browser hands a tap to whichever nearby clickable element it judges the
-  // finger meant, which is not always the one under the tapped pixel. A trial tap finds out
-  // which element that is: while a trial is on, the tap's events are stopped before the page
-  // sees any of them, and only the click's target is noted.
-  let trial = null;
-  ['touchstart', 'touchmove', 'touchend', 'touchcancel', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel',
-    'mousedown', 'mousemove', 'mouseup', 'click'].forEach(type => {
-    window.addEventListener(type, e => {
-      if (!trial) return;
-      e.stopImmediatePropagation();
-      if (e.type === 'click') trial.hit = trial.is(e.target);
-    }, true);
-  });
-
-  // Last resort: a synthetic click on the item's element
-  function synthClick(name) {
-    const t = targetsFor(name);
-    if (!t.els.length) return false;
-    const r = t.els[0].getBoundingClientRect();
-    t.els[0].dispatchEvent(new MouseEvent('click', {
-      bubbles: true, cancelable: true, view: window,
-      clientX: (r.left + r.right) / 2, clientY: (r.top + r.bottom) / 2
-    }));
-    return true;
-  }
-
-  // lon/lat -> client px on the map as it is drawn now
-  function project(lon, lat) {
-    const s = state();
-    const xy = s.projection([lon, lat]);
-    if (!xy || !isFinite(xy[0]) || !isFinite(xy[1])) return null;
-    const m = s.mapG.node().getScreenCTM();
-    return [xy[0] * m.a + xy[1] * m.c + m.e, xy[0] * m.b + xy[1] * m.d + m.f];
-  }
-
-  // client px -> [lon, lat], or null when the point is off the map
-  function unproject(x, y) {
-    const s = state();
-    const m = s.mapG.node().getScreenCTM().inverse();
-    const p = [x * m.a + y * m.c + m.e, x * m.b + y * m.d + m.f];
-    const ll = s.projection.invert(p);
-    if (!ll || !isFinite(ll[0]) || !isFinite(ll[1])) return null;
-    const back = s.projection(ll);
-    if (!back || Math.abs(back[0] - p[0]) > 1 || Math.abs(back[1] - p[1]) > 1) return null;
-    return ll;
-  }
-
-  // True when a click at this client point reaches the map itself (no control on top)
-  function mapIsTopAt(x, y) {
-    const view = viewRect();
-    if (x < view.left || x > view.right || y < view.top || y > view.bottom) return false;
-    const top = document.elementFromPoint(x, y);
-    return !!top && svgEl().contains(top);
-  }
-
   function kmBetween(a, b) {
     const rad = Math.PI / 180;
     const dLat = (b[1] - a[1]) * rad, dLon = (b[0] - a[0]) * rad;
@@ -233,25 +100,151 @@ function installMapProbe() {
     return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
   }
 
-  // Where to click to pin this lon/lat: { x, y, inside (the map area), free (nothing on top) }
-  function pinPoint(lon, lat) {
-    const p = project(lon, lat);
-    if (!p) return null;
-    const view = viewRect();
-    const inside = p[0] >= view.left && p[0] <= view.right && p[1] >= view.top && p[1] <= view.bottom;
-    return { x: p[0], y: p[1], inside: inside, free: inside && mapIsTopAt(p[0], p[1]) };
+  // The part of the globe's host that is on screen, in client px
+  function gViewRect() {
+    const r = hostEl().getBoundingClientRect();
+    return {
+      left: Math.max(r.left, 0) + 2, top: Math.max(r.top, 0) + 2,
+      right: Math.min(r.right, window.innerWidth) - 2, bottom: Math.min(r.bottom, window.innerHeight) - 2
+    };
   }
 
-  // A clickable spot on the map as far as possible from this lon/lat
+  // lon/lat -> client px, with whether it faces the viewer squarely enough to click
+  function gClient(lonlat) {
+    const p = globe().project(lonlat);
+    const r = hostEl().getBoundingClientRect();
+    return { x: r.left + p.x, y: r.top + p.y, facing: p.visible && p.z > 0.12 };
+  }
+
+  // True when a click at this client point reaches the globe (no control on top)
+  function gTopAt(x, y) {
+    const v = gViewRect();
+    if (x < v.left || x > v.right || y < v.top || y > v.bottom) return false;
+    const top = document.elementFromPoint(x, y);
+    return !!top && hostEl().contains(top);
+  }
+
+  // The key of the feature of the round's layer exactly under a client point
+  function gKeyAt(x, y) {
+    const r = hostEl().getBoundingClientRect();
+    const hit = globe().featureAt(x - r.left, y - r.top, { tolerance: 0 });
+    return hit && hit.layerId === gmap().layer ? hit.key : null;
+  }
+
+  // Every position of a feature's geometry, thinned to at most `most`
+  function gVertices(feature, most) {
+    const out = [];
+    const walk = a => { if (typeof a[0] === 'number') out.push(a); else a.forEach(walk); };
+    if (feature.geometry) walk(feature.geometry.coordinates);
+    const step = Math.max(1, Math.ceil(out.length / most));
+    return out.filter((p, i) => i % step === 0);
+  }
+
+  // US cities are dots drawn over the globe; a tap goes to the nearest dot within reach
+  function gDotAt(x, y) {
+    const r = hostEl().getBoundingClientRect();
+    let best = null, bestD = 12;
+    gmap().dots.forEach(dot => {
+      const p = globe().project(dot.lonlat);
+      const d = Math.hypot(r.left + p.x - x, r.top + p.y - y);
+      if (p.visible && d <= bestD) { best = dot.name; bestD = d; }
+    });
+    return best;
+  }
+
+  function gLocateDot(name, minScore) {
+    const dot = gmap().dots.find(d => d.name === name);
+    if (!dot) return { error: 'no dot on the globe is named "' + name + '"' };
+    const c = gClient(dot.lonlat);
+    const x = Math.round(c.x), y = Math.round(c.y);
+    const hit = (px, py) => gTopAt(px, py) && gDotAt(px, py) === name;
+    if (c.facing && hit(x, y)) {
+      const ring = [[-2, 0], [2, 0], [0, -2], [0, 2], [-2, -2], [2, -2], [-2, 2], [2, 2]];
+      const score = ring.filter(d => hit(x + d[0], y + d[1])).length;
+      if (score >= (minScore || 0)) return { x: x, y: y, score: score };
+    }
+    return { miss: true, onScreen: c.facing && gTopAt(c.x, c.y), cx: c.x, cy: c.y };
+  }
+
+  // Finds a client point where a click lands on the named item and nothing else:
+  // { x, y, score } with score = how many of 8 points around it also hit (0-8), or
+  // { miss, onScreen, cx, cy } when no point in view will do
+  function gLocate(name, minScore) {
+    if (state().gameMode === 'us-city') return gLocateDot(name, minScore);
+    const feature = featuresByName(name).get(name);
+    if (!feature) return { error: 'nothing on the map is bound to "' + name + '"' };
+    const key = keyOf(feature);
+    const layer = gmap().layer;
+    const anchor = globe().anchor(layer, key);
+    if (!anchor) return { error: 'the globe has no feature "' + key + '" in layer ' + layer };
+    const ring = [[-2, 0], [2, 0], [0, -2], [0, 2], [-2, -2], [2, -2], [-2, 2], [2, 2]];
+    const hit = (x, y) => gTopAt(x, y) && gKeyAt(x, y) === key;
+    let best = null;
+    const consider = lonlat => {
+      const c = gClient(lonlat);
+      const x = Math.round(c.x), y = Math.round(c.y);
+      if (!c.facing || !hit(x, y)) return false;
+      let score = 0;
+      ring.forEach(d => { if (hit(x + d[0], y + d[1])) score++; });
+      if (!best || score > best.score) best = { x: x, y: y, score: score };
+      return score === 8;
+    };
+    // The anchor first (the most-inside point), then points between it and the outline
+    if (!consider(anchor)) {
+      const mid = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      const verts = gVertices(feature, 60);
+      for (let i = 0; i < verts.length; i++) {
+        const far = Math.abs(verts[i][0] - anchor[0]) > 90;       // across the antimeridian: no straight blend
+        if (consider(far ? verts[i] : mid(anchor, verts[i], 0.5)) || consider(far ? verts[i] : mid(anchor, verts[i], 0.9))) break;
+      }
+    }
+    if (best && best.score >= (minScore || 0)) return best;
+    const a = gClient(anchor);
+    return { miss: true, onScreen: a.facing && gTopAt(a.x, a.y), cx: a.x, cy: a.y };
+  }
+
+  // Brings the named place to the middle of the globe, larger with every try
+  function gAim(name, tries) {
+    const g = globe();
+    if (state().gameMode === 'us-city') {
+      // Crowded dots come apart as the globe zooms in
+      const dot = gmap().dots.find(d => d.name === name);
+      g.setView({ lon: dot.lonlat[0], lat: dot.lonlat[1], k: g.getView().k * (tries > 0 ? 2.5 : 1) });
+      return;
+    }
+    const feature = featuresByName(name).get(name);
+    const key = keyOf(feature);
+    const info = g.featureInfo(gmap().layer, key);
+    const anchor = g.anchor(gmap().layer, key);
+    const view = g.getView();
+    const size = 2 * g.radiusPx() * Math.sin(Math.min(info.radiusDeg, 90) * Math.PI / 180);   // px across, about
+    let k = size < 60 ? view.k * 60 / Math.max(size, 0.05) : view.k;
+    if (tries > 0) k = Math.max(k, view.k * 2.5);
+    g.setView({ lon: anchor[0], lat: anchor[1], k: k });
+  }
+
+  function gAtHome() {
+    const v = globe().getView(), h = gmap().home;
+    return !h || (Math.abs(v.lon - h.lon) < 1e-4 && Math.abs(v.lat - h.lat) < 1e-4 && Math.abs(v.k / h.k - 1) < 1e-4);
+  }
+
+  // Where to click to pin this lon/lat: { x, y, free (facing the viewer, nothing on top) }
+  function pinPoint(lon, lat) {
+    const c = gClient([lon, lat]);
+    return { x: c.x, y: c.y, free: c.facing && gTopAt(c.x, c.y) };
+  }
+
+  // A clickable spot on the globe as far as possible from this lon/lat
   function farPoint(lon, lat) {
-    const view = viewRect();
+    const view = gViewRect();
+    const r = hostEl().getBoundingClientRect();
     let best = null;
     for (let i = 0; i < 14; i++) {
       for (let j = 0; j < 10; j++) {
         const x = view.left + (i + 0.5) * (view.right - view.left) / 14;
         const y = view.top + (j + 0.5) * (view.bottom - view.top) / 10;
-        if (!mapIsTopAt(x, y)) continue;
-        const ll = unproject(x, y);
+        if (!gTopAt(x, y)) continue;
+        const ll = globe().invert(x - r.left, y - r.top);
         if (!ll) continue;
         const km = kmBetween([lon, lat], ll);
         if (!best || km > best.km) best = { x: x, y: y, lon: ll[0], lat: ll[1], km: km };
@@ -260,30 +253,33 @@ function installMapProbe() {
     return best;
   }
 
+  // When the view last changed, heard from the engine (a flight to a place takes many frames)
+  let viewHeard = false, viewChanged = 0;
+  function viewStill(quietMs) {
+    if (!viewHeard) {
+      viewHeard = true;
+      globe().on('view', () => { viewChanged = performance.now(); });
+    }
+    return performance.now() - viewChanged > quietMs;
+  }
+
   window.__smokeMap = {
     ready: function () {
       const s = window.__atlas && window.__atlas.state;
-      const svg = svgEl();
-      if (!s || !svg) return false;
-      return svg.querySelectorAll(s.gameMode === 'us-city' ? '.city-dot' : '.country').length > 0;
+      return !!s && !!globe() && gmap().round === s.roundId && gmap().drawn;
     },
-    atHome: function () {
-      const t = state().currentTransform;
-      return !t || (Math.abs(t.k - 1) < 0.001 && Math.abs(t.x) < 0.5 && Math.abs(t.y) < 0.5);
-    },
-    viewCentre: function () {
-      const v = viewRect();
-      return { x: (v.left + v.right) / 2, y: (v.top + v.bottom) / 2 };
-    },
-    trialBegin: function (name) { trial = { is: targetsFor(name).is, hit: null }; },
-    trialHit: function () { return trial ? trial.hit : null; },
-    trialEnd: function () { const hit = !!(trial && trial.hit); trial = null; return hit; },
-    locate: locate, synthClick: synthClick, pinPoint: pinPoint, farPoint: farPoint
+    atHome: gAtHome,
+    still: viewStill,
+    locate: gLocate,
+    aim: gAim,
+    // Turns the globe so that this lon/lat is at its middle, at the zoom it has
+    aimAt: function (lon, lat) { globe().setView({ lon: lon, lat: lat, k: globe().getView().k }); },
+    pinPoint: pinPoint, farPoint: farPoint
   };
 }
 
 const MapAdapter = {
-  kind: 'SVG map (d3)',
+  kind: 'WebGL globe',
   counts: { clicks: 0, zoomed: 0, synthetic: 0 },
 
   async install(context) {
@@ -294,7 +290,7 @@ const MapAdapter = {
     await page.waitForFunction(() => window.__smokeMap && window.__smokeMap.ready(), null, { timeout: 15000, polling: 30 });
   },
 
-  // The least a click point must score (see locate): any hit will do for a mouse click on the
+  // The least a click point must score (see gLocate): any hit will do for a mouse click on the
   // answer, a tap wants a little room, and a deliberately wrong answer stays well inside its
   // shape so that it cannot graze the right one
   minScore(wrongAnswer) {
@@ -304,7 +300,7 @@ const MapAdapter = {
   // One real tap or click at a client point
   async tapAt(page, x, y) {
     if (OPT.mobile) {
-      // Two taps close together in time and place are a double tap, which zooms the map
+      // Two taps close together in time and place are a double tap
       const last = this.lastTap;
       const wait = last && last.page === page && Math.hypot(last.x - x, last.y - y) < 16 ? last.at + 560 - Date.now() : 0;
       if (wait > 0) await page.waitForTimeout(wait);
@@ -316,23 +312,12 @@ const MapAdapter = {
     this.counts.clicks++;
   },
 
-  // Touch: would a tap at this point be handed to the named item? (see the trial tap notes)
-  async trialTap(page, name, x, y) {
-    await page.evaluate(n => window.__smokeMap.trialBegin(n), name);
-    await page.touchscreen.tap(x, y);
-    await page.waitForFunction(() => window.__smokeMap.trialHit() !== null, null, { timeout: 400, polling: 10 }).catch(() => {});
-    return page.evaluate(() => window.__smokeMap.trialEnd());
-  },
-
   // Clicks or taps the named item if some point of it in view is safe to hit; otherwise
   // resolves to { miss, onScreen, cx, cy } without touching anything
   async tapItem(page, name, minScore) {
     const loc = await page.evaluate(a => window.__smokeMap.locate(a[0], a[1]), [name, minScore]);
     if (loc.error) throw new Error('map adapter: ' + loc.error);
     if (loc.miss) return loc;
-    if (OPT.mobile && !(await this.trialTap(page, name, loc.x, loc.y))) {
-      return { miss: true, onScreen: true, cx: loc.x, cy: loc.y };
-    }
     await this.tapAt(page, loc.x, loc.y);
     return loc;
   },
@@ -349,27 +334,14 @@ const MapAdapter = {
     for (let attempt = 0; attempt < 7; attempt++) {
       const r = await this.tapItem(page, name, this.minScore(false));
       if (!r.miss) {
-        if (attempt > 0) {
-          this.counts.zoomed++;
-          await this.resetView(page);
-        }
+        // Turning the globe is part of playing on it: the view stays where the answer was
+        if (attempt > 0) this.counts.zoomed++;
         return name;
       }
-      if (!r.onScreen) {
-        // Panned or zoomed away from it by an earlier answer
-        await this.resetView(page);
-      } else {
-        // Too small or hemmed in at this zoom: zoom in on it and look again
-        await page.mouse.move(r.cx, r.cy);
-        await page.mouse.wheel(0, -700);
-        await page.waitForTimeout(140);
-      }
+      await page.evaluate(a => window.__smokeMap.aim(a[0], a[1]), [name, attempt]);
+      await page.waitForTimeout(150);
     }
-    const sent = await page.evaluate(n => window.__smokeMap.synthClick(n), name);
-    if (!sent) throw new Error('map adapter: could not click "' + name + '"');
-    this.counts.synthetic++;
-    await this.resetView(page);
-    return name;
+    throw new Error('map adapter: could not click "' + name + '" on the globe');
   },
 
   async answerWrong(page, skip) {
@@ -391,35 +363,32 @@ const MapAdapter = {
     return this.answer(page, names[0]);
   },
 
+  // Resolves once the globe has stopped moving (a reveal and the next city both turn it)
+  async still(page) {
+    await page.evaluate(() => window.__smokeMap.still(0));
+    await page.waitForFunction(() => window.__smokeMap.still(350), null, { timeout: 8000, polling: 50 }).catch(() => {});
+  },
+
   async pinAt(page, lon, lat) {
+    await this.still(page);
     for (let attempt = 0; attempt < 4; attempt++) {
       const p = await page.evaluate(ll => window.__smokeMap.pinPoint(ll[0], ll[1]), [lon, lat]);
-      if (!p) throw new Error('map adapter: ' + lon + ', ' + lat + ' is not on this map');
       if (p.free) {
         await this.tapAt(page, p.x, p.y);
         return;
       }
-      if (!p.inside) {
-        await this.resetView(page);
-      } else {
-        // A map control covers the spot: drag the map so the spot slides toward the middle
-        const c = await page.evaluate(() => window.__smokeMap.viewCentre());
-        const dx = Math.sign(c.x - p.x) * 140, dy = Math.sign(c.y - p.y) * 100;
-        await page.mouse.move(c.x, c.y);
-        await page.mouse.down();
-        await page.mouse.move(c.x + dx / 2, c.y + dy / 2, { steps: 4 });
-        await page.mouse.move(c.x + dx, c.y + dy, { steps: 4 });
-        await page.mouse.up();
-        await page.waitForTimeout(120);
-      }
+      // Behind the globe, near its edge or under a control: turn the place to the middle
+      await page.evaluate(ll => window.__smokeMap.aimAt(ll[0], ll[1]), [lon, lat]);
+      await page.waitForTimeout(150);
     }
     throw new Error('map adapter: could not reach ' + lon + ', ' + lat + ' with a click');
   },
 
   async pinFarFrom(page, lon, lat) {
+    await this.still(page);
     await this.resetView(page);
     const p = await page.evaluate(ll => window.__smokeMap.farPoint(ll[0], ll[1]), [lon, lat]);
-    if (!p) throw new Error('map adapter: no clickable spot found on the map');
+    if (!p) throw new Error('map adapter: no clickable spot found on the globe');
     await this.tapAt(page, p.x, p.y);
     return { lon: p.lon, lat: p.lat, km: p.km };
   }

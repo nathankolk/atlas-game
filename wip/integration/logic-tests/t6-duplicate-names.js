@@ -12,6 +12,7 @@ function makeCopy() {
   fs.rmSync(COPY, { recursive: true, force: true });
   fs.mkdirSync(COPY, { recursive: true });
   fs.symlinkSync(path.join(SRC, 'data'), path.join(COPY, 'data'));
+  fs.symlinkSync(path.join(SRC, 'vendor'), path.join(COPY, 'vendor'));
   let html = fs.readFileSync(path.join(SRC, 'index.html'), 'utf8');
   const a = "    ]\n    // Midwest / South / West populated in Stage 2.\n";
   if (html.split(a).length !== 2) throw new Error('city table anchor not found');
@@ -59,11 +60,11 @@ function makeCopy() {
     for (let i = 0; i < 20 && !found; i++) {
       const s = await snap(page);
       if (s.screen !== 'game-screen') break;
-      if (s.current === 'Sydney, Canada') found = await page.evaluate(() => document.getElementById('prompt-country').innerHTML);
+      if (s.current === 'Sydney, Canada') found = await page.evaluate(() => [document.getElementById('prompt-country').textContent, document.getElementById('prompt-note').textContent]);
       else await answer(page, 'skip');
     }
     if (found === null) console.log('   (the planted city was the one of 21 left out of this 20-city round; prompt not seen)');
-    else r.eq('pin prompt shows the plain name and the country', found, 'Sydney<span class="pin-prompt-country">Canada</span>');
+    else r.eq('pin prompt shows the plain name and, on its second line, the country', found, ['Sydney', 'Canada']);
     r.eq('no page errors', h.errors, []);
   } catch (e) { r.check('ran to the end', false, String(e && e.stack || e)); }
   await h.close();

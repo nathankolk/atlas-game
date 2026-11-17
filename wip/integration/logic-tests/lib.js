@@ -8,15 +8,6 @@ const { launch } = require(path.join(S, 'harness', 'atlas-harness.js'));
 
 // Runs before the app's script. fast: shrink the game's delays so a long round takes seconds.
 function initScript(opts) {
-  if (opts.noPaint) {
-    // The SVG map is rasterised in software here, which costs seconds per repaint of the detailed maps.
-    // Hidden, it still lays out and takes dispatched events, so the game logic runs exactly the same.
-    document.addEventListener('DOMContentLoaded', () => {
-      const style = document.createElement('style');
-      style.textContent = '#world-map, #sat-canvas { visibility: hidden !important; }';
-      document.head.appendChild(style);
-    });
-  }
   if (opts.fast) {
     const st = window.setTimeout;
     window.setTimeout = function (fn, ms) {
@@ -36,18 +27,54 @@ function pageHelpers() {
     : st.activeDataset === 'province'
       ? st.provinceStores[st.currentProvinceRound.split('-')[0]].featureByCanonical
       : st.featureByCanonical;
-  T.pathFor = (name) => {
+  // ----- The globe -----
+  T.keyFor = (name) => {
     const f = T.byName().get(name);
-    if (!f) return null;
-    const raw = f.properties.name || f.properties.NAME;
-    return document.querySelector('.country[data-fkey="' + CSS.escape('name:' + raw) + '"]');
+    return f ? 'name:' + (f.properties.name || f.properties.NAME) : null;
   };
-  T.click = (el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+  // A press and release on the globe at a client point (dispatched, so it lands whatever is painted)
+  T.tapAt = (x, y) => {
+    const host = document.getElementById('globe-host');
+    const ev = type => host.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, pointerId: 7, pointerType: 'mouse', isPrimary: true, button: 0, clientX: x, clientY: y
+    }));
+    ev('pointerdown');
+    ev('pointerup');
+  };
+  // Turns the globe so a feature of the round's layer sits in the middle, big enough to hit; returns its client point
+  T.aimKey = (key) => {
+    const g = A.globe, layer = A.map.layer;
+    const at = g.anchor(layer, key), info = g.featureInfo(layer, key);
+    const size = 2 * g.radiusPx() * Math.sin(Math.min(info.radiusDeg, 90) * Math.PI / 180);
+    g.setView({ lon: at[0], lat: at[1], k: size < 40 ? g.getView().k * 40 / Math.max(size, 0.05) : g.getView().k });
+    const p = g.project(at), r = document.getElementById('globe-host').getBoundingClientRect();
+    return { x: r.left + p.x, y: r.top + p.y };
+  };
+  T.tapKey = (key) => { const p = T.aimKey(key); T.tapAt(p.x, p.y); };
   // An eligible, not-yet-answered feature other than the target
-  T.wrongPath = () => {
-    const target = T.pathFor(st.current);
-    return Array.from(document.querySelectorAll('.country.eligible')).find(el =>
-      el !== target && !el.classList.contains('completed-correct') && !el.classList.contains('completed-wrong')) || null;
+  T.wrongKey = () => {
+    const target = T.keyFor(st.current);
+    return Array.from(A.map.eligible).find(k => k !== target && !A.map.marks.has(k)) || null;
+  };
+  // Marks on the map: { found, second, missed, reveal }
+  T.marks = () => {
+    const n = { found: 0, second: 0, missed: 0, reveal: 0 };
+    A.map.marks.forEach(v => { n[v]++; });
+    A.map.dotMarks.forEach(v => { n[v]++; });
+    A.map.dotShown.forEach(v => { if (v.style === 'reveal') n.reveal++; });
+    A.map.shown.forEach(v => { if (v === 'reveal') n.reveal++; });
+    return n;
+  };
+  // How far the map is zoomed in, relative to the round's opening view
+  T.zoom = () => A.globe.getView().k / A.map.home.k;
+  // The element the map is drawn in
+  T.mapEl = () => document.getElementById('globe-host');
+  // Pin the City: turns the globe so this lon/lat is in the middle, then taps it
+  T.pinTap = (lon, lat) => {
+    const g = A.globe;
+    g.setView({ lon: lon, lat: lat, k: g.getView().k });
+    const p = g.project([lon, lat]), r = document.getElementById('globe-host').getBoundingClientRect();
+    T.tapAt(r.left + p.x, r.top + p.y);
   };
   T.snapshot = () => ({
     screen: T.screen(), current: st.current, locked: st.interactionLocked, mode: st.gameMode,
@@ -68,17 +95,18 @@ function pageHelpers() {
       return true;
     }
     if (mode === 'us-city') {
-      const dots = Array.from(document.querySelectorAll('.city-dot'));
-      const dot = right ? dots.find(d => d.getAttribute('data-city') === st.current)
-        : dots.find(d => d.getAttribute('data-city') !== st.current &&
-            !d.classList.contains('completed-correct') && !d.classList.contains('completed-wrong'));
+      const dot = right ? A.map.dots.find(d => d.name === st.current)
+        : A.map.dots.find(d => d.name !== st.current && !A.map.dotMarks.has(d.name));
       if (!dot) return false;
-      T.click(dot);
+      // The dot goes to the middle, zoomed in far enough that no neighbour is nearer the tap
+      A.globe.setView({ lon: dot.lonlat[0], lat: dot.lonlat[1], k: Math.max(A.globe.getView().k, 40) });
+      const p = A.globe.project(dot.lonlat), r = document.getElementById('globe-host').getBoundingClientRect();
+      T.tapAt(r.left + p.x, r.top + p.y);
       return true;
     }
-    const el = right ? T.pathFor(st.current) : T.wrongPath();
-    if (!el) return false;
-    T.click(el);
+    const key = right ? T.keyFor(st.current) : T.wrongKey();
+    if (!key) return false;
+    T.tapKey(key);
     return true;
   };
   T.capitalOf = (stateName) => {
@@ -99,25 +127,15 @@ function pageHelpers() {
     'South Dakota': 'Pierre', 'Tennessee': 'Nashville', 'Texas': 'Austin', 'Utah': 'Salt Lake City', 'Vermont': 'Montpelier',
     'Virginia': 'Richmond', 'Washington': 'Olympia', 'West Virginia': 'Charleston', 'Wisconsin': 'Madison', 'Wyoming': 'Cheyenne'
   };
-  // Client coordinates of a lon/lat on the map as drawn. Goes through the map group's own screen matrix,
-  // which covers the zoom transform and the viewBox squeeze when the map area has changed height (B2).
-  T.clientPoint = (lon, lat) => {
-    const p = st.projection([lon, lat]);
-    const pt = document.getElementById('world-map').createSVGPoint();
-    pt.x = p[0];
-    pt.y = p[1];
-    const out = pt.matrixTransform(st.mapG.node().getScreenCTM());
-    return { x: out.x, y: out.y };
-  };
   T.ls = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return localStorage.getItem(key); } };
   window.__t = T;
 }
 
-// Small window by default: the SVG map is rasterised in software here, and paint time grows with its size
+// Small window by default: the map is drawn in software here, and paint time grows with its size
 async function launchApp(opts) {
   opts = Object.assign({ width: 600, height: 460 }, opts || {});
   const h = await launch(opts);
-  await h.context.addInitScript(initScript, { fast: opts.fast || false, noPaint: !!opts.noPaint });
+  await h.context.addInitScript(initScript, { fast: opts.fast || false });
   if (opts.beforeLoad) await opts.beforeLoad(h);
   await h.page.goto(h.url + (opts.query || ''));
   await h.page.waitForFunction(() => window.__atlas && window.__atlas.state.allFeatures.length > 0, null, { timeout: 20000 });
@@ -138,7 +156,10 @@ async function startLevel(page, arg, startOpts) {
   await page.evaluate(([a, o]) => { window.__atlas.startGame(a, o || undefined); }, [arg, startOpts || null]);
   await page.waitForFunction(() => {
     const s = window.__t.snapshot();
-    return s.screen === 'game-screen' && (s.current || s.learnPhase === 'study') && document.querySelector('#world-map g');
+    const A = window.__atlas;
+    // The globe: set up for this round, and its layers built (a tap before that finds nothing)
+    const mapReady = A.map.round === A.state.roundId && A.map.drawn;
+    return s.screen === 'game-screen' && (s.current || s.learnPhase === 'study') && mapReady;
   }, null, { timeout: 30000 });
   return snap(page);
 }
@@ -166,11 +187,8 @@ async function answer(page, how) {
       const offKm = how === 'first' ? 0 : how === 'second' ? 300 : 1500;
       const city = await page.evaluate(() => window.__pinCities[window.__atlas.state.current]);
       const dLat = offKm / 111.2 * (city.lat > 0 ? -1 : 1);
-      const xy = await page.evaluate(([lon, lat]) => window.__t.clientPoint(lon, lat), [city.lon, city.lat + dLat]);
-      // A dispatched click rather than a real one, so it also lands when the map is not painted
-      await page.evaluate(([x, y]) => {
-        document.getElementById('world-map').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y }));
-      }, [xy.x, xy.y]);
+      // A dispatched tap rather than a real one, so it also lands when the map is not painted
+      await page.evaluate(([lon, lat]) => window.__t.pinTap(lon, lat), [city.lon, city.lat + dLat]);
       await page.waitForFunction(() => !document.getElementById('pin-btn').disabled, null, { timeout: 5000 });
       await page.click('#pin-btn');
     }

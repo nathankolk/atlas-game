@@ -8,7 +8,7 @@
  * Depends on the globals `d3` (d3-array + d3-geo) and `earcut`.
  *
  *   const globe = Globe.create(hostElement, { minZoom, maxZoom, dblClickZoom,
- *                                             theme, forceCanvas2D });
+ *                                             reducedMotion, theme, forceCanvas2D });
  *
  * Layers    setLayers([{ id, features, key, interactive, borders,
  *           borderColor, borderWidth, bordersVisible, visible, style }])
@@ -1526,7 +1526,11 @@ const Globe = (function () {
     // Reused for every 'view' event; listeners copy the values if they keep them
     const viewEvent = { lon: 0, lat: 0, k: 1 };
     const viewInfo = { moving: false };
-    const reducedMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+    const systemMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+    let motionChoice = null;                   // the caller's say on reduced motion; null follows the system's
+
+    // True when movement should be instant: no eased flights or zooms, no glide after a drag.
+    function reducedMotion() { return motionChoice === null ? systemMotion.matches : motionChoice; }
 
     /* ----- Events ----- */
 
@@ -1668,7 +1672,7 @@ const Globe = (function () {
       };
       const duration = o && o.duration !== undefined ? o.duration : 700;
       const still = wrapLon(to.lon) === view.lon && to.lat === view.lat && to.k === view.k;
-      if (still || duration <= 0 || reducedMotion.matches || !scene.w || paused) {
+      if (still || duration <= 0 || reducedMotion() || !scene.w || paused) {
         setViewRaw(to.lon, to.lat, to.k);
         return Promise.resolve(true);
       }
@@ -1700,7 +1704,7 @@ const Globe = (function () {
       }
       let active = false;
       if (zoom.active) {
-        const step = reducedMotion.matches ? 1 : 1 - Math.exp(-dt / ZOOM_TAU_MS);
+        const step = reducedMotion() ? 1 : 1 - Math.exp(-dt / ZOOM_TAU_MS);
         let k = view.k * Math.pow(zoom.target / view.k, step);
         if (Math.abs(Math.log(zoom.target / k)) < 0.002) { k = zoom.target; zoom.active = false; }
         zoomAbout(k, zoom);
@@ -1743,9 +1747,11 @@ const Globe = (function () {
       zoomToward((zoom.active ? zoom.target : view.k) * factor);
     }
 
-    // Changes the options that can change after creation: { dblClickZoom, minZoom, maxZoom }.
+    // Changes the options that can change after creation: { dblClickZoom, minZoom, maxZoom,
+    // reducedMotion }. reducedMotion is true or false, or null to follow the system's setting.
     function setOptions(o) {
       if (o.dblClickZoom !== undefined) dblClickZoom = !!o.dblClickZoom;
+      if (o.reducedMotion !== undefined) motionChoice = o.reducedMotion === null ? null : !!o.reducedMotion;
       if (o.minZoom !== undefined) minZoom = o.minZoom;
       if (o.maxZoom !== undefined) maxZoom = Math.min(o.maxZoom, ZOOM_LIMIT);
       if (homeFit && scene.w) home.k = fitZoom(homeFit);
@@ -2478,7 +2484,7 @@ const Globe = (function () {
 
     // Starts the glide after a drag from the pointer's velocity over its last 120 ms.
     function startInertia(now) {
-      if (reducedMotion.matches || trackCount < 2) return;
+      if (reducedMotion() || trackCount < 2) return;
       const newest = ((trackCount - 1) % 8) * 3;
       if (now - track[newest] > 100) return;      // the pointer rested before lifting
       let oldest = newest;

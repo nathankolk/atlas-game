@@ -26,7 +26,7 @@ const stores = (page) => page.evaluate(() => ['atlas-records', 'atlas-focus', 'a
       await page.waitForTimeout(3200);
       const s2 = await snap(page);
       r.eq('B4: a skip left behind does not eat the next round\'s first question', [s2.current, s2.queue, s2.wrong, s2.seq, s2.locked], [s1.current, s1.queue, 0, 0, false]);
-      const marks = await page.evaluate(() => document.querySelectorAll('.country.completed-wrong, .country.completed-correct, .country.reveal').length);
+      const marks = await page.evaluate(() => { const m = window.__t.marks(); return m.found + m.second + m.missed + m.reveal; });
       r.eq('B4: no marks from the abandoned round on the new map', marks, 0);
 
       // 2. Correct answer (0.9 s pending) -> Esc -> another level
@@ -163,7 +163,7 @@ const stores = (page) => page.evaluate(() => ['atlas-records', 'atlas-focus', 'a
     const h = await launch({});
     const page = h.page;
     try {
-      await page.route(/world-atlas/, route => route.abort());
+      await page.route(/countries-(50|110)m\.json/, route => route.abort());
       await page.goto(h.url);
       await page.waitForFunction(() => document.querySelector('#menu-content .error-state'), null, { timeout: 20000 });
       const text = await page.evaluate(() => document.querySelector('#menu-content .error-state').textContent);

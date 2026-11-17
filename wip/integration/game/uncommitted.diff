@@ -1,0 +1,1284 @@
+diff --git a/public/index.html b/public/index.html
+index 148ff64..a8d2676 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -3392,4 +3392,8 @@
+     pin: null,                // Pin the City round: { phase, guess, results }
+     roundNeedsWork: [],       // missed + secondTry from the round just finished
++    picks: [],                // Wrong answers given to the question in play
++    roundLog: new Map(),      // name -> { picks, skipped } for each question answered this round
++    gainStart: null,          // The level's mastery as the round began: { skill, title, names, levels }
++    clock: null,              // Interval that keeps the game bar's time current
+     startTime: null,
+     interactionLocked: false,
+@@ -5485,4 +5489,6 @@
+     state.totalQuestions = 0;
+     state.current = null;   // nothing can be answered until the first prompt is up
++    state.picks = [];
++    state.roundLog = new Map();
+ 
+     // Build eligible features based on mode
+@@ -5571,5 +5577,7 @@
+       state.learn = createLearnRun(region, state.queue, !!opts.learnFresh);
+     }
+-    setLearnChrome(!!state.learn);
++    // Learn quizzes record no answers, so there is no gain to show after one
++    state.gainStart = state.learn ? null : masterySnapshot();
++    setGameChrome();
+     setAddressBar(levelLink(regionOrMode, !!state.learn));
+ 
+@@ -5580,18 +5588,9 @@
+ 
+     switchScreen('game');
+-    // Header label - daily mode shows the puzzle number
+-    let headerLabel = GAME_MODES[mode].label(region);
+-    if (mode === 'daily-five') {
+-      headerLabel = 'Daily #' + dailyPuzzleNumber(state.dailyDateKey);
+-      if (state.dailyReplay) headerLabel += ' (Practice)';
+-    }
+-    if (state.practice) headerLabel += state.review ? ' · Review' : ' · Practice';
+-    if (state.learn) headerLabel += ' · Learn';
+-    document.getElementById('region-tag').textContent = headerLabel;
+-    const zoomHintEl = document.getElementById('zoom-hint');
+-    if (zoomHintEl) {
+-      zoomHintEl.style.display = state.zoomHintShown ? 'none' : '';
+-      state.zoomHintShown = true;
+-    }
++    updateStats();
++    startClock();
++    // How to move the map, said once per visit
++    document.getElementById('zoom-hint').hidden = state.zoomHintShown;
++    state.zoomHintShown = true;
+ 
+     // Wait for screen transition, then render map
+@@ -5672,4 +5671,124 @@
+   }
+ 
++  // What kind of round this is, beyond a full one: the word shown beside the level's name
++  function roundKind() {
++    if (state.learn) return 'Learn';
++    if (state.review) return 'Review';
++    return state.practice || state.dailyReplay ? 'Practice' : '';
++  }
++
++  // Sets the game screen up for the round about to start: its title and
++  // tags, the figures and buttons it has, and the shape of the prompt card.
++  // Runs before the map is drawn, so the map is fitted around the card as
++  // it will stand for every question.
++  function setGameChrome() {
++    const mode = state.gameMode;
++    const learn = !!state.learn;
++    const pin = !!state.pin;
++    const screen = document.getElementById('game-screen');
++    screen.classList.toggle('pin-mode', pin);
++    // Hard: no borders on the chart (Uncharted's imagery has none anyway)
++    screen.classList.toggle('pin-hard', pin && state.difficulty === 'hard');
++    screen.classList.toggle('learn-mode', learn);
++
++    document.getElementById('region-tag').textContent = mode === 'daily-five'
++      ? 'Daily #' + dailyPuzzleNumber(state.dailyDateKey)
++      : GAME_MODES[mode].label(state.currentContinent);
++    const kind = document.getElementById('game-kind');
++    kind.textContent = roundKind();
++    kind.hidden = !kind.textContent;
++    document.getElementById('game-diff').textContent = DIFFICULTY_INFO[state.difficulty].label;
++
++    document.getElementById('stat-score-label').textContent = learn ? 'Found' : 'Score';
++    document.getElementById('stat-extra').hidden = !(learn || pin);
++    document.getElementById('stat-extra-label').textContent = learn ? 'Restarts' : 'Avg km';
++
++    document.getElementById('skip-btn').hidden = false;
++    document.getElementById('learn-ready-btn').hidden = true;
++    document.getElementById('pin-btn').hidden = !pin;
++
++    // The card's extra lines exist for the whole round or not at all
++    setPrompt(mode === 'city-pin' ? 'Pin the city' : 'Find on the map', '—');
++    const note = document.getElementById('prompt-note');
++    note.textContent = '';
++    note.hidden = !pin;
++    const choices = document.getElementById('choices-panel');
++    choices.innerHTML = '';
++    choices.hidden = mode !== 'us-state-to-capital';
++  }
++
++  // Writes the prompt card: the small label over the name. A long name
++  // steps down in size so it keeps to the card's one line.
++  function setPrompt(label, name) {
++    const nameEl = document.getElementById('prompt-country');
++    document.getElementById('prompt-label').textContent = label;
++    nameEl.textContent = name;
++    nameEl.classList.toggle('is-long', name.length > 17 && name.length <= 26);
++    nameEl.classList.toggle('is-xlong', name.length > 26);
++    state.currentPromptText = name;
++    setPromptTry(false);
++    nameEl.classList.remove('shake', 'pulse');
++    void nameEl.offsetWidth;
++    nameEl.classList.add('pulse');
++  }
++
++  // "Second try" beside the prompt's label, after a first wrong answer
++  function setPromptTry(on) {
++    document.getElementById('prompt-try').hidden = !on;
++  }
++
++  // A wrong answer shakes the name being asked for
++  function shakePrompt() {
++    const nameEl = document.getElementById('prompt-country');
++    nameEl.classList.remove('shake');
++    void nameEl.offsetWidth;
++    nameEl.classList.add('shake');
++  }
++
++  // The game bar's clock: time since the round began, current while it is in play
++  function startClock() {
++    stopClock();
++    const tick = () => {
++      document.getElementById('stat-time').textContent =
++        formatTimeSeconds(Math.floor((Date.now() - state.startTime) / 1000));
++    };
++    tick();
++    state.clock = setInterval(tick, 1000);
++  }
++
++  // Stops the clock; given the round's final time, leaves that showing
++  function stopClock(finalSeconds) {
++    clearInterval(state.clock);
++    state.clock = null;
++    if (finalSeconds != null) document.getElementById('stat-time').textContent = formatTimeSeconds(finalSeconds);
++  }
++
++  // The part of the stage the HUD leaves clear, in stage px: under the
++  // prompt card, over the actions and what sits beside them, and inside the
++  // map controls where they run down the side. The map is fitted to it.
++  function stageClearArea(width, height) {
++    const stage = document.getElementById('map-wrap').getBoundingClientRect();
++    const box = (sel) => {
++      const el = document.querySelector(sel);
++      const r = el ? el.getBoundingClientRect() : null;
++      return r && r.width > 0 ? r : null;
++    };
++    const gap = 12;
++    const bar = box('.gamebar');
++    const card = box('#prompt');
++    const controls = box('.mapctl');
++    let top = bar ? bar.bottom - stage.top : 0;
++    let bottom = height;
++    let side = 20;
++    [box('.game-actions'), box('#game-legend')].forEach(r => {
++      if (r) bottom = Math.min(bottom, r.top - stage.top);
++    });
++    if (controls && controls.height > controls.width) side = stage.right - controls.left + gap;
++    else if (controls) bottom = Math.min(bottom, controls.top - stage.top);
++    // A short window has no room to keep the map clear of the card as well
++    if (card && bottom - (card.bottom - stage.top) > 200) top = card.bottom - stage.top;
++    return { left: side, right: width - side, top: top + gap, bottom: bottom - gap };
++  }
++
+   function renderMap() {
+     const svgEl = document.getElementById('world-map');
+@@ -5729,21 +5848,15 @@
+     }
+ 
+-    const padding = 20;
+-    if (state.activeDataset === 'us' || state.activeDataset === 'province') {
+-      projection.fitExtent(
+-        [[padding + 20, padding + 10], [width - padding - 20, height - padding - 10]],
+-        fitCollection
+-      );
+-    } else if (state.currentContinent === 'World' || state.gameMode === 'daily-five') {
+-      projection.fitExtent(
+-        [[padding, padding], [width - padding, height - padding]],
+-        bgCollection
+-      );
+-    } else {
+-      projection.fitExtent(
+-        [[padding + 40, padding + 10], [width - padding - 40, height - padding - 10]],
+-        fitCollection
+-      );
+-    }
++    // Fit the map into what the HUD leaves clear. The whole world goes edge
++    // to edge; a continent or a country keeps a little air around it.
++    const clear = stageClearArea(width, height);
++    const wholeWorld = state.activeDataset === 'world' &&
++      (state.currentContinent === 'World' || state.gameMode === 'daily-five');
++    const airX = wholeWorld ? 0 : state.activeDataset === 'world' ? 40 : 20;
++    const airY = wholeWorld ? 0 : 10;
++    projection.fitExtent(
++      [[clear.left + airX, clear.top + airY], [clear.right - airX, clear.bottom - airY]],
++      wholeWorld ? bgCollection : fitCollection
++    );
+ 
+     state.projection = projection;
+@@ -5943,65 +6056,40 @@
+ 
+     const mode = state.gameMode;
+-    const promptEl = document.getElementById('prompt-country');
+-    const promptLabelEl = document.querySelector('.prompt-panel .prompt-label');
+-    const choicesEl = document.getElementById('choices-panel');
++    state.picks = [];
+ 
+-    // Configure the prompt based on mode
++    // The prompt for this mode
+     if (mode === 'city-pin') {
+       const city = PIN_CITY_BY_NAME.get(state.current);
+-      promptLabelEl.textContent = 'Pin the city';
+-      promptEl.innerHTML = escapeHtml(city.label) + '<span class="pin-prompt-country">' + escapeHtml(city.country) + '</span>';
++      setPrompt('Pin the city', city.label);
+       state.currentPromptText = city.name;
+-      choicesEl.style.display = 'none';
++      document.getElementById('prompt-note').textContent = city.country;
+       state.pin.phase = 'aim';
+       state.pin.guess = null;
+       drawPinLayer();
+-      setPinButton('Drop Pin', true);
++      setPinButton('Drop pin', true);
+     } else if (mode === 'us-city') {
+-      // City mode: prompt shows "City, State" to disambiguate same-name
+-      // cities and give the player geographic context as part of the
+-      // question. The dot lookup still uses just the city name.
+-      promptLabelEl.textContent = 'Find the city';
++      // "City, State" tells same-name cities apart and places the city as
++      // part of the question. The dot lookup still goes by the city name.
+       const cityState = state.cityStateByName
+         ? state.cityStateByName.get(state.current)
+         : null;
+       // A name that already carries its state (see claimName) is shown as it is
+-      const display = cityState && !state.current.endsWith(', ' + cityState)
++      setPrompt('Find the city', cityState && !state.current.endsWith(', ' + cityState)
+         ? state.current + ', ' + cityState
+-        : state.current;
+-      promptEl.textContent = display;
+-      state.currentPromptText = display;
+-      choicesEl.style.display = 'none';
++        : state.current);
+     } else if (mode === 'us-capital-to-state') {
+-      // The quiz target is a state name; the prompt shows its capital.
+-      promptLabelEl.textContent = 'Click the state with this capital';
+-      promptEl.textContent = US_CAPITALS[state.current];
+-      state.currentPromptText = US_CAPITALS[state.current];
+-      choicesEl.style.display = 'none';
++      // The quiz target is a state name; the prompt shows its capital
++      setPrompt('Find the state with this capital', US_CAPITALS[state.current]);
+     } else if (mode === 'us-state-to-capital') {
+-      // The quiz target is a state name; the prompt shows the state,
+-      // and the user chooses the correct capital from 4 options.
+-      promptLabelEl.textContent = 'Which capital belongs to';
+-      promptEl.textContent = state.current;
+-      state.currentPromptText = state.current;
++      // The prompt shows the state, tinted on the map; the answer is one of four capitals
++      setPrompt('Which capital belongs to', state.current);
+       renderCapitalChoices(state.current);
+-      choicesEl.style.display = '';
+-      // Highlight the state on the map so users visualize what they're being asked
+       highlightPromptedState(state.current);
+     } else {
+-      // World country mode or US state mode
+-      promptLabelEl.textContent = state.learn
++      setPrompt(state.learn
+         ? 'Level ' + state.learn.level + ' of ' + state.learn.order.length + ' · find'
+-        : 'Find on the map';
+-      promptEl.textContent = state.current;
+-      state.currentPromptText = state.current;
+-      choicesEl.style.display = 'none';
++        : 'Find on the map', state.current);
+     }
+ 
+-    promptEl.classList.remove('shake');
+-    promptEl.classList.remove('pulse');
+-    void promptEl.offsetWidth;
+-    promptEl.classList.add('pulse');
+-
+     updateStats();
+     document.getElementById('skip-btn').disabled = false;
+@@ -6010,6 +6098,10 @@
+   // Books a resolved question: 2 points for a first-try find, 1 for a
+   // second-try find, 0 for a miss (two wrong tries, or a skip). Locks the
+-  // map until the next prompt and hands the outcome to the mastery store.
+-  function scoreAnswer(points) {
++  // map until the next prompt, notes what was picked on the way (skipped:
++  // given up rather than missed twice), and hands the outcome to the
++  // mastery store.
++  function scoreAnswer(points, skipped) {
++    state.roundLog.set(state.current, { picks: state.picks.slice(), skipped: !!skipped });
++    setPromptTry(false);
+     if (points > 0) {
+       state.correct++;
+@@ -6088,5 +6180,5 @@
+         roundTimeout(() => {
+           p.classed('target-correct', false);
+-          if (!state.hardMode) p.classed('completed-correct', true);
++          if (!state.hardMode) p.classed(foundMark(pointsEarned), true);
+         }, 700);
+       }
+@@ -6095,11 +6187,8 @@
+     } else {
+       state.attempts++;
++      state.picks.push(capital);
+       btn.classList.add('choice-wrong');
+       btn.disabled = true;
+-
+-      const promptEl = document.getElementById('prompt-country');
+-      promptEl.classList.remove('shake');
+-      void promptEl.offsetWidth;
+-      promptEl.classList.add('shake');
++      shakePrompt();
+ 
+       if (state.attempts >= 2) {
+@@ -6123,4 +6212,5 @@
+         }
+       } else {
++        setPromptTry(true);
+         showToast('wrong', 'Not quite — try again');
+       }
+@@ -6128,4 +6218,15 @@
+   }
+ 
++  // The class that marks a found item for good: by the try it was found on
++  function foundMark(points) {
++    return points === 2 ? 'completed-correct' : 'completed-second';
++  }
++
++  // True once an item on the map carries its mark and takes no more answers
++  function isMarked(el) {
++    return el.classList.contains('completed-correct') || el.classList.contains('completed-second') ||
++      el.classList.contains('completed-wrong');
++  }
++
+   function handleCountryClick(event, f) {
+     if (state.gameMode === 'city-pin') return;   // the map-wide pin handler takes it
+@@ -6146,9 +6247,5 @@
+     const visiblePath = d3.select('.country[data-fkey="' + CSS.escape(fkey) + '"]');
+     const visibleEl = visiblePath.node();
+-    if (!visibleEl) return;
+-    if (visibleEl.classList.contains('completed-correct') ||
+-        visibleEl.classList.contains('completed-wrong')) {
+-      return;
+-    }
++    if (!visibleEl || isMarked(visibleEl)) return;
+ 
+     const byCanonical = activeCanonicalByFeature();
+@@ -6174,18 +6271,13 @@
+       roundTimeout(() => {
+         visiblePath.classed('target-correct', false);
+-        if (!state.hardMode) {
+-          visiblePath.classed('completed-correct', true);
+-        }
++        if (!state.hardMode) visiblePath.classed(foundMark(pointsEarned), true);
+         nextCountry();
+       }, 900);
+     } else {
+       state.attempts++;
++      state.picks.push(clickedCanonical || null);
+       visiblePath.classed('target-wrong', true);
+       roundTimeout(() => visiblePath.classed('target-wrong', false), 700);
+-
+-      const promptEl = document.getElementById('prompt-country');
+-      promptEl.classList.remove('shake');
+-      void promptEl.offsetWidth;
+-      promptEl.classList.add('shake');
++      shakePrompt();
+ 
+       // Learn mode allows no second try: one miss restarts the level
+@@ -6202,4 +6294,5 @@
+       } else {
+         const wrongName = clickedCanonical || 'That';
++        setPromptTry(true);
+         showToast('wrong', '<em>' + wrongName + '</em> — try again');
+       }
+@@ -6297,9 +6390,5 @@
+ 
+     const dotEl = event.currentTarget;
+-    if (!dotEl) return;
+-    if (dotEl.classList.contains('completed-correct') ||
+-        dotEl.classList.contains('completed-wrong')) {
+-      return;
+-    }
++    if (!dotEl || isMarked(dotEl)) return;
+ 
+     const dotSel = d3.select(dotEl);
+@@ -6317,16 +6406,13 @@
+       roundTimeout(() => {
+         dotSel.classed('target-correct', false);
+-        if (!state.hardMode) dotSel.classed('completed-correct', true);
++        if (!state.hardMode) dotSel.classed(foundMark(pointsEarned), true);
+         nextCountry();
+       }, 900);
+     } else {
+       state.attempts++;
++      state.picks.push(clickedName);
+       dotSel.classed('target-wrong', true);
+       roundTimeout(() => dotSel.classed('target-wrong', false), 700);
+-
+-      const promptEl = document.getElementById('prompt-country');
+-      promptEl.classList.remove('shake');
+-      void promptEl.offsetWidth;
+-      promptEl.classList.add('shake');
++      shakePrompt();
+ 
+       if (state.attempts >= 2) {
+@@ -6334,4 +6420,5 @@
+         revealMissedCity(state.current);
+       } else {
++        setPromptTry(true);
+         showToast('wrong', '<em>' + clickedName + '</em> — try again');
+       }
+@@ -6421,5 +6508,5 @@
+       return;
+     }
+-    scoreAnswer(0);
++    scoreAnswer(0, true);
+ 
+     // In state-to-capital mode, also show the correct capital button
+@@ -6460,40 +6547,51 @@
+   }
+ 
++  // Where the round stands: `at` and `total` for "7 of 20", `done` for the
++  // progress line. A Learn ladder counts its levels.
++  function roundProgress() {
++    if (state.learn) {
++      const run = state.learn;
++      return { at: run.level, total: run.order.length, done: run.level - 1 + state.correct / run.level };
++    }
++    const done = state.pin ? state.pin.results.length : state.correct + state.wrong;
++    // The question in play is one past those answered, until it is answered too
++    const open = state.pin ? state.pin.phase === 'aim' : !!state.current && !state.interactionLocked;
++    return { at: Math.max(1, Math.min(state.totalQuestions, done + (open ? 1 : 0))), total: state.totalQuestions, done: done };
++  }
++
++  // Brings the game bar and the tally in line with the round
+   function updateStats() {
++    const p = roundProgress();
++    const text = (id, value) => { document.getElementById(id).textContent = value; };
++    text('game-count', p.at);
++    text('game-of', 'of ' + p.total + (state.learn ? ' levels' : ''));
++    // Phones have one line for where the round stands and what kind it is
++    const hardness = state.difficulty === 'normal' ? null : DIFFICULTY_INFO[state.difficulty].label;
++    text('game-sub', [(state.learn ? 'Level ' : '') + p.at + ' of ' + p.total, roundKind(), hardness].filter(Boolean).join(' · '));
++    const track = document.getElementById('game-track');
++    track.setAttribute('aria-valuemax', p.total);
++    track.setAttribute('aria-valuenow', Math.floor(p.done));
++    track.firstElementChild.style.width = (p.total ? Math.min(100, p.done / p.total * 100) : 0) + '%';
++
+     if (state.pin) {
+-      // Pin the City: points · average miss · last miss · cities left
+-      const rs = state.pin.results;
+-      const kms = rs.filter(r => r.km != null).map(r => r.km);
+-      const last = rs.length ? rs[rs.length - 1] : null;
+-      document.getElementById('stat-score').textContent = state.score;
+-      // Header values are bare numbers; the labels say km
+-      const n = (km) => Math.round(km).toLocaleString('en-US');
+-      document.getElementById('stat-correct').textContent =
+-        kms.length ? n(kms.reduce((a, b) => a + b, 0) / kms.length) : '—';
+-      document.getElementById('stat-wrong').textContent =
+-        last ? (last.km == null ? 'skip' : n(last.km)) : '—';
+-      document.getElementById('stat-remaining').textContent =
+-        Math.max(0, state.totalQuestions - rs.length);
+-      return;
+-    }
+-    if (state.learn) {
+-      // Learn mode: Level · found this pass · restarts so far · still to learn
+-      document.getElementById('stat-score').textContent = state.learn.level;
+-      document.getElementById('stat-correct').textContent = state.correct;
+-      document.getElementById('stat-wrong').textContent = state.learn.restarts;
+-      // Left = provinces not yet introduced, matching "Level n of N" above the map
+-      document.getElementById('stat-remaining').textContent = state.learn.order.length - state.learn.level;
+-      return;
++      const kms = state.pin.results.filter(r => r.km != null).map(r => r.km);
++      text('stat-score', state.score.toLocaleString('en-US'));
++      text('stat-extra-value', kms.length
++        ? Math.round(kms.reduce((a, b) => a + b, 0) / kms.length).toLocaleString('en-US')
++        : '—');
++    } else if (state.learn) {
++      // Found this pass, of the level's names
++      text('stat-score', state.correct + '/' + state.learn.level);
++      text('stat-extra-value', state.learn.restarts);
++    } else {
++      text('stat-score', state.score);
+     }
+-    document.getElementById('stat-score').textContent = state.score;
+-    document.getElementById('stat-correct').textContent = state.correct;
+-    document.getElementById('stat-wrong').textContent = state.wrong;
+-    const remaining = Math.max(0, state.totalQuestions - state.correct - state.wrong);
+-    document.getElementById('stat-remaining').textContent = remaining;
++    text('legend-found', state.correct - state.secondTry.length);
++    text('legend-second', state.secondTry.length);
++    text('legend-missed', state.wrong);
+   }
+ 
+   function flashScore() {
+     const el = document.getElementById('stat-score');
+-    if (!el) return;
+     el.classList.remove('score-flash');
+     void el.offsetWidth;
+@@ -6501,8 +6599,9 @@
+   }
+ 
++  // Right-or-wrong feedback under the prompt card; fades by itself
+   function showToast(kind, html) {
+     const toast = document.getElementById('toast');
+     toast.className = 'toast ' + kind;
+-    toast.innerHTML = html;
++    toast.innerHTML = '<span class="toast-icon">' + icon(kind === 'correct' ? 'check' : 'close') + '</span><span>' + html + '</span>';
+     toast.classList.add('show');
+     clearTimeout(showToast._t);
+@@ -6511,12 +6610,10 @@
+ 
+   function finishGame() {
+-    setLearnResultsLabels(false);
+     state.lastWasLearn = false;
+     const elapsed = Math.round((Date.now() - state.startTime) / 1000);
+-    const mins = Math.floor(elapsed / 60);
+-    const secs = elapsed % 60;
+     const total = state.correct + state.wrong;
+     const pct = total > 0 ? Math.round((state.correct / total) * 100) : 0;
+     const maxScore = state.totalQuestions * 2;
++    stopClock(elapsed);
+ 
+     // What this round says to work on next: misses first, then second tries
+@@ -6587,165 +6684,329 @@
+     syncAfterGameEnd();
+ 
+-    const modeConfig = GAME_MODES[state.gameMode];
+-    let regionLabel = modeConfig.label(state.currentContinent);
+-    if (state.gameMode === 'daily-five') {
++    const daily = state.gameMode === 'daily-five';
++    let regionLabel = GAME_MODES[state.gameMode].label(state.currentContinent);
++    if (daily) {
+       regionLabel = 'Daily #' + dailyPuzzleNumber(state.dailyDateKey);
+       if (state.dailyReplay) regionLabel += ' (Practice)';
+     }
+     if (state.practice) regionLabel += ' · Practice';
+-    const difficultyLabel = difficultyBadge(state.difficulty, state.hardMode);
+-    document.getElementById('results-region').textContent = regionLabel + difficultyLabel;
+-    document.getElementById('grade-big').textContent = pct;
+-    document.getElementById('r-correct').textContent = state.correct;
+-    document.getElementById('r-wrong').textContent = state.wrong;
+-    document.getElementById('r-time').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+-    document.getElementById('r-score').textContent = state.score + '/' + maxScore;
+-
+-    renderRecordsBanner();
+-    renderBestsSection();
+-
+-    const missedSection = document.getElementById('missed-section');
+-    const missedList = document.getElementById('missed-list');
+-    const missedHeading = document.getElementById('missed-heading');
+-    const missedLegend = document.getElementById('missed-legend');
+-    if (state.roundNeedsWork.length > 0) {
+-      // Heading word matches what the player was actually identifying.
+-      // us-city stores city names; us-state/us-capital-to-state/us-state-to-capital
+-      // all store state names (even when the prompt was a capital).
+-      const noun = targetNoun(state.gameMode, state.currentContinent);
+-      if (missedHeading) missedHeading.textContent = '— ' + noun + ' to revisit —';
+-      const items = state.missed.map(n => '<span class="missed-item">' + n + '</span>')
+-        .concat(state.secondTry.map(n => '<span class="missed-item second-try">' + n + '</span>'));
+-      missedList.innerHTML = items.join('<span style="opacity:0.3">·</span>');
+-      // Legend names only the kinds that actually appear
+-      let legend = '';
+-      if (state.missed.length) legend += '<span class="missed-key">Missed</span>';
+-      if (state.secondTry.length) legend += '<span class="missed-key second-try">Second try</span>';
+-      if (missedLegend) missedLegend.innerHTML = legend;
+-      missedSection.style.display = 'block';
+-    } else {
+-      missedSection.style.display = 'none';
+-    }
+ 
+-    // Daily mode tweaks the results actions: hide "Study Again" since you
+-    // can't replay today's puzzle for record. Replace with a Practice link
+-    // (after a practice replay too, so you can go again).
+-    const replayBtn = document.getElementById('replay-btn');
+-    const dailyPracticeBtn = document.getElementById('daily-practice-btn');
+-    if (state.gameMode === 'daily-five') {
+-      if (replayBtn) replayBtn.style.display = 'none';
+-      if (dailyPracticeBtn) dailyPracticeBtn.style.display = '';
+-    } else {
+-      if (replayBtn) replayBtn.style.display = '';
+-      if (dailyPracticeBtn) dailyPracticeBtn.style.display = 'none';
+-    }
+-
+-    // "Practice These N" drills the list shown just above. After a focus
+-    // round, "Study Again" would be ambiguous, so it becomes "Full Game".
+-    // Practice is the suggested next step when offered, so it takes the
+-    // filled style and Study Again steps back to an outline.
+-    const practiceBtn = document.getElementById('practice-btn');
+-    const offerPractice = state.gameMode !== 'daily-five' && state.roundNeedsWork.length > 0;
+-    if (practiceBtn) {
+-      practiceBtn.style.display = offerPractice ? '' : 'none';
+-      const n = state.roundNeedsWork.length;
+-      practiceBtn.textContent = n === 1 ? 'Practice This One' : 'Practice These ' + n;
+-    }
+-    if (replayBtn) {
+-      replayBtn.textContent = state.practice ? 'Full Game' : 'Study Again';
+-      replayBtn.classList.toggle('primary', !offerPractice);
+-    }
+-
+-    // Sharing a practice round would read like a real score for the level
+-    const shareBtn = document.getElementById('share-btn');
+-    if (shareBtn) shareBtn.style.display = isPractice ? 'none' : '';
+-
+-    // "View Map" button: lets the player go back to the map with all the
+-    // green/red markers still in place, so they can take a screenshot.
+-    // Pointless in Hard Mode (markers don't persist between answers), so
+-    // hide it there.
+-    const viewMapBtn = document.getElementById('view-map-btn');
+-    if (viewMapBtn) {
+-      viewMapBtn.style.display = state.hardMode ? 'none' : '';
+-    }
++    const second = state.secondTry.length;
++    const first = state.correct - second;
++    const skipped = state.missed.filter(name => (state.roundLog.get(name) || {}).skipped).length;
++    const noun = targetNoun(state.gameMode, state.currentContinent);
++    // The capital modes ask about a state through its capital: say which
++    const capitalMode = state.gameMode === 'us-capital-to-state' || state.gameMode === 'us-state-to-capital';
++    const row = (name, isSecond) => ({
++      second: isSecond,
++      name: name,
++      story: (capitalMode ? US_CAPITALS[name] + ' · ' : '') + answerStory(name, isSecond)
++    });
+ 
+-    showReviewNext();
++    renderResults({
++      label: regionLabel + difficultyBadge(state.difficulty, state.hardMode),
++      badge: recordHeadline(),
++      ring: {
++        first: first, second: second, missed: state.wrong, big: String(state.correct), unit: 'of ' + total + ' found',
++        said: ': ' + first + ' first try, ' + second + ' second try, ' + state.wrong + ' missed'
++      },
++      title: resultsTitle(pct, state.wrong === 0 && second === 0),
++      line: state.score + ' of ' + maxScore + ' points · ' + pct + '% accuracy',
++      cells: [
++        { value: first, label: 'First try', dot: 'good', note: '2 points each' },
++        { value: second, label: 'Second try', dot: 'second', note: '1 point each' },
++        { value: state.wrong, label: 'Missed', dot: 'bad', note: skipped ? skipped + ' skipped' : 'no points' },
++        { value: formatTimeSeconds(elapsed), label: 'Time', icon: 'clock', note: timeNote(elapsed) }
++      ],
++      gain: true,
++      // The Daily Five's answers in order; only today's real attempt is shared
++      daily: daily ? { sequence: state.sequence, share: !state.dailyReplay } : null,
++      bests: recordsBests(),
++      revisit: state.roundNeedsWork.length === 0 ? null : {
++        heading: noun + ' to revisit',
++        rows: state.missed.map(name => row(name, false)).concat(state.secondTry.map(name => row(name, true)))
++      },
++      actions: {
++        // Practice drills the list shown beside it. The Daily Five can't be
++        // replayed for the record, so it offers a practice replay instead.
++        practice: daily ? 0 : state.roundNeedsWork.length,
++        replay: daily ? null : state.practice ? 'Full round' : 'Play again',
++        dailyReplay: daily,
++        // Marks don't stay on the map in Hard and Uncharted: nothing to look back at
++        viewMap: !state.hardMode,
++        // Sharing a practice round would read like a real score for the level
++        share: !isPractice
++      }
++    });
+     switchScreen('results');
+   }
+ 
+-  // Shows a "New Record!" banner at the top of results if any record broke.
+-  function renderRecordsBanner() {
+-    const banner = document.getElementById('new-record-banner');
+-    if (!banner) return;
+-    const broken = state.brokenRecords || {};
+-    const list = [];
+-    if (broken.score) list.push('Score');
+-    if (broken.time) list.push('Time');
+-    if (broken.accuracy) list.push('Accuracy');
+-
+-    if (list.length === 0) {
+-      banner.style.display = 'none';
+-      return;
+-    }
+-
+-    const headline = list.length === 3
+-      ? 'Triple Record Broken!'
+-      : list.length === 2
+-        ? 'Two New Records!'
+-        : 'New ' + list[0] + ' Record!';
++  /* =========================================================
++   * RESULTS (the screen after a round)
++   * ========================================================= */
+ 
+-    banner.innerHTML =
+-      '<div class="record-laurel">❧</div>' +
+-      '<div class="record-text">' + headline + '</div>' +
+-      '<div class="record-laurel flipped">❧</div>';
+-    banner.style.display = 'flex';
++  // A headline for how the round went, by the share found (or of points won)
++  function resultsTitle(pct, flawless) {
++    if (flawless) return 'Flawless';
++    if (pct >= 100) return 'A Clean Sweep';
++    if (pct >= 90) return 'Seasoned Navigator';
++    if (pct >= 75) return 'Steady Hand';
++    if (pct >= 50) return 'Finding Your Bearings';
++    return 'Uncharted Waters';
+   }
+ 
+-  // Shows the "Your Personal Bests" panel with current records for this region × mode.
+-  function renderBestsSection() {
+-    const section = document.getElementById('bests-section');
+-    if (!section) return;
++  // The record badge's line for the round just committed, or null
++  function recordHeadline() {
++    const broken = state.brokenRecords || {};
++    const list = ['score', 'time', 'accuracy'].filter(kind => broken[kind]);
++    if (list.length === 0) return null;
++    if (list.length === 3) return 'Three new records';
++    return list.length === 2 ? 'Two new records' : 'New ' + list[0] + ' record';
++  }
++
++  // The round's time against the level's fastest clean sweep. Only a round
++  // with everything found sets that record, so only such a round compares.
++  function timeNote(elapsed) {
++    const prior = state.priorRecords && state.priorRecords.bestTime;
++    const now = state.currentRecords && state.currentRecords.bestTime;
++    if (!state.currentRecords) return '';
++    if (state.wrong === 0 && prior) {
++      const diff = elapsed - prior.value;
++      return diff < 0
++        ? '<b>−' + formatTimeSeconds(-diff) + '</b> vs best'
++        : '+' + formatTimeSeconds(diff) + ' vs best';
++    }
++    if (state.wrong === 0) return 'first clean sweep';
++    return now ? 'best sweep ' + formatTimeSeconds(now.value) : '';
++  }
++
++  // The level's bests after this round, for the results screen (null after practice)
++  function recordsBests() {
+     const rec = state.currentRecords;
+-    if (!rec) { section.style.display = 'none'; return; }
+-
++    if (!rec) return null;
+     const broken = state.brokenRecords || {};
+-
+     const items = [];
+     if (rec.bestScore) {
+-      items.push({
+-        label: 'Best Score',
+-        value: rec.bestScore.value + '/' + rec.bestScore.max,
+-        broken: broken.score
+-      });
++      items.push({ label: 'Best score', value: rec.bestScore.value, sub: '/' + rec.bestScore.max, record: broken.score });
+     }
+     if (rec.bestAccuracy) {
+       items.push({
+-        label: 'Best Accuracy',
+-        value: rec.bestAccuracy.pct + '% · ' + rec.bestAccuracy.correct + '/' + rec.bestAccuracy.total,
+-        broken: broken.accuracy
++        label: 'Best accuracy', value: rec.bestAccuracy.pct + '%',
++        sub: rec.bestAccuracy.correct + '/' + rec.bestAccuracy.total, record: broken.accuracy
+       });
+     }
+     if (rec.bestTime) {
+-      items.push({
+-        label: 'Fastest Clean Sweep',
+-        value: formatTimeSeconds(rec.bestTime.value),
+-        broken: broken.time
+-      });
++      items.push({ label: 'Fastest clean sweep', value: formatTimeSeconds(rec.bestTime.value), record: broken.time });
+     }
+-    items.push({
+-      label: 'Games Played',
+-      value: String(rec.gamesPlayed || 0),
+-      broken: false
++    items.push({ label: 'Rounds played', value: String(rec.gamesPlayed || 0) });
++    return { heading: 'Your personal bests', items: items };
++  }
++
++  // What happened on a question that needs another look, in a few words
++  function answerStory(name, second) {
++    const log = state.roundLog.get(name) || { picks: [], skipped: false };
++    const picks = log.picks.filter(Boolean);
++    if (second) return picks.length ? 'Second try, after ' + picks[0] : 'Second try';
++    if (log.skipped) return picks.length ? 'You chose ' + picks[0] + ', then skipped' : 'Skipped';
++    if (picks.length >= 2) {
++      return picks[0] === picks[1]
++        ? 'You chose ' + picks[0] + ' twice'
++        : 'You chose ' + picks[0] + ', then ' + picks[1];
++    }
++    return picks.length ? 'You chose ' + picks[0] : 'Missed';
++  }
++
++  // The names a round's mastery gain is measured over, with where each
++  // stands now: the level's own, or every country for the Daily Five
++  function masterySnapshot() {
++    const daily = state.gameMode === 'daily-five';
++    const level = daily ? levelByKey('world') : levelForStartArg(state.startArg);
++    const skill = roundSkill();
++    if (!level || !skill) return null;
++    const names = level.names();
++    return {
++      skill: skill,
++      names: names,
++      title: daily ? GAME_MODES['world-country'].label('World') : GAME_MODES[state.gameMode].label(state.currentContinent),
++      levels: mastery.levels(skill, names)
++    };
++  }
++
++  // How the level's mastery moved over the round, as the results screen
++  // shows it: the count newly mastered when there is one, otherwise how
++  // many names moved a step, over a bar of where every name stands now
++  function renderGain() {
++    const start = state.gainStart;
++    if (!start || !start.names.length) return '';
++    const now = mastery.levels(start.skill, start.names);
++    const sum = mastery.summary(start.skill, start.names);
++    const step = (levels, name) => Mastery.LEVELS.indexOf(levels[name]);
++    const top = Mastery.LEVELS.length - 1;
++    let up = 0, down = 0, fresh = 0;
++    start.names.forEach(name => {
++      const a = step(start.levels, name), b = step(now, name);
++      if (b > a) up++;
++      if (b < a) down++;
++      if (b === top && a < top) fresh++;
+     });
+ 
+-    const html = items.map(it =>
+-      '<div class="best-item' + (it.broken ? ' broken' : '') + '">' +
+-        '<div class="best-value">' + it.value + (it.broken ? ' <span class="best-star">★</span>' : '') + '</div>' +
+-        '<div class="best-label">' + it.label + '</div>' +
+-      '</div>'
+-    ).join('');
++    let figure, text, flat = false;
++    if (fresh > 0) {
++      figure = '+' + fresh;
++      text = 'mastered in ' + start.title;
++    } else if (up > 0) {
++      figure = '+' + up;
++      text = 'moved up a step in ' + start.title;
++    } else if (down > 0) {
++      figure = '−' + down;
++      text = 'slipped back a step in ' + start.title;
++      flat = true;
++    } else {
++      figure = '+0';
++      text = 'No change in ' + start.title;
++      flat = true;
++    }
++    const tally = fresh > 0
++      ? (sum.mastered - fresh) + ' → ' + sum.mastered + ' of ' + sum.total
++      : sum.mastered + ' of ' + sum.total + ' mastered';
++    const part = (n, cls) => n > 0 ? '<i class="' + cls + '" style="--n:' + n + '"></i>' : '';
++    return '<div class="gain">' +
++      '<span class="num gain-num' + (flat ? ' is-flat' : '') + '">' + figure + '</span>' +
++      '<div class="gain-text"><strong>' + escapeHtml(text) + '</strong><span>' + tally + '</span></div>' +
++      '<div class="mbar" role="img" aria-label="' + sum.mastered + ' mastered, ' + sum.familiar + ' familiar, ' +
++        sum.learning + ' learning, ' + sum.new + ' new">' +
++        part(sum.mastered - fresh, 'm3') + part(fresh, 'm3 is-new') + part(sum.familiar, 'm2') +
++        part(sum.learning, 'm1') + part(sum.new, '') +
++      '</div>' +
++    '</div>';
++  }
+ 
+-    section.querySelector('.bests-grid').innerHTML = html;
+-    section.style.display = 'block';
++  // The score ring's arcs: one per outcome that happened, in order, with a
++  // sliver of track between them
++  function scoreRingArcs(ring) {
++    const parts = [['sr-good', ring.first], ['sr-second', ring.second], ['sr-bad', ring.missed]].filter(p => p[1] > 0);
++    const total = parts.reduce((sum, p) => sum + p[1], 0);
++    const gap = parts.length > 1 ? 6 : 0;
++    const room = 540 - gap * parts.length;
++    let at = gap / 2;
++    return parts.map(p => {
++      const length = room * p[1] / total;
++      const arc = '<circle class="' + p[0] + '" cx="60" cy="60" r="54" pathLength="540" stroke-dasharray="' +
++        length.toFixed(1) + ' 540" stroke-dashoffset="' + (-at).toFixed(1) + '"/>';
++      at += length + gap;
++      return arc;
++    }).join('');
++  }
++
++  // The Daily Five's answers as five marks, in the order they were asked
++  function dailyMarks(sequence) {
++    const said = { 2: 'first try', 1: 'second try', 0: 'missed' };
++    return '<ol class="marks" aria-label="Your five answers">' + (sequence || []).map(points =>
++      '<li class="mark mark--' + (points === 2 ? 'first' : points === 1 ? 'second' : 'missed') + '" aria-label="' + said[points] + '">' +
++        (points === 2 ? icon('check') : points === 1 ? '2' : icon('close')) + '</li>').join('') + '</ol>';
++  }
++
++  // One row of the revisit list: its mark, the name, what happened, and
++  // where the name now stands in the mastery store
++  function revisitRow(row, skill) {
++    const item = skill ? mastery.get(skill, row.name) : null;
++    const level = item ? item.level : Mastery.LEVELS[0];
++    const swatch = { new: '', learning: ' m1', familiar: ' m2', mastered: ' m3' }[level];
++    return '<li>' +
++      '<span class="revisit-mark' + (row.second ? ' is-second' : '') + '" aria-hidden="true">' + (row.second ? '2' : icon('close')) + '</span>' +
++      '<div><strong>' + escapeHtml(row.name) + '</strong><small>' + escapeHtml(row.story) + '</small></div>' +
++      '<span class="revisit-tally">' + (item && item.seen ? 'first try ' + item.first + ' of ' + item.seen : '') + '</span>' +
++      '<span class="level-pill"><i class="swatch' + swatch + '"></i>' + level.charAt(0).toUpperCase() + level.slice(1) + '</span>' +
++    '</li>';
++  }
++
++  // Draws the results screen from one description of the round:
++  //   label    level, kind of round and difficulty, for the bar
++  //   badge    a line about a record broken, or null
++  //   ring     { first, second, missed, big, unit, said }: the arcs, what the
++  //            middle says, and the arcs put into words for a screen reader
++  //   title, line   the headline and the sentence under it
++  //   cells    [{ value, sub, label, dot | icon, note }]: the row of figures
++  //   gain     true to show what the round did to the level's mastery
++  //   daily    { sequence, share }: the Daily Five's answers, or null
++  //   bests    { heading, items: [{ label, value, sub, record }] }, or null
++  //   revisit  { heading, rows: [{ second, name, story }], note }, or null
++  //   actions  { practice, replay, dailyReplay, viewMap, share }
++  function renderResults(r) {
++    document.getElementById('results-region').textContent = r.label;
++    document.getElementById('results-date').textContent = ' · ' +
++      new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
++
++    document.getElementById('results-summary').innerHTML =
++      (r.badge ? '<span class="badge-record">' + icon('star') + escapeHtml(r.badge) + '</span>' : '') +
++      '<div class="score-ring" role="img" aria-label="' + escapeHtml(r.ring.big + ' ' + r.ring.unit + r.ring.said) + '">' +
++        '<svg viewBox="0 0 120 120"><circle class="sr-track" cx="60" cy="60" r="54"/>' + scoreRingArcs(r.ring) + '</svg>' +
++        '<div class="score-ring-label"><span class="num' + (r.ring.big.length > 3 ? ' is-long' : '') + '">' + r.ring.big + '</span>' +
++          '<span>' + escapeHtml(r.ring.unit) + '</span></div>' +
++      '</div>' +
++      '<h1 class="display-l results-title">' + escapeHtml(r.title) + '</h1>' +
++      '<p class="results-line">' + escapeHtml(r.line) + '</p>';
++
++    const skill = roundSkill();
++    const cells = r.cells.map(c =>
++      '<div><dd class="num">' + c.value + (c.sub ? '<small>' + c.sub + '</small>' : '') + '</dd>' +
++        '<dt>' + (c.dot ? '<i class="odot' + (c.dot === 'good' ? '' : ' odot--' + c.dot) + '"></i>' : icon(c.icon, 'icon--sm')) + c.label + '</dt>' +
++        '<small>' + (c.note || '') + '</small></div>').join('');
++    let detail = '<dl class="outcomes" style="--cols:' + r.cells.length + '">' + cells + '</dl>';
++    if (r.gain) detail += renderGain();
++    if (r.daily) {
++      detail += '<div class="daily-recap">' + dailyMarks(r.daily.sequence) +
++        '<span class="daily-recap-next">' + icon('clock', 'icon--sm') + 'Next puzzle in <b data-countdown="clock"></b></span>' +
++        (r.daily.share
++          ? '<button type="button" class="btn btn--primary" data-action="share-results">' + icon('share') + '<span>Share result</span></button>'
++          : '') +
++      '</div>';
++    }
++    if (r.bests) {
++      detail += '<section class="results-bests"><h2 class="eyebrow">' + r.bests.heading + '</h2><dl class="figs">' +
++        r.bests.items.map(it =>
++          '<div><dt class="eyebrow">' + it.label + '</dt>' +
++          '<dd class="num' + (it.record ? ' is-record' : '') + '">' + it.value + (it.sub ? '<small>' + it.sub + '</small>' : '') +
++            (it.record ? icon('star') + '<span class="sr-only"> new record</span>' : '') + '</dd></div>').join('') +
++        '</dl></section>';
++    }
++    if (r.revisit) {
++      detail += '<section>' +
++        '<div class="revisit-head"><h2>' + escapeHtml(r.revisit.heading) + '</h2>' +
++          (r.actions.viewMap
++            ? '<button type="button" class="link" data-action="view-map">View on the map' + icon('chevron') + '</button>'
++            : '') +
++        '</div>' +
++        '<ul class="revisit">' + r.revisit.rows.map(row => revisitRow(row, skill)).join('') + '</ul>' +
++        (r.revisit.note ? '<p class="revisit-note">' + escapeHtml(r.revisit.note) + '</p>' : '') +
++      '</section>';
++    }
++    document.getElementById('results-detail').innerHTML = detail;
++    if (r.daily) startDailyCountdown();
++
++    // The buttons: the first one showing is the suggested next step
++    const a = r.actions;
++    const step = state.review && state.review.queue[0];
++    const labels = {
++      'review-next-btn': step ? 'Next: ' + countNoun(step.names.length, step.level.noun) : null,
++      'practice-btn': a.practice
++        ? (a.practice === 1 ? 'Practice this one' : 'Practice these <span class="btn-count">' + a.practice + '</span>')
++        : null,
++      'replay-btn': a.replay ? icon('replay') + a.replay : null,
++      'daily-practice-btn': a.dailyReplay ? 'Practice replay' : null
++    };
++    let lead = true;
++    Object.keys(labels).forEach(id => {
++      const btn = document.getElementById(id);
++      btn.hidden = !labels[id];
++      if (!labels[id]) return;
++      btn.innerHTML = labels[id];
++      btn.classList.toggle('btn--primary', lead);
++      btn.classList.toggle('btn--secondary', !lead);
++      lead = false;
++    });
++    document.getElementById('view-map-btn').hidden = !a.viewMap;
++    document.getElementById('share-btn').hidden = !a.share;
++    document.getElementById('results-screen').scrollTop = 0;
+   }
+ 
+@@ -8160,5 +8421,5 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+     state.pin.guess = ll;
+     drawPinLayer();
+-    setPinButton('Drop Pin', false);
++    setPinButton('Drop pin', false);
+   }
+ 
+@@ -8174,7 +8435,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+ 
+   function setPinButton(label, disabled) {
+-    const btn = document.getElementById('pin-btn');
+-    btn.textContent = label;
+-    btn.disabled = disabled;
++    document.getElementById('pin-btn-label').textContent = label;
++    document.getElementById('pin-btn').disabled = disabled;
+   }
+ 
+@@ -8197,4 +8457,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+     showToast(pts >= 50 ? 'correct' : 'wrong', msg);
+     if (pts > 0) flashScore();
++    // The card keeps the miss and the points in view until the next city
++    document.getElementById('prompt-note').innerHTML = escapeHtml(city.country) + ' · ' + (guess
++      ? '<b>' + formatKm(km) + ' off</b> · +' + pts + (pts === 1 ? ' point' : ' points')
++      : '<b>skipped</b>');
+ 
+     const t = state.currentTransform || d3.zoomIdentity;
+@@ -8275,79 +8539,60 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+     state.lastWasLearn = false;
+     state.roundNeedsWork = [];
+-    setLearnResultsLabels(false);
+-
+-    document.getElementById('results-region').textContent =
+-      GAME_MODES['city-pin'].label(region) + difficultyBadge(state.difficulty, false);
+-    document.getElementById('grade-big').textContent = state.score.toLocaleString('en-US');
+-    document.getElementById('grade-unit').textContent = 'of ' + max.toLocaleString('en-US') + ' points';
+-    document.getElementById('r-score-label').textContent = 'Avg Miss';
+-    document.getElementById('r-score').textContent = avgKm == null ? '—' : formatKm(avgKm);
+-    document.getElementById('r-correct-label').textContent = 'Within 100 km';
+-    document.getElementById('r-correct').textContent = results.filter(r => r.km != null && r.km <= 100).length;
+-    document.getElementById('r-wrong-label').textContent = 'Skipped';
+-    document.getElementById('r-wrong').textContent = results.filter(r => r.km == null).length;
+-    document.getElementById('r-time').textContent = formatTimeSeconds(elapsed);
+-
+-    // "New Best" banner reuses the records banner
+     state.brokenRecords = {};
+-    const banner = document.getElementById('new-record-banner');
+-    if (newBest) {
+-      banner.innerHTML =
+-        '<div class="record-laurel">❧</div>' +
+-        '<div class="record-text">New Best Score!</div>' +
+-        '<div class="record-laurel flipped">❧</div>';
+-      banner.style.display = 'flex';
+-    } else {
+-      banner.style.display = 'none';
+-    }
++    stopClock(elapsed);
++
++    // The ring's three bands are the outcomes the mastery store was given
++    const band = { first: 0, second: 0, miss: 0 };
++    results.forEach(r => { band[pinOutcome(r.pts)]++; });
++    const within100 = results.filter(r => r.km != null && r.km <= 100).length;
++    const skipped = results.filter(r => r.km == null).length;
+ 
+-    // Progress over time for this region (and difficulty)
+-    const bests = document.getElementById('bests-section');
+-    document.getElementById('bests-heading').textContent = '— Your Progress —';
++    // Progress over time for this region and difficulty
+     const recentN = Math.min(10, now.games);
+-    const items = [{ label: 'Best Game', value: now.best.toLocaleString('en-US'), broken: newBest }];
++    const bests = [{ label: 'Best round', value: now.best.toLocaleString('en-US'), record: newBest }];
+     if (recentN >= 2) {
+-      items.push({ label: 'Avg, Last ' + recentN, value: Math.round(now.recentAvg).toLocaleString('en-US') + pinTrendArrow(now) });
+-      items.push({ label: 'Avg Miss, Last ' + recentN, value: now.recentKm == null ? '—' : formatKm(now.recentKm) });
+-    }
+-    items.push({ label: 'Games Played', value: String(now.games) });
+-    bests.querySelector('.bests-grid').innerHTML = items.map(it =>
+-      '<div class="best-item' + (it.broken ? ' broken' : '') + '">' +
+-        '<div class="best-value">' + it.value + (it.broken ? ' <span class="best-star">★</span>' : '') + '</div>' +
+-        '<div class="best-label">' + it.label + '</div>' +
+-      '</div>'
+-    ).join('');
+-    bests.style.display = 'block';
++      bests.push({ label: 'Average, last ' + recentN, value: Math.round(now.recentAvg).toLocaleString('en-US') + pinTrendArrow(now) });
++      bests.push({ label: 'Average miss, last ' + recentN, value: now.recentKm == null ? '—' : formatKm(now.recentKm) });
++    }
++    bests.push({ label: 'Rounds played', value: String(now.games) });
+ 
+     // Farthest misses this round, then the cities that have been hardest lately
+     const worst = results.slice().sort((a, b) => (b.km == null ? Infinity : b.km) - (a.km == null ? Infinity : a.km))
+       .filter(r => r.pts < 80).slice(0, 6);
+-    const missedSection = document.getElementById('missed-section');
+-    if (worst.length) {
+-      document.getElementById('missed-heading').textContent = '— Farthest off —';
+-      document.getElementById('missed-list').innerHTML = worst.map(r =>
+-        '<span class="missed-item">' + escapeHtml(r.name) + ' · ' + (r.km == null ? 'skipped' : formatKm(r.km)) + '</span>'
+-      ).join('<span style="opacity:0.3">·</span>');
+-      const weak = pinWeakestCities(region, 5);
+-      document.getElementById('missed-legend').innerHTML = weak.length
+-        ? '<span class="pin-weak">Hardest over your last few tries: ' +
+-          weak.map(w => escapeHtml(w.name) + ' (' + (w.allSkipped ? 'skipped' : 'avg ' + formatKm(w.avgKm)) + ')').join(', ') + '</span>'
+-        : '';
+-      missedSection.style.display = 'block';
+-    } else {
+-      missedSection.style.display = 'none';
+-    }
+-
+-    const replayBtn = document.getElementById('replay-btn');
+-    replayBtn.style.display = '';
+-    replayBtn.textContent = 'Play Again';
+-    replayBtn.classList.add('primary');
+-    document.getElementById('practice-btn').style.display = 'none';
+-    document.getElementById('daily-practice-btn').style.display = 'none';
+-    document.getElementById('share-btn').style.display = '';
+-    document.getElementById('view-map-btn').style.display = 'none';
+-    document.getElementById('pin-btn').style.display = 'none';
+-
+-    showReviewNext();
++    const weak = pinWeakestCities(region, 5);
++
++    renderResults({
++      label: GAME_MODES['city-pin'].label(region) + difficultyBadge(state.difficulty, false),
++      badge: newBest ? 'New best score' : null,
++      ring: {
++        first: band.first, second: band.second, missed: band.miss,
++        big: state.score.toLocaleString('en-US'), unit: 'of ' + max.toLocaleString('en-US') + ' points',
++        said: ': ' + band.first + ' pins scored 80 or more, ' + band.second + ' from 40 to 79, ' + band.miss + ' under 40'
++      },
++      title: resultsTitle(max ? Math.round(state.score / max * 100) : 0, false),
++      line: avgKm == null ? 'No pin dropped this round.' : 'Average miss ' + formatKm(avgKm) + '.',
++      cells: [
++        { value: band.first, label: '80+ points', dot: 'good', note: within100 + ' within 100 km' },
++        { value: band.second, label: '40 to 79', dot: 'second', note: '' },
++        { value: band.miss, label: 'Under 40', dot: 'bad', note: skipped ? skipped + ' skipped' : '' },
++        { value: formatTimeSeconds(elapsed), label: 'Time', icon: 'clock', note: '' }
++      ],
++      gain: true,
++      daily: null,
++      bests: { heading: 'Your progress', items: bests },
++      revisit: worst.length === 0 ? null : {
++        heading: 'Farthest off',
++        rows: worst.map(r => ({
++          second: r.pts >= 40,
++          name: r.name,
++          story: r.km == null ? 'Skipped' : formatKm(r.km) + ' off · +' + r.pts
++        })),
++        note: weak.length
++          ? 'Hardest over your last few tries: ' +
++            weak.map(w => w.name + ' (' + (w.allSkipped ? 'skipped' : 'avg ' + formatKm(w.avgKm)) + ')').join(', ')
++          : ''
++      },
++      actions: { practice: 0, replay: 'Play again', dailyReplay: false, viewMap: false, share: true }
++    });
+     switchScreen('results');
+   }
+@@ -8360,6 +8605,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+     const avg = arr => arr.reduce((x, y) => x + y, 0) / arr.length;
+     const ratio = avg(a) / Math.max(1, avg(b));
+-    if (ratio >= 1.05) return ' <span class="pin-trend up">↑</span>';
+-    if (ratio <= 0.95) return ' <span class="pin-trend down">↓</span>';
++    if (ratio >= 1.05) return ' <span class="trend up">↑<span class="sr-only"> rising</span></span>';
++    if (ratio <= 0.95) return ' <span class="trend down">↓<span class="sr-only"> falling</span></span>';
+     return '';
+   }
+@@ -8552,28 +8797,4 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+   }
+ 
+-  // Swap the in-game chrome between learn and normal play
+-  // (Pin the City's chrome is set here too, from state.gameMode.)
+-  function setLearnChrome(on) {
+-    const pin = state.gameMode === 'city-pin' && !!state.pin;
+-    document.getElementById('stat-score-label').textContent = on ? 'Level' : 'Score';
+-    document.getElementById('stat-correct-label').textContent = pin ? 'Avg km' : 'Found';
+-    document.getElementById('stat-wrong-label').textContent = on ? 'Restarts' : (pin ? 'Last km' : 'Missed');
+-    document.getElementById('learn-ready-btn').style.display = 'none';
+-    document.getElementById('pin-btn').style.display = pin ? '' : 'none';
+-    document.getElementById('skip-btn').style.display = '';
+-    const gameScreen = document.getElementById('game-screen');
+-    gameScreen.classList.toggle('pin-mode', pin);
+-    // Hard: no borders on parchment (Uncharted's satellite no-borders is generic)
+-    gameScreen.classList.toggle('pin-hard', pin && state.difficulty === 'hard');
+-  }
+-
+-  function setLearnResultsLabels(on) {
+-    document.getElementById('r-score-label').textContent = on ? 'Levels' : 'Score';
+-    document.getElementById('r-correct-label').textContent = 'Found';
+-    document.getElementById('r-wrong-label').textContent = on ? 'Restarts' : 'Missed';
+-    document.getElementById('grade-unit').textContent = on ? 'learned' : '% accuracy';
+-    document.getElementById('bests-heading').textContent = '— Your Personal Bests —';
+-  }
+-
+   // Study phase: show the provinces of this level with their names
+   function startLearnLevel() {
+@@ -8594,16 +8815,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+ 
+     const newest = run.order[run.level - 1];
+-    const promptLabelEl = document.querySelector('.prompt-panel .prompt-label');
+-    const promptEl = document.getElementById('prompt-country');
+-    promptLabelEl.textContent = learnStudyPromptLabel(run);
+     drawLearnStudy();
+-    promptEl.textContent = newest;
+-    state.currentPromptText = newest;
+-    promptEl.classList.remove('shake', 'pulse');
+-    void promptEl.offsetWidth;
+-    promptEl.classList.add('pulse');
++    setPrompt(learnStudyPromptLabel(run), newest);
+ 
+-    document.getElementById('skip-btn').style.display = 'none';
+-    document.getElementById('learn-ready-btn').style.display = '';
++    document.getElementById('skip-btn').hidden = true;
++    document.getElementById('learn-ready-btn').hidden = false;
+ 
+     // Zoomed in: bring the new one into view. Zoomed out, the whole round
+@@ -8736,9 +8950,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+   }
+ 
+-  // "Zoom in" pill on the map while some study names are left off
++  // "Zoom in" pill over the map for as long as some study names are left off
+   function setLearnHint(on) {
+-    const hint = document.getElementById('learn-hint');
+-    if (hint) hint.style.display = on ? '' : 'none';
+-    if (on) document.getElementById('zoom-hint').style.display = 'none';
++    document.getElementById('learn-hint').hidden = !on;
++    if (on) document.getElementById('zoom-hint').hidden = true;
+   }
+ 
+@@ -8854,6 +9067,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+     run.phase = 'quiz';
+     clearLearnStudy();
+-    document.getElementById('learn-ready-btn').style.display = 'none';
+-    document.getElementById('skip-btn').style.display = '';
++    document.getElementById('learn-ready-btn').hidden = true;
++    document.getElementById('skip-btn').hidden = false;
+     state.queue = shuffle(run.order.slice(0, run.level));
+     state.totalQuestions = run.level;
+@@ -8904,28 +9117,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
+     const elapsed = Math.round((Date.now() - state.startTime) / 1000);
+     const total = run.order.length;
+-    setLearnResultsLabels(true);
+-    document.getElementById('results-region').textContent =
+-      GAME_MODES.province.label(run.roundKey) + ' · Learn';
+-    document.getElementById('grade-big').textContent = total;
+-    document.getElementById('r-score').textContent = total + '/' + total;
+-    document.getElementById('r-correct').textContent = total;
+-    document.getElementById('r-wrong').textContent = run.restarts;
+-    document.getElementById('r-time').textContent = formatTimeSeconds(elapsed);
+-
+-    renderRecordsBanner();
+-    renderBestsSection();
+-    document.getElementById('missed-section').style.display = 'none';
+-    document.getElementById('practice-btn').style.display = 'none';
+-    document.getElementById('daily-practice-btn').style.display = 'none';
+-    document.getElementById('share-btn').style.display = 'none';
+-    document.getElementById('view-map-btn').style.display = 'none';
+-    const replayBtn = document.getElementById('replay-btn');
+-    replayBtn.style.display = '';
+-    replayBtn.textContent = 'Learn Again';
+-    replayBtn.classList.add('primary');
+-
++    stopClock(elapsed);
+     state.learn = null;
+-    setLearnChrome(false);
+-    showReviewNext();
++
++    renderResults({
++      label: GAME_MODES.province.label(run.roundKey) + ' · Learn',
++      badge: null,
++      ring: { first: total, second: 0, missed: 0, big: String(total), unit: 'learned', said: '' },
++      title: 'Ladder Complete',
++      line: 'Every one of the ' + total + ' found in a single clean pass.',
++      cells: [
++        { value: total, sub: '/' + total, label: 'Levels', icon: 'learn', note: '' },
++        { value: run.restarts, label: run.restarts === 1 ? 'Restart' : 'Restarts', icon: 'replay', note: '' },
++        { value: formatTimeSeconds(elapsed), label: 'Time', icon: 'clock', note: 'study time included' }
++      ],
++      gain: false,
++      daily: null,
++      bests: null,
++      revisit: null,
++      actions: { practice: 0, replay: 'Learn again', dailyReplay: false, viewMap: false, share: false }
++    });
+     switchScreen('results');
+   }

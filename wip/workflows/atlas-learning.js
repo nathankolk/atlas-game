@@ -322,7 +322,9 @@ spacing, leftovers of the old look, and anything over the globe that hides the p
 
 Housekeeping: remove dead code, CSS, unused tokens and unused files under public/ (check that nothing
 references a file before deleting it; do not touch favicons or the OG image); add a short README in
-public/vendor/ listing each vendored file with its version, source and licence.
+public/vendor/ listing each vendored file with its version, source and licence. Move the pasted modules'
+tests into the repo as orchestrator-notes.md describes (tools/tests/, loading each module out of
+public/index.html), so that nothing the repo needs lives only in the scratchpad.
 
 Docs, last: rewrite the parts of ${REPO}/CLAUDE.md and ${REPO}/atlas_handoff.md that describe the app so
 they match what is there now (views and navigation, LEVELS and COLLECTIONS, mastery and Smart Review, the

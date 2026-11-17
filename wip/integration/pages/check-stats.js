@@ -187,7 +187,7 @@ const checks = {
         await page.waitForTimeout(250);
       }
       await page.waitForFunction(() => document.body.dataset.screen === 'results', null, { timeout: 20000 });
-      const next = await page.evaluate(() => { const b = document.getElementById('review-next-btn'); return b.style.display === 'none' ? null : b.textContent; });
+      const next = await page.evaluate(() => { const b = document.getElementById('review-next-btn'); return b.hidden ? null : b.textContent; });
       if (!next) break;
       await page.locator('#review-next-btn').click();
       await page.waitForFunction(() => document.body.dataset.screen === 'game' && window.__atlas.state.current, null, { timeout: 30000 });
