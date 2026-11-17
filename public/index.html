@@ -5521,7 +5521,7 @@
         return region === 'World' ? !!continent : continent === region;
       });
       state.queue = shuffle(pinCitiesFor(region).map(c => c.name)).slice(0, PIN_ROUND_SIZE);
-      state.pin = { phase: 'aim', guess: null, results: [] };
+      state.pin = { phase: 'aim', guess: null, results: [], back: null };
     } else if (mode === 'province') {
       // Every feature in the country's file is quizzable; Russia's rounds
       // narrow it to one group (isEligible handles that).
@@ -6027,7 +6027,7 @@
       document.getElementById('prompt-note').textContent = city.country;
       state.pin.phase = 'aim';
       state.pin.guess = null;
-      drawPinLayer();
+      restorePinView();
       setPinButton('Drop pin', true);
     } else if (mode === 'us-city') {
       // "City, State" tells same-name cities apart and places the city as
@@ -6902,9 +6902,9 @@
   const DATASET_LAYER = { world: 'world', us: 'us', province: 'prov' };
   const CITY_DOT_RADIUS = 6;                 // px, at every zoom
 
-  // True for the modes drawn on the globe; the rest still use the SVG map
+  // True for the modes drawn on the globe
   function playedOnGlobe(mode) {
-    return mode !== 'city-pin';
+    return !!mode;
   }
 
   // A CSS colour as [r, g, b, a]: r, g and b 0–255, a 0–1
@@ -7004,7 +7004,7 @@
     MAP_LAYERS.forEach(id => g.updateLayer(id, {
       borderColor: rgbaCss(token('--g-border')),
       borderWidth: parseFloat(cs.getPropertyValue('--g-line')) || 0.6,
-      bordersVisible: state.difficulty !== 'uncharted'
+      bordersVisible: state.difficulty !== 'uncharted' && !(state.pin && state.difficulty === 'hard')
     }));
     map.ink = {
       label: rgbaCss(token('--g-label')), halo: rgbaCss(token('--g-halo')),
@@ -7119,6 +7119,7 @@
 
   // What the round's opening view should hold, as GeoJSON; null for the whole globe
   function roundFrame() {
+    if (state.pin) return state.currentContinent === 'World' ? null : pinFitGeometry(state.currentContinent);
     if (state.gameMode === 'us-city' || state.activeDataset === 'province') {
       return { type: 'FeatureCollection', features: state.eligibleFeatures };
     }
@@ -7206,6 +7207,15 @@
   function onMapClick(e) {
     const screen = document.getElementById('game-screen');
     if (!state.onGlobe || !screen.classList.contains('active') || screen.classList.contains('review-mode')) return;
+    if (state.pin) {
+      // Aiming: anywhere on the globe, land or sea, moves the pin; the sky around it does not
+      if (state.pin.phase === 'aim' && state.current && e.lonlat) {
+        state.pin.guess = e.lonlat;
+        setPinButton('Drop pin', false);
+        map.globe.invalidate();
+      }
+      return;
+    }
     if (state.interactionLocked || !state.current) return;
     // A finger is less exact than a mouse: tiny places take a tap from further off
     const touch = !!e.originalEvent && e.originalEvent.pointerType !== 'mouse';
@@ -7285,6 +7295,7 @@
     });
     drawCityDots(ctx, o.time);
     drawLearnLabels(ctx);
+    drawPins(ctx);
     drawRevealRings(ctx, o.time, still);
   }
 
@@ -12065,20 +12076,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     };
   }
 
-  // Tap on the map: move the aiming pin there (not scored until Drop Pin)
-  function handlePinClick(event) {
-    if (!state.pin || state.pin.phase !== 'aim' || !state.current) return;
-    const pt = d3.pointer(event, state.mapG.node());
-    const ll = state.projection.invert(pt);
-    if (!ll || !isFinite(ll[0]) || !isFinite(ll[1])) return;
-    // Taps off the edge of the globe invert to nonsense: require a round trip
-    const back = state.projection(ll);
-    if (!back || Math.abs(back[0] - pt[0]) > 1 || Math.abs(back[1] - pt[1]) > 1) return;
-    state.pin.guess = ll;
-    drawPinLayer();
-    setPinButton('Drop pin', false);
-  }
-
   // The one button under the map: Drop Pin while aiming, Next after a reveal
   function handlePinButton() {
     if (!state.pin) return;
@@ -12104,7 +12101,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
     state.pin.results.push({ name: city.name, km: km, pts: pts });
     mastery.record(roundSkill(), city.name, pinOutcome(pts));
     state.pin.phase = 'reveal';
-    drawPinLayer();
+    showPinMiss(guess, truth);
 
     let msg;
     if (!guess) msg = '<em>' + escapeHtml(city.name) + '</em> — here it is';
@@ -12117,55 +12114,97 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Mastery;
       ? '<b>' + formatKm(km) + ' off</b> · +' + pts + (pts === 1 ? ' point' : ' points')
       : '<b>skipped</b>');
 
-    const t = state.currentTransform || d3.zoomIdentity;
-    if (t.k > 1.05) ensureFeatureVisible({ type: 'Feature', geometry: { type: 'Point', coordinates: truth } });
-
     document.getElementById('skip-btn').disabled = true;
     setPinButton(state.queue.length ? 'Next' : 'Finish', false);
     updateStats();
   }
 
-  // Draw the aiming pin, and after a reveal the real spot, the great-circle
-  // line between them and the city's name. Rebuilt from state each time
-  // (also after a resize rebuilds the map).
-  function drawPinLayer() {
-    if (!state.mapG || !state.pin) return;
-    state.mapG.selectAll('.pin-layer').remove();
-    const layer = state.mapG.append('g').attr('class', 'pin-layer');
-    const k = (state.currentTransform && state.currentTransform.k) || 1;
-    const scaleAt = (p) => 'translate(' + p[0] + ',' + p[1] + ') scale(' + (1 / k) + ')';
-    const guess = state.pin.guess;
-    const city = state.current ? PIN_CITY_BY_NAME.get(state.current) : null;
-
-    if (state.pin.phase === 'reveal' && city) {
-      const truth = [city.lon, city.lat];
-      if (guess) {
-        layer.append('path')
-          .attr('class', 'pin-line')
-          .attr('d', state.pathGen({ type: 'LineString', coordinates: [guess, truth] }));
-      }
-      const tp = state.projection(truth);
-      const target = layer.append('g').attr('class', 'pin-scaled pin-truth')
-        .attr('data-x', tp[0]).attr('data-y', tp[1]).attr('transform', scaleAt(tp));
-      target.append('circle').attr('class', 'pin-truth-ring').attr('r', 9);
-      target.append('circle').attr('class', 'pin-truth-dot').attr('r', 4);
-      target.append('text').attr('class', 'pin-truth-label').attr('y', -14).text(city.name);
+  // After a drop the globe shows the whole miss: the city, and the pin too
+  // when one view can hold both. The view it turned from is kept, to go
+  // back to for the next city.
+  function showPinMiss(guess, truth) {
+    const g = map.globe, view = g.getView(), c = map.clear, edge = 40;
+    const inSight = lonlat => {
+      const p = g.project(lonlat);
+      return p.z > 0.35 && p.x >= c.left + edge && p.x <= c.right - edge && p.y >= c.top + edge && p.y <= c.bottom - edge;
+    };
+    const apart = guess ? d3.geoDistance(guess, truth) : 0;
+    const both = !!guess && apart < 2.1;            // under about 120°: one view shows both ends
+    g.invalidate();
+    if (inSight(truth) && (!both || inSight(guess))) return;
+    let to = { lon: truth[0], lat: truth[1], k: view.k };
+    if (both) {
+      // Centred between the two, each end lies sin(half the miss) globe radii out
+      const mid = d3.geoInterpolate(guess, truth)(0.5);
+      const room = Math.min(c.right - c.left, c.bottom - c.top) / 2 - edge;
+      const k = room / (Math.max(Math.sin(apart / 2), 0.05) * g.radiusPx() / view.k);
+      to = { lon: mid[0], lat: mid[1], k: Math.min(view.k, k) };
     }
-    if (guess) {
-      const gp = state.projection(guess);
-      const pin = layer.append('g').attr('class', 'pin-scaled pin-guess')
-        .attr('data-x', gp[0]).attr('data-y', gp[1]).attr('transform', scaleAt(gp));
-      pin.append('path').attr('d', 'M0,0 C-2,-6 -8,-10 -8,-16 A8,8 0 1 1 8,-16 C8,-10 2,-6 0,0 Z');
-      pin.append('circle').attr('cx', 0).attr('cy', -16).attr('r', 3);
-    }
+    state.pin.back = view;
+    g.flyTo(to, { duration: reducedMotion() ? 0 : 550 });
   }
 
-  // Keep pins and markers a constant screen size while zooming
-  function scalePinMarkers(k) {
-    if (!state.mapG) return;
-    state.mapG.selectAll('.pin-scaled').attr('transform', function () {
-      return 'translate(' + this.getAttribute('data-x') + ',' + this.getAttribute('data-y') + ') scale(' + (1 / k) + ')';
-    });
+  // The view a reveal turned away from, given back when the next city comes up
+  function restorePinView() {
+    const back = state.pin.back;
+    state.pin.back = null;
+    if (back) map.globe.flyTo(back, { duration: reducedMotion() ? 0 : 450 });
+    else map.globe.invalidate();
+  }
+
+  const PIN_SHAPE = new Path2D('M0,0 C-2,-6 -8,-10 -8,-16 A8,8 0 1 1 8,-16 C8,-10 2,-6 0,0 Z');   // tip at 0,0
+
+  // Pin the City on the overlay: the aiming pin, and after a drop the real
+  // spot with the city's name and the great-circle line of the miss
+  function drawPins(ctx) {
+    const pin = state.pin;
+    if (!pin) return;
+    const g = map.globe, ink = map.ink;
+    const city = state.current ? PIN_CITY_BY_NAME.get(state.current) : null;
+    if (pin.phase === 'reveal' && city) {
+      const truth = [city.lon, city.lat];
+      if (pin.guess) g.draw.geoLine(ctx, pin.guess, truth, { color: ink.label, width: 1.5, dash: [5, 4] });
+      ctx.setLineDash([]);
+      const p = g.project(truth);
+      if (p.visible) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 9, 0, 2 * Math.PI);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = ink.label;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = ink.select;
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.font = '700 16px ' + ink.font;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = ink.halo;
+        ctx.strokeText(city.name, p.x, p.y - 14);
+        ctx.fillStyle = ink.label;
+        ctx.fillText(city.name, p.x, p.y - 14);
+      }
+    }
+    if (pin.guess) {
+      const p = g.project(pin.guess);
+      if (!p.visible) return;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.fillStyle = ink.wrong;
+      ctx.fill(PIN_SHAPE);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = ink.halo;
+      ctx.stroke(PIN_SHAPE);
+      ctx.beginPath();
+      ctx.arc(0, -16, 3, 0, 2 * Math.PI);
+      ctx.fillStyle = ink.halo;
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   // Round over: save it, then the results screen
