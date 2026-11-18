@@ -168,12 +168,16 @@ groups.input = async () => {
   r.check('input: a drag turns the globe', Math.abs(after.view.lon - before.lon) > 2, [before.lon, after.view.lon]);
   r.eq('input: and answers nothing', [after.attempts, after.picks, after.seq.length], [0, [], s.seq.length]);
   if (!mobile) {
-    // Hover: a hand over what can be picked, and the hover tint
-    await setView(page, { lon: 18, lat: 15, k: 1.4 });
-    const chad = await at(page, 18.6, 15.3);
+    // Hover: a hand over what can be picked, and the hover tint. The place the two wrong taps
+    // revealed carries a mark and cannot be picked again, so hover over one of the round's others.
+    const spots = { Chad: [18.6, 15.3], Mali: [-2, 17.5], Niger: [9, 17] };
+    const marked = after.marks.map(m => m[0]);
+    const free = Object.keys(spots).find(n => !marked.includes('name:' + n));
+    await setView(page, { lon: spots[free][0], lat: spots[free][1], k: 1.4 });
+    const chad = await at(page, spots[free][0], spots[free][1]);
     await page.mouse.move(chad.x + 3, chad.y + 3);
     await page.mouse.move(chad.x, chad.y);
-    await page.waitForTimeout(200);
+    await page.waitForFunction(() => document.getElementById('globe-host').style.getPropertyValue('--globe-cursor') === 'pointer', null, { timeout: 3000 }).catch(() => {});
     r.eq('input: the cursor is a hand over a place that can be picked', await page.evaluate(() => document.getElementById('globe-host').style.getPropertyValue('--globe-cursor')), 'pointer');
     const sea = await at(page, 0, -10);
     await page.mouse.move(sea.x, sea.y);
@@ -403,10 +407,21 @@ const spyBorders = (page) => page.evaluate(() => {
     return update.apply(g, arguments);
   };
 });
-const imageryReady = (page) => page.waitForFunction(() => {
-  const im = window.__atlas.globe.stats().imagery;
-  return !!im && im.status === 'ready';
-}, null, { timeout: 20000 });
+// Imagery ready with the globe at rest: a round that opens with a flight (a Learn study panel turning
+// to its newest name) asks for more tiles on the way, and the note says Loading again until they are in
+const imagerySettled = (page) => page.evaluate(() => new Promise(resolve => {
+  const g = window.__atlas.globe, t0 = performance.now();
+  let last = JSON.stringify(g.getView()), still = 0;
+  const tick = () => {
+    const now = JSON.stringify(g.getView()), im = g.stats().imagery;
+    still = now === last ? still + 1 : 0;
+    last = now;
+    if (still >= 6 && im && im.status === 'ready') resolve(true);
+    else if (performance.now() - t0 > 20000) resolve(false);
+    else setTimeout(tick, 60);
+  };
+  setTimeout(tick, 60);
+}));
 // Where a lon/lat sits relative to what the HUD leaves clear
 const sight = (page, lonlat) => page.evaluate(ll => {
   const A = window.__atlas, p = A.globe.project(ll), c = A.map.clear;
@@ -524,7 +539,7 @@ groups.imagerymodes = async () => {
     const rounds = [['World', null], ['us-state', null], ['us-state-to-capital', null], ['northeast-cities', null], ['india-states', null], ['russia-west', { learn: true, learnFresh: true }], ['pin-asia', null]];
     for (const [arg, opts] of rounds) {
       await start(page, arg, opts);
-      const ready = await imageryReady(page).then(() => true, () => false);
+      const ready = await imagerySettled(page);
       const look = await page.evaluate(() => {
         const A = window.__atlas, wrap = document.getElementById('map-wrap'), credit = document.getElementById('sat-credit');
         const im = A.globe.stats().imagery;

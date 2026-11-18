@@ -738,7 +738,8 @@ for 20:41 UTC with `atlas-learning-resume.js` (quiz and modes pinned, Explore to
 
 ## Stage: performance, accessibility, polish, housekeeping, docs
 
-Status: IN PROGRESS (started 2026-11-17 21:15 UTC from 1330e48, tree clean, nothing of this stage existed).
+Status: FINISHED 2026-11-18 (commits 287b894, 23f7e36, 2e19ffc, c15645d, 10a55d8, 2848f09; all pushed; the app files are
+those of c15645d). The finished record is at the end of this section; the notes between are the working log.
 Working files: `$S/work/integration/polish/`. Screenshots: `$S/shots/app/polish/`.
 
 ### Plan (commit + push after each)
@@ -783,9 +784,97 @@ DONE in the repo (each verified as noted):
   from before is `run-all.before-polish.sh`).
 - Suite of this stage: `polish/check-polish.js` (groups contrast, perf, frames, a11y, explore), runner
   `polish/run-suites.sh [names]` (two lanes; `polish/suites.log`). Sweep: `polish/sweep.sh` + `shot.js --audit`.
-REMAINING: read the suite results and fix or adapt; docs (CLAUDE.md, atlas_handoff.md); final measurements table;
-final commit + push; report.
 
 Orchestrator note, 2026-11-17 22:49 UTC: with a usage limit close, the orchestrator committed the docs as they stood
 (a commit titled "Checkpoint: CLAUDE.md and the handoff rewritten for the new app, in progress") and pushed. The
 polish stage may amend the two files further in a commit of its own; check git log before assuming they are uncommitted.
+
+
+### Finished record (2026-11-18, about 02:45 UTC)
+
+The stage was closed in a third session that built nothing new. It re-ran what the second session's final run had
+not finished, found three suite checks out of date with intended changes (below), measured the final tree again,
+and corrected the speed table in atlas_handoff.md (commits 10a55d8 and 2848f09; nothing else in the repo changed
+after c15645d). HEAD is 2848f09, equal to origin, tree clean.
+The dated seeds were regenerated first (the UTC day had changed): `harness/seed-rich.js` four times (default,
+`--unplayed --out=…/seed-rich-unplayed.json`, `--quiz`, `--heavy`) and `shell/gen-seed.js`.
+
+**Suites on the final tree** (app files of c15645d; run on 17 Nov 22:56-23:12 UTC unless marked 18 Nov):
+| suite | desktop | phone |
+| polish/check-polish.js | 112 | (one size) |
+| explore/check-explore.js | 192 | 192 |
+| shell/check-shell.js | 246 | 242 |
+| pages/check-stats.js | 168 | 170 |
+| pages/check-settings.js | 93 | 93 |
+| game/check-game.js | 110 | 115 |
+| globe-stage/check-globe.js | 123 (18 Nov, after the two check fixes) | 121 |
+| modes/check-modes.js | 163 (18 Nov) | 170 |
+| harness/smoke.js | 13/13 (18 Nov) | 13/13 (18 Nov) |
+| globe-stage/check-edges.js | 37 (18 Nov) | |
+| logic-tests/run-all.sh (18 Nov, 02:38, "logic suites failed: 0") | syntax ok; tools/tests/run.js --quick: world facts, quiz 44, mastery 709, mastery across zones 180; t1 38, t2 46, t3 41, t4 67, t5 4, t6 7 | |
+| logic-tests/v-b4-learn.js, t7-records-function.mjs (18 Nov) | 10; all passed | |
+`node tools/tests/run.js --globe` was last run on 17 Nov 22:03 (291/291); the engine section is byte for byte the same
+in 1330e48 and c15645d, so it was not run again.
+
+**Checks brought up to date in this session (the app was right in all three; no check was weakened):**
+- check-globe.js "the cursor is a hand over a place that can be picked": it always hovered over Chad, but when the
+  round's first question was Chad the two wrong taps before it reveal and mark Chad, and a marked place cannot be
+  picked. It failed whenever the first question was Chad (one start in three). It now hovers over whichever of Chad, Mali and Niger carries no mark and waits
+  for the cursor instead of a fixed 200 ms. (Copy from before: `check-globe.before-close.js`.)
+- check-globe.js "imagery (normal, russia-west, learn): tiles arrive and the note stops saying Loading": a round now
+  starts while the last round's imagery still reads `ready`; the Learn study panel then turns the globe and asks for
+  more tiles, and the note rightly says Loading for about a second. `imagerySettled()` waits for `ready` with the
+  globe at rest (it replaced `imageryReady()`).
+- logic-tests/t3-links-b4-d6.js "a round left before its first prompt asks nothing": it left the round during the
+  80 ms start delay, which this stage removed (the prompt goes up in a 0 ms round timer). It now leaves from a
+  mutation observer on `body[data-screen]`, which runs before that timer, and asserts first that no prompt was up
+  when it left. (Copy from before: `t3-links-b4-d6.before-polish.js`.)
+- logic-tests/run-all.sh now exits with the number of suites that failed and prints "logic suites failed: N" last;
+  before, a failed t-suite left the runner's exit status at 0 and its line in `polish/suites.log` looked green.
+  (The t3 failure above had been hidden that way.)
+
+**Measurements, final tree** (`polish/perf.js`, tags `final` and `final2` in `polish/perf-results.jsonl`; stock
+harness flags, GPU compositing on the software GL driver; local server; fonts answered from memory; medians):
+| | old app (1c74e1d) | before this stage (1330e48) | final |
+| cold load of Home: requests | 9 | 10 | 10 |
+| cold load of Home: bytes raw / as brotli | 1,518 KB / 494 KB | 1,685 KB / 508 KB | 1,694 KB / 510 KB |
+| Home usable, desktop | 200 ms | 516 ms | 210 ms |
+| Home usable, phone | not run | 646 ms | 218 ms |
+| Start -> first question, Europe, desktop / phone | 479 ms / not run | 172 / 179 ms | 59 / 64 ms (8 runs each) |
+| Start -> first question, States | 668 ms / not run | 304 / 330 ms | 76 / 62 ms |
+| Start -> first question, India | (chooser) | 233 / 306 ms | 100 / 80 ms |
+| Start -> first question, Europe on satellite | old app's run timed out | 187-363 / 345-363 ms | 77-91 or 261-271 / 90-95 or 230-298 ms |
+| level link, cold -> first question | 600 ms | 832 / 1479 ms | 660 / 684 ms |
+| JS heap: Home / after 10 rounds / after 20 | not run | 11.1 / 15.8 / 15.9 MB | 11.0 / 17.8 / 17.9 MB |
+| listeners on Home and after 20 rounds | not run | 63 / 63 | 64 / 64 |
+| US states file raw / brotli | 1,037 KB / 185 KB | same | 445 KB / 132 KB |
+Satellite start is bimodal on this machine (about half the runs in each group, 16 runs): `polish/dbg/satstart.js`
+and `satstart2.js` show one task of 65-77 ms (the game's own work), the game screen up at 64-76 ms, and the first
+prompt either about 15 ms later or (one probe run of 14, half of the perf.js runs) about 170 ms later. The slow
+probe run reported no long task in that gap. In the fast probe runs the animation frames after the prompt take
+90-215 ms each with blockingDuration 0 and no script, so frames here spend their time waiting on the software GL
+driver; the likeliest reading is that the 0 ms prompt timer sometimes falls behind such a wait. That is an
+inference, not a trace. What a real GPU does with it cannot be measured here.
+Per frame while turning and zooming the 50m world (`globe-stage/measure.js --apps=new --stock-gpu --runs=2`, output in
+`polish/measure-final.log`): engine draw call median 0.2-0.3 ms (p95 0.3-2.7); script 0.5-0.9 ms per frame; all
+main-thread work 2.9-3.1 ms per frame; the same within noise on chart and satellite, desktop and phone. Frame
+intervals here are 180-300 ms (software GL; not what a GPU does). The old app's per-frame figures are the globe
+stage's (M5): script 0.2-0.4 ms, main thread 3-20 ms, plus 47-51 ms of reprojection after each satellite gesture.
+
+**Seen again on the final tree in this session** (`shots/app/polish/fin-*.png`, 7 opened): Europe and Africa on a
+dark phone (the continent fills the width; the round's land stands clear of the land around it), Europe on a phone
+held sideways (card at the left, Europe clear of it), Pin the City Europe opening and after a drop at desktop light
+and phone dark (pin, city and the line between them clear of the card), results in Night Chart.
+
+**Not done or not verifiable here:**
+- Real Esri imagery, the live site, Safari, Firefox, real touch devices, a real GPU (frame rates), a screen reader.
+- The five-size sweep's 328 screenshots were taken at 21:59-22:13 on 17 Nov, before 23f7e36 (focus ring, control
+  edges, mark colours) and c15645d; how many of them the earlier sessions opened is not recorded. This session
+  opened only the seven above.
+- The old app was not measured at phone size by perf.js, and its satellite start timed out under the stock flags.
+- The page links favicon-32.png, favicon.png, favicon-180.png and og-image.png; none of them is tracked in git
+  (not on main either). Left alone, as the owner rules say; whether the live site serves them could not be checked.
+- Still open from earlier stages and left as they were: Learn study on a phone turns to the newest name, so on a
+  long ladder earlier names can be off screen until the player drags; Afghanistan's flag; strict typo margins in
+  Name It; no typed-capitals mode; iOS keyboard behaviour in Name It untested.
+

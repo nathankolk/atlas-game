@@ -51,12 +51,24 @@ const stores = (page) => page.evaluate(() => ['atlas-records', 'atlas-focus', 'a
       const s6 = await snap(page);
       r.eq('B4: capital-choice callbacks are dropped too', [s6.current, s6.queue, s6.correct], [s5.current, s5.queue, 0]);
 
-      // 4. Leaving during the 80 ms start delay never shows a prompt on the hidden screen
+      // 4. Leaving before the first prompt never shows one on the hidden screen. The prompt goes up in
+      //    a 0 ms round timer, so the round is left from a mutation observer: its callback runs straight
+      //    after the code that brought the game screen up, before any timer.
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => window.__t.screen() === 'menu-screen');
-      await page.evaluate(() => { window.__atlas.startGame('Oceania'); });
-      await page.waitForFunction(() => window.__t.screen() === 'game-screen');
-      await page.keyboard.press('Escape');
+      await page.evaluate(() => {
+        window.__leftEarly = null;
+        const seen = new MutationObserver(() => {
+          if (document.body.dataset.screen !== 'game') return;
+          seen.disconnect();
+          window.__leftEarly = { currentAtLeave: window.__atlas.state.current };
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        });
+        seen.observe(document.body, { attributes: true, attributeFilter: ['data-screen'] });
+        window.__atlas.startGame('Oceania');
+      });
+      await page.waitForFunction(() => window.__leftEarly && window.__t.screen() === 'menu-screen');
+      r.eq('B4: the round was left before its first prompt', await page.evaluate(() => window.__leftEarly.currentAtLeave), null);
       await page.waitForTimeout(400);
       const s7 = await snap(page);
       r.eq('B4: a round left before its first prompt asks nothing', [s7.screen, s7.current], ['menu-screen', null]);

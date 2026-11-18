@@ -67,6 +67,18 @@ Rules for you:
 - Drive the real app through ${S}/harness/atlas-harness.js; the stages' suites and tools named in
   progress.md are starting points, not proof. Playwright over the map needs --disable-gpu-compositing.
   ${S}/harness/seed-rich.js makes a player with history.
+- Test tools as they stand: ${S}/work/integration/polish/run-suites.sh [names] runs every suite of every
+  stage, two at a time (a line per suite in polish/suites.log, full output in polish/suites/; with names it
+  runs only those and appends). The module tests are in the repo: node tools/tests/run.js --quick (add
+  --globe after a change to the engine). The seeded players are dated: after a UTC day change run
+  harness/seed-rich.js four times (no flags; --unplayed --out=harness/scratch/seed-rich-unplayed.json;
+  --quiz; --heavy) and then shell/gen-seed.js, as the polish stage's notes in progress.md say. Start-up
+  times on satellite fall into two groups on this machine (about 90 ms or about 260 ms): never read one run
+  as a regression, take at least five.
+- Already known and recorded, so not findings: the favicons and og-image.png the page links are not in the
+  repo (the owner's assets); Afghanistan's flag, the strict margin for forgiven misspellings and the lack
+  of a typed-capitals mode are the owner's call; on a phone the Learn study view turns to the newest name;
+  the sideways-phone layout puts the prompt card at the left.
 - Report only what you have reproduced or can point to in the code, with exact steps or references. No
   matters of taste. Do not report the known limits of this sandbox (no GPU, no real Esri tiles, no Safari,
   Firefox or real phones), or the wip/ folder, which is temporary.
@@ -242,9 +254,16 @@ Rules:
   tree before your fix (git stash, or git show of the previous commit into a scratch folder) where that is
   practical. Name the check in the finding's outcome note. Where no check is practical (a purely visual
   fix), give the screenshot path that shows it instead.
-- After the fixes: node --check on the script blocks, then every suite progress.md lists (smoke at desktop
-  and --mobile, shell, stats, settings, game, globe, edges, the new modes' and Explore's suites, the logic
-  tests, the module tests), and a fresh look at screenshots of every screen you touched in both themes.
+- After the fixes: node --check on the script blocks, then every suite (the runner below, with no names),
+  the module tests, and a fresh look at screenshots of every screen you touched in both themes.
+- Test tools as they stand: ${S}/work/integration/polish/run-suites.sh [names] runs every suite of every
+  stage, two at a time (a line per suite in polish/suites.log, full output in polish/suites/; with names it
+  runs only those and appends). The module tests are in the repo: node tools/tests/run.js --quick (add
+  --globe after a change to the engine). The seeded players are dated: after a UTC day change run
+  harness/seed-rich.js four times (no flags; --unplayed --out=harness/scratch/seed-rich-unplayed.json;
+  --quiz; --heavy) and then shell/gen-seed.js, as the polish stage's notes in progress.md say. Start-up
+  times on satellite fall into two groups on this machine (about 90 ms or about 260 ms): never read one run
+  as a regression, take at least five.
 - Commit each coherent group of fixes with a plain message and push after each commit:
   git push -u origin ${BRANCH} (retry a network error up to 4 times). Never force-push, never open a pull
   request, never touch main, leave wip/ alone. The orchestrator sometimes commits a checkpoint of the
