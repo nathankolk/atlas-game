@@ -4328,8 +4328,10 @@
    * ========================================================= */
 
   // slug -> startGame() argument, for every link the app answers
+  // (No prototype: a slug such as "constructor" finds nothing here)
   function linkSlugs() {
-    const slugs = { daily: 'daily-five' };
+    const slugs = Object.create(null);
+    slugs.daily = 'daily-five';
     LEVELS.forEach(level => { slugs[level.key] = level.arg; });
     return slugs;
   }
@@ -4957,19 +4959,23 @@
     }
     const hasBest = !!best;
     const ladder = level.learn ? getLearnProgress(level.key) : null;
-    const untouched = !!summary && !summary.seen && !ladder && !levelPlayed(level);
+    const climbed = !!level.learn && learnFinished(level.key);
+    const untouched = !!summary && !summary.seen && !ladder && !climbed && !levelPlayed(level);
     if (hasBest) {
       said.push('best ' + levelBestText(level, state.difficulty).replace(' / ', ' of '));
     } else if (!untouched) {
       best = ladder ? 'Learning · level ' + ladder.level + ' of ' + ladder.order.length
         : levelPlayed(level) ? 'Not played on ' + DIFFICULTY_INFO[state.difficulty].label
+        : climbed ? 'Ladder complete'
         : 'Not played yet';
       said.push(best);
     }
 
-    // Trailing slot: what there is to do here, if anything
+    // Trailing slot: what there is to do here, if anything. A count of
+    // what is due is shown only where Smart Review can bring it back.
+    const comesBack = !!summary && summary.due > 0 && reviewLevels(level.skill).length > 0;
     let due = '';
-    if (summary && summary.due > 0) due = summary.due + ' due';
+    if (comesBack) due = summary.due + ' due';
     else if (untouched) due = 'New';
     if (due) said.push(due);
     if (summary && summary.seen) said.splice(2, 0, summary.mastered + ' of ' + summary.total + ' mastered');
@@ -4980,7 +4986,7 @@
       '<span class="level-title">' + title + '</span>' +
       '<span class="level-sub"><span class="level-meta">' + meta + '</span>' + (best ? '<span class="level-best">' + best + '</span>' : '') + '</span>' +
       (blurb ? '<span class="level-blurb">' + blurb + '</span>' : '') +
-      '<span class="level-due' + (summary && summary.due > 0 ? ' is-due' : '') + '">' + due + '</span>' +
+      '<span class="level-due' + (comesBack ? ' is-due' : '') + '">' + due + '</span>' +
       renderRing(summary) +
     '</a>';
   }
@@ -5587,8 +5593,23 @@
 
   /* ----- Headline figures ----- */
 
+  // Rounds finished, all told. The learning history has counted every
+  // round, practice included, since it began; the records and the Pin the
+  // City log count full rounds, from before that too. Neither holds all of
+  // the other's, so the larger of the two stands.
+  function roundsPlayed() {
+    const records = loadAllRecords();
+    let full = loadPinStore().games.length;
+    Object.keys(records).forEach(key => {
+      const games = Math.floor(Number(records[key] && records[key].gamesPlayed));
+      if (games > 0) full += games;
+    });
+    return Math.max(mastery.totals().games, full);
+  }
+
   function renderStatsFigures() {
     const totals = mastery.totals();
+    const rounds = roundsPlayed();
     const all = addSummaries(skillSummaries(LEVELS));
     const days = mastery.activity(60);
     const month = sumActivity(days.slice(30));
@@ -5618,10 +5639,11 @@
       kpi('First-try accuracy', pct === null ? null : pct + '<small>%</small>', accuracySub) +
       kpi('Day streak', totals.games ? streak.current : null,
         totals.games ? 'longest ' + streak.longest + (streak.longest === 1 ? ' day' : ' days') : 'starts with a round') +
-      kpi('Rounds played', totals.games ? formatCount(totals.games) : null,
-        totals.games ? formatCount(week.games) + ' in the last 7 days' : 'none yet') +
+      kpi('Rounds played', rounds ? formatCount(rounds) : null,
+        rounds ? formatCount(week.games) + ' in the last 7 days' : 'none yet') +
       kpi('Time played', totals.seconds ? durationFigure(totals.seconds) : null,
-        totals.seconds && totals.daysActive ? 'about ' + Math.max(1, Math.round(totals.seconds / totals.daysActive / 60)) + ' min on a day you play' : 'none yet') +
+        totals.seconds && totals.daysActive ? 'about ' + Math.max(1, Math.round(totals.seconds / totals.daysActive / 60)) + ' min on a day you play'
+          : rounds ? 'counted from your next round' : 'none yet') +
     '</dl>';
   }
 
@@ -6437,6 +6459,14 @@
     nameEl.classList.add('pulse');
   }
 
+  // A flag as the question. It is there to be seen: read out, its name
+  // would be the answer, so a screen reader is told only that a flag is shown.
+  function setPromptFlag(label, flag) {
+    setPrompt(label, flag);
+    document.getElementById('prompt-country').innerHTML =
+      '<span aria-hidden="true">' + escapeHtml(flag) + '</span><span class="vh">A flag is shown</span>';
+  }
+
   // "Second try" beside the prompt's label, after a first wrong answer
   function setPromptTry(on) {
     document.getElementById('prompt-try').hidden = !on;
@@ -6585,7 +6615,7 @@
     } else if (mode === 'capital-find') {
       setPrompt('Which country’s capital is', capitalFor(state.current));
     } else if (mode === 'flag') {
-      setPrompt('Which country’s flag is this', Quiz.flagPrompt(WORLD_FACTS, state.current).flag);
+      setPromptFlag('Which country’s flag is this', Quiz.flagPrompt(WORLD_FACTS, state.current).flag);
     } else if (mode === 'name-it') {
       // The globe turns to the country; its name is typed into the card
       setPrompt('Name this country', '');
@@ -9083,6 +9113,9 @@ const Globe = (function () {
   const ANCHOR_CAP = 5 * RAD;      // features wider than this are aimed at by anchor, not centroid
   const ANCHOR_PRECISION = 1 / 400;   // an anchor's clear radius is within this fraction of its polygon's
                                       // smaller dimension of the best there is
+  const OUTLINE_STEP = 1 * RAD;       // a stroked outline has a vertex at least this often along every edge
+  const OUTLINE_STEP_COS = Math.cos(OUTLINE_STEP);
+  const OUTLINE_SKIP_PX = 0.35;       // ...and leaves out vertices that fall this close to the last one drawn
 
   const TILE_PX = 256;             // imagery tiles are this many px square
   const BASE_TILE_ZOOM = 2;        // tile zoom of the whole-world imagery mosaic (16 tiles)
@@ -11569,6 +11602,73 @@ const Globe = (function () {
     const pA = { x: 0, y: 0, visible: false, z: 0 }, pB = { x: 0, y: 0, visible: false, z: 0 }, pC = { x: 0, y: 0, visible: false, z: 0 };
     const arcA = new Float64Array(3), arcB = new Float64Array(3);
 
+    // A ring of [lon, lat] as unit vectors (x, y, z in turn), closed, with
+    // a vertex added wherever two stand more than OUTLINE_STEP apart, so that
+    // straight lines between their projections follow the great circle.
+    function ringVectors(ring) {
+      const out = [];
+      const closed = ring.length > 1 && ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1];
+      const n = closed ? ring.length : ring.length + 1;
+      for (let i = 0; i < n; i++) {
+        unitVector(ring[i % ring.length], arcB);
+        if (i > 0) {
+          const cos = clamp(arcA[0] * arcB[0] + arcA[1] * arcB[1] + arcA[2] * arcB[2], -1, 1);
+          const steps = cos < OUTLINE_STEP_COS ? Math.ceil(Math.acos(cos) / OUTLINE_STEP) : 1;
+          for (let s = 1; s < steps; s++) {
+            const t = s / steps;
+            const x = arcA[0] + (arcB[0] - arcA[0]) * t, y = arcA[1] + (arcB[1] - arcA[1]) * t, z = arcA[2] + (arcB[2] - arcA[2]) * t;
+            const len = Math.sqrt(x * x + y * y + z * z) || 1;
+            out.push(x / len, y / len, z / len);
+          }
+        }
+        out.push(arcB[0], arcB[1], arcB[2]);
+        arcA[0] = arcB[0]; arcA[1] = arcB[1]; arcA[2] = arcB[2];
+      }
+      return Float32Array.from(out);
+    }
+
+    // Adds the rings of one polygon of a feature (a part, see buildFeature)
+    // to the canvas path as they stand in the current view: vertex to
+    // vertex, cut where a ring passes behind the limb. A vertex that would
+    // land within OUTLINE_SKIP_PX of the last one drawn is left out, and a
+    // ring too small for any line leaves a dot.
+    function traceRings(ctx, part) {
+      if (viewZ(part.cx, part.cy, part.cz) < -Math.sin(Math.min(part.radius, Math.PI / 2))) return;
+      const rings = part.vectors || (part.vectors = part.geom.coordinates.map(ringVectors));
+      const cx = scene.w / 2, cy = scene.h / 2, radius = scene.radius;
+      for (let r = 0; r < rings.length; r++) {
+        const v = rings[r];
+        let wasVisible = false, px = 0, py = 0, pz = 0, lastX = 0, lastY = 0, lines = 0, begun = false;
+        for (let i = 0; i < v.length; i += 3) {
+          const x = viewX(v[i], v[i + 1], v[i + 2]), y = viewY(v[i], v[i + 1], v[i + 2]), z = viewZ(v[i], v[i + 1], v[i + 2]);
+          const visible = z > 0;
+          if (i > 0 && visible !== wasVisible) {
+            // The edge crosses the limb: where its chord meets it, pushed out to the rim of the disc
+            const t = pz / (pz - z);
+            const ex = px + (x - px) * t, ey = py + (y - py) * t, len = Math.sqrt(ex * ex + ey * ey) || 1;
+            lastX = cx + radius * ex / len; lastY = cy - radius * ey / len;
+            if (wasVisible) { ctx.lineTo(lastX, lastY); lines++; } else { ctx.moveTo(lastX, lastY); begun = true; }
+          }
+          if (visible) {
+            const sx = cx + radius * x, sy = cy - radius * y;
+            if (i === 0) {
+              ctx.moveTo(sx, sy);
+              lastX = sx; lastY = sy; begun = true;
+            } else if (Math.abs(sx - lastX) + Math.abs(sy - lastY) >= OUTLINE_SKIP_PX) {
+              ctx.lineTo(sx, sy);
+              lastX = sx; lastY = sy; lines++;
+            }
+          }
+          wasVisible = visible; px = x; py = y; pz = z;
+        }
+        if (begun && !lines) {
+          ctx.lineTo(lastX + 0.5, lastY);
+          ctx.lineTo(lastX, lastY + 0.5);
+          ctx.closePath();
+        }
+      }
+    }
+
     const draw = {
       // Strokes the great-circle arc from a to b, stopping at the limb.
       // opts: { color, width, dash }
@@ -11605,6 +11705,17 @@ const Globe = (function () {
         const meta = measureFeature(feature), parts = meta.parts;
         // Nothing to draw when the whole feature is behind the limb
         if (viewZ(meta.cx, meta.cy, meta.cz) < -Math.sin(Math.min(meta.radius, Math.PI / 2))) return;
+        if (!o.fill && parts.length) {
+          // A stroke alone needs no clipped polygon: the rings are traced as they stand
+          if (!o.stroke) return;
+          ctx.beginPath();
+          for (let p = 0; p < parts.length; p++) traceRings(ctx, parts[p]);
+          ctx.strokeStyle = o.stroke;
+          ctx.lineWidth = o.width || 2;
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+          return;
+        }
         overlayRotation[0] = -view.lon; overlayRotation[1] = -view.lat;
         overlayCentre[0] = scene.w / 2; overlayCentre[1] = scene.h / 2;
         overlayProjection.rotate(overlayRotation).scale(scene.radius).translate(overlayCentre);
@@ -13711,13 +13822,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     return points >= 80 ? 'first' : points >= 40 ? 'second' : 'miss';
   }
 
-  // Another tab changed the store: take its work in, so this tab's reads
-  // (and its next save) include it, and the view on screen shows it
+  // Another tab changed a progress store: take its work in, so this tab's
+  // reads (and its next save) include it, and the view on screen shows it.
+  // A round's end writes several stores one after another, so the redraw
+  // waits a moment for the last of them.
+  let storageRedraw = 0;
   window.addEventListener('storage', (e) => {
-    if (e.key === null || e.key === Mastery.KEY) {
-      mastery.reload();
-      refreshView();
-    }
+    const history = e.key === null || e.key === Mastery.KEY;
+    if (!history && PROGRESS_KEYS.indexOf(e.key) === -1) return;
+    if (history) mastery.reload();
+    clearTimeout(storageRedraw);
+    storageRedraw = setTimeout(refreshView, 120);
   });
 
   /* =========================================================
@@ -14321,6 +14436,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     const all = loadLearnAll();
     all[run.levelKey] = { order: run.order.slice(), level: run.level, savedAt: Date.now() };
     saveLearnAll(all);
+  }
+
+  // True when this level's ladder has been climbed to the top
+  function learnFinished(levelKey) {
+    const p = loadLearnAll()[levelKey];
+    return !!p && p.done === true;
   }
 
   function markLearnFinished(levelKey) {
@@ -15639,17 +15760,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   });
 
   // A new window size (a phone turned on its side, or its keyboard coming
-  // up): the globe keeps its picture and its marks; a view the player has
-  // not moved is fitted to the new shape, and a country a question is
-  // showing is brought back into what is left of the map
+  // up): the globe keeps its picture and its marks. The round's opening
+  // view, where Recentre goes, is fitted to the new shape; a view the
+  // player has made is kept, and a country a question is showing is
+  // brought back into what is left of the map
   let resizeTimer;
   function refitMapSoon() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       if (!map.globe || !document.getElementById('game-screen').classList.contains('active')) return;
       const shown = map.layer === 'world' && map.promptKey ? map.globe.featureInfo('world', map.promptKey) : null;
-      if (mapAtHome() || shown) frameMap();
-      else placeGlobeHost();
+      const own = mapAtHome() || shown ? null : map.globe.getView();
+      frameMap();
+      if (own) map.globe.setView(own);
       if (shown) turnToCountry(shown.feature);
       placeLearnLabels();
     }, 200);

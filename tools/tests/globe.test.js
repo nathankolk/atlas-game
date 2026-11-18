@@ -2388,8 +2388,75 @@ group('outline', async ({ page }) => {
     }
     times.sort((a, b) => a - b);
     out.median = times[20]; out.worst = times[39];
+
+    // A stroke alone (no fill) is traced by the engine itself. It inks what d3 would ink...
+    const canada = byName('Canada');
+    const stroked = (view, features) => {
+      const ref = document.createElement('canvas');
+      ref.width = 800; ref.height = 600;
+      const c = ref.getContext('2d');
+      const path = d3.geoPath(d3.geoOrthographic().clipAngle(90).precision(0.3).rotate([-view.lon, -view.lat]).scale(globe.radiusPx()).translate([400, 300]), c);
+      c.beginPath();
+      features.forEach(f => path(f));
+      c.strokeStyle = '#f0f'; c.lineWidth = 2; c.lineJoin = 'round'; c.stroke();
+      const a = overlay.getContext('2d').getImageData(0, 0, 800, 600).data, b = c.getImageData(0, 0, 800, 600).data;
+      let both = 0, either = 0, mine = 0, far = 0;
+      for (let i = 0; i < 800 * 600; i++) {
+        const m = a[i * 4 + 3] > 60, t = b[i * 4 + 3] > 60;
+        if (m) { mine++; far = Math.max(far, Math.hypot(i % 800 + 0.5 - 400, Math.floor(i / 800) + 0.5 - 300)); }
+        if (m && t) both++;
+        if (m || t) either++;
+      }
+      return { iou: both / Math.max(1, either), ink: mine, farthest: far };
+    };
+    out.match = {};
+    for (const [name, view, list] of [['Canada', { lon: -95, lat: 62, k: 1.7 }, [canada]], ['France', { lon: 3, lat: 46, k: 9 }, [byName('France')]],
+      ['Indonesia', { lon: 118, lat: -2, k: 3 }, [byName('Indonesia')]]]) {
+      targets = [];
+      const off = globe.addOverlay(ctx => list.forEach(f => globe.draw.outline(ctx, f, { stroke: '#f0f', width: 2 })));
+      globe.setView(view);
+      await T.frames(2);
+      out.match[name] = stroked(view, list);
+      off();
+    }
+    // ...stops at the limb, draws nothing on the far side...
+    const offRussia = globe.addOverlay(ctx => globe.draw.outline(ctx, byName('Russia'), { stroke: '#f0f', width: 2 }));
+    globe.setView({ lon: 5, lat: -18, k: 1 });
+    await T.frames(2);
+    out.strokeLimb = Object.assign(ink(), { radius: globe.radiusPx() });
+    globe.setView({ lon: -80, lat: -40, k: 1 });
+    await T.frames(2);
+    out.strokeFar = ink().n;
+    offRussia();
+    // ...a country of specks still shows as dots...
+    const tuvalu = byName('Tuvalu') || byName('Kiribati');
+    const offDots = globe.addOverlay(ctx => globe.draw.outline(ctx, tuvalu, { stroke: '#f0f', width: 2 }));
+    const where = d3.geoCentroid(tuvalu);
+    globe.setView({ lon: where[0], lat: where[1], k: 2 });
+    await T.frames(2);
+    out.dots = ink().n;
+    offDots();
+    // ...and costs little even for the outline with the most points on the map
+    out.canadaPoints = JSON.stringify(canada.geometry.coordinates).split('],[').length;
+    const offCanada = globe.addOverlay(ctx => globe.draw.outline(ctx, canada, { stroke: '#f0f', width: 2 }));
+    const costs = [];
+    for (let i = 0; i < 40; i++) {
+      globe.setView({ lon: -120 + i * 1.5, lat: 55, k: 1.6 });
+      await T.frame();
+      costs.push(globe.stats().lastFrameMs);
+    }
+    offCanada();
+    costs.sort((a, b) => a - b);
+    out.canadaMedian = costs[20]; out.canadaWorst = costs[39];
     return out;
   });
+  check('draw.outline: a stroke alone inks what d3 would ink (Canada, France, Indonesia)', ['Canada', 'France', 'Indonesia'].every(n => r.match[n].iou >= 0.9 && r.match[n].ink > 300),
+    Object.keys(r.match).map(n => n + ' IoU ' + fmt(r.match[n].iou, 3) + ' over ' + r.match[n].ink + ' px').join('; '));
+  check('draw.outline: a stroke alone stops at the limb and draws nothing on the far side', r.strokeLimb.n > 200 && r.strokeLimb.farthest <= r.strokeLimb.radius + 1.5 && r.strokeFar === 0,
+    r.strokeLimb.n + ' px of ink, none beyond ' + fmt(r.strokeLimb.farthest, 1) + ' px (radius ' + fmt(r.strokeLimb.radius, 0) + '); ' + r.strokeFar + ' px on the far side');
+  check('draw.outline: a country of specks still shows when stroked', r.dots >= 4, r.dots + ' px of ink');
+  check('draw.outline: stroking the outline with the most points (Canada) costs about a millisecond of JS a frame', r.canadaMedian < 3,
+    'median ' + fmt(r.canadaMedian) + ' ms per frame, worst ' + fmt(r.canadaWorst) + ' ms, about ' + r.canadaPoints + ' points');
   check('draw.outline (A10): a feature straddling the limb is drawn only on the near side', r.straddling.n > 500 && r.straddling.farthest <= r.straddling.radius + 1.5 && r.visible > r.straddling.n && r.farSide === 0,
     r.straddling.n + ' px of ink, none beyond ' + fmt(r.straddling.farthest, 1) + ' px from the centre (radius ' + fmt(r.straddling.radius, 0) + '); ' + r.farSide + ' px when wholly on the far side');
   check('draw.outline (A10): five country outlines per frame cost a few ms of JS', r.median < 6, 'median ' + fmt(r.median) + ' ms per frame, worst ' + fmt(r.worst) + ' ms, about ' + r.points + ' points outlined');
