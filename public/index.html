@@ -4360,6 +4360,69 @@
     } catch (e) { /* some embedded browsers block this - harmless */ }
   }
 
+  /* ----- The browser's back button -----
+   * Moving to another view, opening a level's sheet and starting a round
+   * from a view each add an entry to the browser's history, so that its
+   * back button (a phone's included) undoes that step instead of leaving
+   * the app. An entry says what it is in its state: { atlas: 'view' |
+   * 'sheet' | 'round', view }. Closing the sheet or leaving the round with
+   * the app's own controls steps back over the entry; that lands a moment
+   * later, and history changes asked for meanwhile wait for it.
+   */
+  const nav = { stepping: false, since: 0, queued: [] };
+
+  function historyEntry() {
+    try { return window.history.state || {}; } catch (e) { return {}; }
+  }
+
+  // Adds an entry (url: where it points, the present address when left out),
+  // or with `replace` turns the entry on top into this one
+  function writeHistory(entry, url, replace) {
+    try {
+      window.history[replace ? 'replaceState' : 'pushState'](entry, '', url || window.location.href);
+    } catch (e) { /* blocked: the address bar and the back button stay as they were */ }
+  }
+
+  // Steps back over the entry on top
+  function stepBack() {
+    nav.stepping = true;
+    nav.since = performance.now();
+    try { window.history.back(); } catch (e) { nav.stepping = false; }
+  }
+
+  // Runs fn once a step back that is on its way has landed; at once when
+  // none is (or when one has been on its way too long to be coming)
+  function whenHistorySettled(fn) {
+    if (nav.stepping && performance.now() - nav.since < 1000) nav.queued.push(fn);
+    else fn();
+  }
+
+  // The back or forward button, or a step back of the app's own
+  window.addEventListener('popstate', () => {
+    nav.stepping = false;
+    const waiting = nav.queued.splice(0);
+    const entry = historyEntry();
+    const screen = document.body.dataset.screen;
+    const inRound = screen === 'game' || screen === 'results';
+    // The entry of a sheet that is not open or of a round that is over
+    // (the forward button leads to these): there is nothing of it to show,
+    // and neither is started again from history, so back off it
+    if ((entry.atlas === 'sheet' && !sheet.level) || (entry.atlas === 'round' && !inRound)) {
+      nav.queued = waiting;
+      stepBack();
+      return;
+    }
+    if (entry.atlas === 'round') {
+      // The round on screen is this entry's now
+      writeHistory(entry, levelLink(state.startArg, !!state.learn), true);
+    } else if (entry.atlas !== 'sheet') {
+      if (sheet.level) closeLevelSheet();
+      const view = viewFromHash();
+      if (inRound || view !== state.view) showView(view, { keepAddress: true });
+    }
+    waiting.forEach(fn => fn());
+  });
+
   // What the ?play= link the page was opened with asks for: { arg, opts }
   // to start a level, { refused: why } for a slug that is no playable
   // level, null when there is no link
@@ -4384,7 +4447,7 @@
       showNotice(link.refused);
       return;
     }
-    startGame(link.arg, link.opts);
+    startGame(link.arg, Object.assign({ linked: true }, link.opts));
   }
 
   /* =========================================================
@@ -5202,6 +5265,9 @@
     document.getElementById('level-sheet-scrim').hidden = false;
     document.getElementById('level-sheet').hidden = false;
     document.getElementById('sheet-start-btn').focus();
+    whenHistorySettled(() => {
+      if (sheet.level === level && historyEntry().atlas !== 'sheet') writeHistory({ atlas: 'sheet', view: state.view });
+    });
     // Flags are about to be shown: fetch their font now, and find out
     // whether they can be drawn at all (if not, the sheet closes again)
     if (level.mode === 'flag') {
@@ -5235,7 +5301,8 @@
     });
   }
 
-  // opts.keepFocus: leave the focus where it is (a round is about to start)
+  // opts.keepFocus: leave the focus where it is, and the sheet's history
+  // entry too (a round is about to start, and takes it over)
   function closeLevelSheet(opts) {
     if (!sheet.level) return;
     const key = sheet.level.key;
@@ -5245,6 +5312,7 @@
     document.getElementById('level-sheet-scrim').hidden = true;
     document.getElementById('level-sheet').hidden = true;
     if (opts && opts.keepFocus) return;
+    if (historyEntry().atlas === 'sheet') stepBack();
     // The library may have been redrawn since: find the card again by its level
     const card = opener && document.contains(opener) ? opener : document.querySelector('[data-level="' + key + '"]');
     if (card) card.focus({ preventScroll: true });
@@ -6280,7 +6348,23 @@
     // Learn quizzes record no answers, so there is no gain to show after one
     state.gainStart = state.learn ? null : masterySnapshot();
     setGameChrome();
-    setAddressBar(levelLink(regionOrMode, !!state.learn));
+    // The address bar names the level in play. Started from a view, the
+    // round is a step the back button undoes; one that follows another (or
+    // a sheet's Start) takes over the entry on top; a level link is
+    // the page's own entry.
+    const url = levelLink(regionOrMode, !!state.learn);
+    const fromView = VIEWS.some(view => view.screen === document.body.dataset.screen);
+    const startedFrom = state.view;
+    if (opts && opts.linked) {
+      setAddressBar(url);
+    } else {
+      whenHistorySettled(() => {
+        const top = historyEntry();
+        if (top.atlas === 'round' || top.atlas === 'sheet') writeHistory({ atlas: 'round', view: top.view }, url, true);
+        else if (fromView) writeHistory({ atlas: 'round', view: startedFrom }, url);
+        else setAddressBar(url);
+      });
+    }
 
     // Imagery gets a fresh chance if it failed last round. The globe comes
     // in already showing this round, in place: the window is laid out as
@@ -7638,6 +7722,7 @@
   const MAP_LAYERS = ['world', 'us', 'prov'];   // bottom to top
   const DATASET_LAYER = { world: 'world', us: 'us', province: 'prov' };
   const CITY_DOT_RADIUS = 6;                 // px, at every zoom
+  const CITY_DOT_APART = 10;                 // px: dots are drawn at least this far apart, centre to centre
   const PROMPT_MIN_PX = 40;                  // a country a question shows is drawn at least this wide
   const HUD_CLEAR_PX = 60;                   // ...and this much of it, round its anchor, is kept out from under the HUD
 
@@ -8101,9 +8186,9 @@
     // A finger is less exact than a mouse: tiny places take a tap from further off
     const touch = !!e.originalEvent && e.originalEvent.pointerType !== 'mouse';
     if (state.gameMode === 'us-city') {
-      // The nearest dot within reach takes the tap; an answered one takes it and does nothing
-      const dot = dotNear(e.x, e.y, touch ? 20 : 12);
-      if (dot && !map.dotMarks.has(dot.name)) answerCity(dot.name);
+      // The nearest dot within reach that has not been answered takes the tap
+      const dot = dotNear(e.x, e.y, touch ? 20 : 12, true);
+      if (dot) answerCity(dot.name);
       return;
     }
     if (!answersOnShapes()) return;
@@ -8116,14 +8201,46 @@
     answerFeature(hit.key);
   }
 
-  // The city dot nearest to a point of the host, if one is within reach px
-  function dotNear(x, y, reach) {
-    let best = null, bestD = reach;
+  // Where each dot of the round is drawn, in host px: [{ dot, x, y,
+  // visible }]. That is at its city, or a few px off it where two cities
+  // would be drawn nearly on top of each other (New York and Jersey City at
+  // the opening view): those are moved apart, so that each can be seen and
+  // tapped. Zoomed in, every dot is on its city.
+  function dotPoints() {
     const p = { x: 0, y: 0, visible: false, z: 0 };
-    map.dots.forEach(dot => {
+    const points = map.dots.map(dot => {
       map.globe.project(dot.lonlat, p);
-      const d = Math.hypot(p.x - x, p.y - y);
-      if (p.visible && d <= bestD) { best = dot; bestD = d; }
+      return { dot: dot, x: p.x, y: p.y, visible: p.visible };
+    });
+    for (let pass = 0; pass < 6; pass++) {
+      let crowded = false;
+      for (let i = 0; i < points.length; i++) {
+        for (let j = i + 1; j < points.length; j++) {
+          const a = points[i], b = points[j];
+          if (!a.visible || !b.visible) continue;
+          let dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+          if (d >= CITY_DOT_APART) continue;
+          // Two on the very same spot part sideways
+          if (d < 0.01) { dx = 1; dy = 0; d = 1; }
+          const push = (CITY_DOT_APART - Math.hypot(b.x - a.x, b.y - a.y)) / 2 + 0.01;
+          a.x -= dx / d * push; a.y -= dy / d * push;
+          b.x += dx / d * push; b.y += dy / d * push;
+          crowded = true;
+        }
+      }
+      if (!crowded) break;
+    }
+    return points;
+  }
+
+  // The city dot nearest to a point of the host, if one is within reach
+  // px; with `open`, the nearest that has yet to be answered
+  function dotNear(x, y, reach, open) {
+    let best = null, bestD = reach;
+    dotPoints().forEach(at => {
+      if (!at.visible || (open && map.dotMarks.has(at.dot.name))) return;
+      const d = Math.hypot(at.x - x, at.y - y);
+      if (d <= bestD) { best = at.dot; bestD = d; }
     });
     return best;
   }
@@ -8131,8 +8248,8 @@
   // The mouse moved over the globe without a button down: the dot under it, if any
   function onMapMove(e) {
     if (explore.on || state.gameMode !== 'us-city') return;
-    const dot = dotNear(e.x, e.y, CITY_DOT_RADIUS + 2);
-    const name = dot && !map.dotMarks.has(dot.name) && !state.interactionLocked ? dot.name : null;
+    const dot = dotNear(e.x, e.y, CITY_DOT_RADIUS + 2, true);
+    const name = dot && !state.interactionLocked ? dot.name : null;
     if (name === map.dotHover) return;
     map.dotHover = name;
     document.getElementById('globe-host').style.setProperty('--globe-cursor', name ? 'pointer' : '');
@@ -8225,12 +8342,17 @@
   function drawCityDots(ctx, now) {
     if (!map.dots.length) return;
     const ink = map.ink;
-    const p = { x: 0, y: 0, visible: false, z: 0 };
     map.dots.forEach(dot => {
-      map.globe.project(dot.lonlat, p);
-      if (!p.visible) return;
-      let shown = map.dotShown.get(dot.name);
-      if (shown && shown.until <= now) { map.dotShown.delete(dot.name); shown = null; }
+      const shown = map.dotShown.get(dot.name);
+      if (shown && shown.until <= now) map.dotShown.delete(dot.name);
+    });
+    // Unanswered dots first, answered ones over them, and the one an
+    // answer has just lit on top: a mark is never hidden by a plain dot
+    const rank = dot => (map.dotShown.has(dot.name) ? 2 : map.dotMarks.has(dot.name) ? 1 : 0);
+    const points = dotPoints().filter(at => at.visible).sort((a, b) => rank(a.dot) - rank(b.dot));
+    points.forEach(p => {
+      const dot = p.dot;
+      const shown = map.dotShown.get(dot.name);
       const mark = map.dotMarks.get(dot.name);
       let fill = ink.label, stroke = ink.halo;
       if (shown) {
@@ -15521,7 +15643,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
       state.view = view.key;
       // Drawn on the way in, so bests and the daily card reflect the round just played
       if (view.render) view.render();
-      if (!(opts && opts.keepAddress)) setAddressBar(viewUrl(view.key));
+      if (!(opts && opts.keepAddress)) {
+        const top = historyEntry();
+        if (opts && opts.push) {
+          writeHistory({ atlas: 'view' }, viewUrl(view.key));
+        } else {
+          setAddressBar(viewUrl(view.key));
+          // A round left for the view it was started from: its entry goes
+          if (top.atlas === 'round' && top.view === view.key && !nav.stepping) stepBack();
+        }
+      }
       updateNav();
     } else {
       hideNotice();   // it spoke about a view, and would sit over the game's controls
@@ -15571,7 +15702,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
         if (explore.on) zoomReset();
         else document.getElementById(viewByKey(state.view).screen + '-screen').scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' });
       } else {
-        showView(el.dataset.view);
+        showView(el.dataset.view, { push: true });
       }
     },
     'toggle-theme': () => setThemePref(resolveTheme(loadThemePref()) === 'dark' ? 'light' : 'dark'),
@@ -16528,7 +16659,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   window.__atlas = {
     state, mastery, LEVELS, COLLECTIONS, VIEWS, startGame, levelByKey, showView, exportProgress, resetProgress,
     map, get globe() { return map.globe; },
-    explore, selectCountry, searchCountries,
+    explore, selectCountry, searchCountries, dotPoints,
     Quiz, WORLD_FACTS, COUNTRY_TYPED_ALIASES,
     version: 2
   };
