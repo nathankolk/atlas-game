@@ -1,0 +1,7491 @@
+{
+  "app": "cartographers-atlas",
+  "exportVersion": 1,
+  "exportedAt": "2026-11-17T23:03:24.705Z",
+  "settings": {
+    "difficulty": "normal",
+    "mapStyle": "parchment"
+  },
+  "records": {
+    "us-state|The United States|normal": {
+      "gamesPlayed": 7,
+      "bestScore": {
+        "value": 98,
+        "max": 100,
+        "date": "2026-11-17"
+      },
+      "bestAccuracy": {
+        "correct": 50,
+        "total": 50,
+        "pct": 100,
+        "date": "2026-11-17"
+      },
+      "lastPlayed": "2026-11-17",
+      "bestTime": {
+        "value": 402,
+        "total": 50,
+        "date": "2026-11-17"
+      }
+    },
+    "world-country|South America|normal": {
+      "gamesPlayed": 5,
+      "bestScore": {
+        "value": 23,
+        "max": 26,
+        "date": "2026-10-10"
+      },
+      "bestAccuracy": {
+        "correct": 13,
+        "total": 13,
+        "pct": 100,
+        "date": "2026-10-10"
+      },
+      "lastPlayed": "2026-11-16",
+      "bestTime": {
+        "value": 91,
+        "total": 13,
+        "date": "2026-10-10"
+      }
+    },
+    "world-country|North America|normal": {
+      "gamesPlayed": 7,
+      "bestScore": {
+        "value": 41,
+        "max": 46,
+        "date": "2026-11-09"
+      },
+      "bestAccuracy": {
+        "correct": 23,
+        "total": 23,
+        "pct": 100,
+        "date": "2026-11-09"
+      },
+      "lastPlayed": "2026-11-15",
+      "bestTime": {
+        "value": 157,
+        "total": 23,
+        "date": "2026-11-09"
+      }
+    },
+    "world-country|Africa|hard": {
+      "gamesPlayed": 1,
+      "bestScore": {
+        "value": 66,
+        "max": 108,
+        "date": "2026-09-16"
+      },
+      "bestAccuracy": {
+        "correct": 45,
+        "total": 54,
+        "pct": 83,
+        "date": "2026-09-16"
+      },
+      "lastPlayed": "2026-09-16"
+    },
+    "world-country|Asia|normal": {
+      "gamesPlayed": 5,
+      "bestScore": {
+        "value": 85,
+        "max": 96,
+        "date": "2026-11-03"
+      },
+      "bestAccuracy": {
+        "correct": 46,
+        "total": 48,
+        "pct": 96,
+        "date": "2026-11-03"
+      },
+      "lastPlayed": "2026-11-08"
+    },
+    "world-country|Europe|uncharted": {
+      "gamesPlayed": 2,
+      "bestScore": {
+        "value": 53,
+        "max": 78,
+        "date": "2026-09-27"
+      },
+      "bestAccuracy": {
+        "correct": 32,
+        "total": 39,
+        "pct": 82,
+        "date": "2026-09-27"
+      },
+      "lastPlayed": "2026-09-27"
+    },
+    "world-country|Oceania|normal": {
+      "gamesPlayed": 3,
+      "bestScore": {
+        "value": 14,
+        "max": 14,
+        "date": "2026-10-10"
+      },
+      "bestTime": {
+        "value": 42,
+        "total": 7,
+        "date": "2026-10-10"
+      },
+      "bestAccuracy": {
+        "correct": 7,
+        "total": 7,
+        "pct": 100,
+        "date": "2026-09-21"
+      },
+      "lastPlayed": "2026-10-23"
+    },
+    "us-state|The United States|hard": {
+      "gamesPlayed": 1,
+      "bestScore": {
+        "value": 79,
+        "max": 100,
+        "date": "2026-09-21"
+      },
+      "bestAccuracy": {
+        "correct": 46,
+        "total": 50,
+        "pct": 92,
+        "date": "2026-09-21"
+      },
+      "lastPlayed": "2026-09-21"
+    },
+    "province|canada-provinces|normal": {
+      "gamesPlayed": 5,
+      "bestScore": {
+        "value": 23,
+        "max": 26,
+        "date": "2026-11-08"
+      },
+      "bestAccuracy": {
+        "correct": 13,
+        "total": 13,
+        "pct": 100,
+        "date": "2026-11-08"
+      },
+      "lastPlayed": "2026-11-08",
+      "bestTime": {
+        "value": 65,
+        "total": 13,
+        "date": "2026-11-08"
+      }
+    },
+    "world-country|Europe|normal": {
+      "gamesPlayed": 6,
+      "bestScore": {
+        "value": 71,
+        "max": 78,
+        "date": "2026-11-07"
+      },
+      "bestAccuracy": {
+        "correct": 37,
+        "total": 39,
+        "pct": 95,
+        "date": "2026-11-07"
+      },
+      "lastPlayed": "2026-11-07"
+    },
+    "world-country|Europe|hard": {
+      "gamesPlayed": 3,
+      "bestScore": {
+        "value": 72,
+        "max": 78,
+        "date": "2026-11-10"
+      },
+      "bestAccuracy": {
+        "correct": 38,
+        "total": 39,
+        "pct": 97,
+        "date": "2026-11-10"
+      },
+      "lastPlayed": "2026-11-16"
+    },
+    "world-country|Africa|normal": {
+      "gamesPlayed": 4,
+      "bestScore": {
+        "value": 93,
+        "max": 108,
+        "date": "2026-11-04"
+      },
+      "bestAccuracy": {
+        "correct": 53,
+        "total": 54,
+        "pct": 98,
+        "date": "2026-10-11"
+      },
+      "lastPlayed": "2026-11-04"
+    },
+    "us-state-to-capital|US States → Capitals|normal": {
+      "gamesPlayed": 2,
+      "bestScore": {
+        "value": 72,
+        "max": 100,
+        "date": "2026-10-27"
+      },
+      "bestAccuracy": {
+        "correct": 40,
+        "total": 50,
+        "pct": 80,
+        "date": "2026-10-01"
+      },
+      "lastPlayed": "2026-10-27"
+    },
+    "world-country|World|normal": {
+      "gamesPlayed": 2,
+      "bestScore": {
+        "value": 306,
+        "max": 368,
+        "date": "2026-11-09"
+      },
+      "bestAccuracy": {
+        "correct": 167,
+        "total": 184,
+        "pct": 91,
+        "date": "2026-11-09"
+      },
+      "lastPlayed": "2026-11-09"
+    },
+    "us-capital-to-state|US Capitals → States|normal": {
+      "gamesPlayed": 4,
+      "bestScore": {
+        "value": 88,
+        "max": 100,
+        "date": "2026-11-16"
+      },
+      "bestAccuracy": {
+        "correct": 47,
+        "total": 50,
+        "pct": 94,
+        "date": "2026-11-16"
+      },
+      "lastPlayed": "2026-11-16"
+    },
+    "province|china-provinces|normal": {
+      "gamesPlayed": 4,
+      "bestScore": {
+        "value": 59,
+        "max": 66,
+        "date": "2026-11-12"
+      },
+      "bestAccuracy": {
+        "correct": 32,
+        "total": 33,
+        "pct": 97,
+        "date": "2026-11-12"
+      },
+      "lastPlayed": "2026-11-12"
+    },
+    "us-city|Northeast|normal": {
+      "gamesPlayed": 1,
+      "bestScore": {
+        "value": 39,
+        "max": 80,
+        "date": "2026-10-20"
+      },
+      "bestAccuracy": {
+        "correct": 27,
+        "total": 40,
+        "pct": 68,
+        "date": "2026-10-20"
+      },
+      "lastPlayed": "2026-10-20"
+    },
+    "province|india-states|normal": {
+      "gamesPlayed": 3,
+      "bestScore": {
+        "value": 52,
+        "max": 72,
+        "date": "2026-10-29"
+      },
+      "bestAccuracy": {
+        "correct": 31,
+        "total": 36,
+        "pct": 86,
+        "date": "2026-10-27"
+      },
+      "lastPlayed": "2026-10-29"
+    },
+    "province|canada-provinces|hard": {
+      "gamesPlayed": 2,
+      "bestScore": {
+        "value": 21,
+        "max": 26,
+        "date": "2026-10-24"
+      },
+      "bestTime": {
+        "value": 59,
+        "total": 13,
+        "date": "2026-10-24"
+      },
+      "bestAccuracy": {
+        "correct": 13,
+        "total": 13,
+        "pct": 100,
+        "date": "2026-10-24"
+      },
+      "lastPlayed": "2026-10-25"
+    },
+    "province|russia-west|normal": {
+      "gamesPlayed": 1,
+      "bestScore": {
+        "value": 28,
+        "max": 58,
+        "date": "2026-11-03"
+      },
+      "bestAccuracy": {
+        "correct": 20,
+        "total": 29,
+        "pct": 69,
+        "date": "2026-11-03"
+      },
+      "lastPlayed": "2026-11-03"
+    },
+    "daily-five|Daily|normal": {
+      "gamesPlayed": 25,
+      "bestScore": {
+        "value": 10,
+        "max": 10,
+        "date": "2026-10-19"
+      },
+      "bestTime": {
+        "value": 26,
+        "total": 5,
+        "date": "2026-10-30"
+      },
+      "bestAccuracy": {
+        "correct": 5,
+        "total": 5,
+        "pct": 100,
+        "date": "2026-10-19"
+      },
+      "lastPlayed": "2026-11-17"
+    }
+  },
+  "dailyAttempts": {
+    "2026-10-19": {
+      "dateKey": "2026-10-19",
+      "puzzleNumber": 176,
+      "countries": [
+        "Syria",
+        "Laos",
+        "Honduras",
+        "Uruguay",
+        "Cyprus"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 29,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1792398600000
+    },
+    "2026-10-20": {
+      "dateKey": "2026-10-20",
+      "puzzleNumber": 177,
+      "countries": [
+        "Jamaica",
+        "Vanuatu",
+        "Saint Vincent and the Grenadines",
+        "North Korea",
+        "Chile"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "score": 8,
+      "correct": 4,
+      "wrong": 1,
+      "total": 5,
+      "timeSeconds": 25,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1792485000000
+    },
+    "2026-10-21": {
+      "dateKey": "2026-10-21",
+      "puzzleNumber": 178,
+      "countries": [
+        "Pakistan",
+        "Qatar",
+        "Honduras",
+        "Kenya",
+        "Malaysia"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 31,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1792571400000
+    },
+    "2026-10-22": {
+      "dateKey": "2026-10-22",
+      "puzzleNumber": 179,
+      "countries": [
+        "Belize",
+        "Turkmenistan",
+        "Bolivia",
+        "Kosovo",
+        "Egypt"
+      ],
+      "sequence": [
+        1,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 9,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 71,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1792657800000
+    },
+    "2026-10-23": {
+      "dateKey": "2026-10-23",
+      "puzzleNumber": 180,
+      "countries": [
+        "Mongolia",
+        "Belarus",
+        "Equatorial Guinea",
+        "Poland",
+        "Bhutan"
+      ],
+      "sequence": [
+        2,
+        2,
+        0,
+        2,
+        2
+      ],
+      "score": 8,
+      "correct": 4,
+      "wrong": 1,
+      "total": 5,
+      "timeSeconds": 49,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1792744200000
+    },
+    "2026-10-24": {
+      "dateKey": "2026-10-24",
+      "puzzleNumber": 181,
+      "countries": [
+        "Honduras",
+        "Libya",
+        "Turkey",
+        "Cameroon",
+        "Japan"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        1,
+        2
+      ],
+      "score": 9,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 69,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1792830600000
+    },
+    "2026-10-25": {
+      "dateKey": "2026-10-25",
+      "puzzleNumber": 182,
+      "countries": [
+        "Equatorial Guinea",
+        "Colombia",
+        "Iraq",
+        "Jordan",
+        "Luxembourg"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 28,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1792917000000
+    },
+    "2026-10-26": {
+      "dateKey": "2026-10-26",
+      "puzzleNumber": 183,
+      "countries": [
+        "Paraguay",
+        "Guatemala",
+        "Burkina Faso",
+        "Qatar",
+        "Suriname"
+      ],
+      "sequence": [
+        2,
+        2,
+        1,
+        2,
+        2
+      ],
+      "score": 9,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 41,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1793003400000
+    },
+    "2026-10-27": {
+      "dateKey": "2026-10-27",
+      "puzzleNumber": 184,
+      "countries": [
+        "Greece",
+        "Peru",
+        "Nepal",
+        "Panama",
+        "Yemen"
+      ],
+      "sequence": [
+        2,
+        0,
+        0,
+        1,
+        2
+      ],
+      "score": 5,
+      "correct": 3,
+      "wrong": 2,
+      "total": 5,
+      "timeSeconds": 40,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1793089800000
+    },
+    "2026-10-28": {
+      "dateKey": "2026-10-28",
+      "puzzleNumber": 185,
+      "countries": [
+        "Spain",
+        "Equatorial Guinea",
+        "China",
+        "Libya",
+        "Sierra Leone"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 37,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1793176200000
+    },
+    "2026-10-29": {
+      "dateKey": "2026-10-29",
+      "puzzleNumber": 186,
+      "countries": [
+        "China",
+        "Portugal",
+        "Dominica",
+        "Morocco",
+        "Togo"
+      ],
+      "sequence": [
+        2,
+        2,
+        1,
+        2,
+        2
+      ],
+      "score": 9,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 33,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1793262600000
+    },
+    "2026-10-30": {
+      "dateKey": "2026-10-30",
+      "puzzleNumber": 187,
+      "countries": [
+        "Czech Republic",
+        "Tunisia",
+        "Sri Lanka",
+        "Barbados",
+        "Norway"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 26,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1793349000000
+    },
+    "2026-11-02": {
+      "dateKey": "2026-11-02",
+      "puzzleNumber": 190,
+      "countries": [
+        "Saint Kitts and Nevis",
+        "New Zealand",
+        "Bahrain",
+        "Peru",
+        "Kuwait"
+      ],
+      "sequence": [
+        1,
+        2,
+        0,
+        0,
+        2
+      ],
+      "score": 5,
+      "correct": 3,
+      "wrong": 2,
+      "total": 5,
+      "timeSeconds": 26,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1793608200000
+    },
+    "2026-11-04": {
+      "dateKey": "2026-11-04",
+      "puzzleNumber": 192,
+      "countries": [
+        "Latvia",
+        "Bahrain",
+        "Jordan",
+        "Syria",
+        "Morocco"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 51,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1793781000000
+    },
+    "2026-11-07": {
+      "dateKey": "2026-11-07",
+      "puzzleNumber": 195,
+      "countries": [
+        "Djibouti",
+        "South Korea",
+        "Mongolia",
+        "Greece",
+        "Laos"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 58,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794040200000
+    },
+    "2026-11-08": {
+      "dateKey": "2026-11-08",
+      "puzzleNumber": 196,
+      "countries": [
+        "Rwanda",
+        "Kazakhstan",
+        "Jamaica",
+        "Vietnam",
+        "North Korea"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "score": 9,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 55,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794126600000
+    },
+    "2026-11-09": {
+      "dateKey": "2026-11-09",
+      "puzzleNumber": 197,
+      "countries": [
+        "South Sudan",
+        "Syria",
+        "Saint Kitts and Nevis",
+        "India",
+        "Kenya"
+      ],
+      "sequence": [
+        2,
+        2,
+        0,
+        2,
+        2
+      ],
+      "score": 8,
+      "correct": 4,
+      "wrong": 1,
+      "total": 5,
+      "timeSeconds": 59,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794213000000
+    },
+    "2026-11-10": {
+      "dateKey": "2026-11-10",
+      "puzzleNumber": 198,
+      "countries": [
+        "Armenia",
+        "Saint Lucia",
+        "Belize",
+        "Jordan",
+        "Senegal"
+      ],
+      "sequence": [
+        2,
+        1,
+        0,
+        2,
+        2
+      ],
+      "score": 7,
+      "correct": 4,
+      "wrong": 1,
+      "total": 5,
+      "timeSeconds": 56,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794299400000
+    },
+    "2026-11-11": {
+      "dateKey": "2026-11-11",
+      "puzzleNumber": 199,
+      "countries": [
+        "Taiwan",
+        "Botswana",
+        "Equatorial Guinea",
+        "Jordan",
+        "Uganda"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 45,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794385800000
+    },
+    "2026-11-12": {
+      "dateKey": "2026-11-12",
+      "puzzleNumber": 200,
+      "countries": [
+        "Palestine",
+        "Haiti",
+        "Ethiopia",
+        "Uganda",
+        "South Africa"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 65,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794472200000
+    },
+    "2026-11-13": {
+      "dateKey": "2026-11-13",
+      "puzzleNumber": 201,
+      "countries": [
+        "Republic of the Congo",
+        "Kenya",
+        "Botswana",
+        "Peru",
+        "United Arab Emirates"
+      ],
+      "sequence": [
+        2,
+        1,
+        2,
+        1,
+        2
+      ],
+      "score": 8,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 44,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794558600000
+    },
+    "2026-11-14": {
+      "dateKey": "2026-11-14",
+      "puzzleNumber": 202,
+      "countries": [
+        "Mozambique",
+        "Colombia",
+        "Chad",
+        "Croatia",
+        "Malaysia"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "score": 9,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 53,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794645000000
+    },
+    "2026-11-15": {
+      "dateKey": "2026-11-15",
+      "puzzleNumber": 203,
+      "countries": [
+        "Bolivia",
+        "North Korea",
+        "Moldova",
+        "Jordan",
+        "China"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 55,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794731400000
+    },
+    "2026-11-16": {
+      "dateKey": "2026-11-16",
+      "puzzleNumber": 204,
+      "countries": [
+        "Brunei",
+        "Italy",
+        "Saint Vincent and the Grenadines",
+        "Kazakhstan",
+        "Slovakia"
+      ],
+      "sequence": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "score": 10,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 41,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794817800000
+    },
+    "2026-11-17": {
+      "dateKey": "2026-11-17",
+      "puzzleNumber": 205,
+      "countries": [
+        "Poland",
+        "Belgium",
+        "Saudi Arabia",
+        "Ethiopia",
+        "Kenya"
+      ],
+      "sequence": [
+        2,
+        2,
+        1,
+        2,
+        2
+      ],
+      "score": 9,
+      "correct": 5,
+      "wrong": 0,
+      "total": 5,
+      "timeSeconds": 58,
+      "hardMode": false,
+      "difficulty": "normal",
+      "completedAt": 1794875280790
+    }
+  },
+  "focusLists": {
+    "us-state|The United States": {
+      "names": [
+        "Hawaii",
+        "Nebraska"
+      ],
+      "total": 50,
+      "savedAt": 1794875280790
+    },
+    "world-country|South America": {
+      "names": [
+        "Peru",
+        "Chile"
+      ],
+      "total": 13,
+      "savedAt": 1794854880000
+    },
+    "world-country|North America": {
+      "names": [
+        "Saint Vincent and the Grenadines",
+        "Grenada",
+        "Dominican Republic",
+        "Cuba",
+        "Belize",
+        "Bahamas",
+        "Antigua and Barbuda"
+      ],
+      "total": 23,
+      "savedAt": 1794765600000
+    },
+    "world-country|Africa": {
+      "names": [
+        "Tanzania",
+        "South Africa",
+        "Sierra Leone",
+        "Niger",
+        "Namibia",
+        "Western Sahara",
+        "Mauritius",
+        "Guinea",
+        "Ethiopia",
+        "Algeria"
+      ],
+      "total": 54,
+      "savedAt": 1793816640000
+    },
+    "world-country|Asia": {
+      "names": [
+        "Turkmenistan",
+        "South Korea",
+        "Philippines",
+        "Pakistan",
+        "North Korea",
+        "Mongolia",
+        "Kazakhstan",
+        "Israel",
+        "Palestine",
+        "Iraq",
+        "India",
+        "Georgia",
+        "Cyprus"
+      ],
+      "total": 48,
+      "savedAt": 1794160800000
+    },
+    "world-country|Europe": {
+      "names": [
+        "United Kingdom",
+        "Ukraine",
+        "North Macedonia",
+        "Albania"
+      ],
+      "total": 39,
+      "savedAt": 1794852000000
+    },
+    "world-country|Oceania": {
+      "names": [
+        "Vanuatu"
+      ],
+      "total": 7,
+      "savedAt": 1792779840000
+    },
+    "province|canada-provinces": {
+      "names": [
+        "Saskatchewan",
+        "Ontario",
+        "Nova Scotia"
+      ],
+      "total": 13,
+      "savedAt": 1794163680000
+    },
+    "us-state-to-capital|US States → Capitals": {
+      "names": [
+        "Arizona",
+        "Colorado",
+        "Delaware",
+        "Hawaii",
+        "Maryland",
+        "Minnesota",
+        "Mississippi",
+        "Montana",
+        "New Hampshire",
+        "New Jersey",
+        "Ohio",
+        "Oklahoma",
+        "Oregon",
+        "Rhode Island",
+        "Tennessee",
+        "Texas",
+        "Utah",
+        "Wyoming"
+      ],
+      "total": 50,
+      "savedAt": 1793125440000
+    },
+    "world-country|World": {
+      "names": [
+        "Zimbabwe",
+        "Vanuatu",
+        "Falkland Islands",
+        "United Kingdom",
+        "Ukraine",
+        "Tanzania",
+        "Spain",
+        "Somalia",
+        "Slovenia",
+        "Serbia",
+        "Senegal",
+        "Qatar",
+        "Peru",
+        "Papua New Guinea",
+        "Pakistan",
+        "Western Sahara",
+        "Mauritania",
+        "Malaysia",
+        "Madagascar",
+        "North Macedonia",
+        "Lesotho",
+        "Lebanon",
+        "Kosovo",
+        "Kenya",
+        "Kazakhstan",
+        "Iraq",
+        "Indonesia",
+        "India",
+        "Iceland",
+        "Guyana",
+        "Grenada",
+        "Georgia",
+        "Ethiopia",
+        "Equatorial Guinea",
+        "Dominican Republic",
+        "Costa Rica",
+        "Central African Republic",
+        "Cape Verde",
+        "Burundi",
+        "Benin",
+        "Belize",
+        "Bahrain",
+        "Antigua and Barbuda",
+        "Algeria",
+        "Albania"
+      ],
+      "total": 184,
+      "savedAt": 1794247200000
+    },
+    "us-capital-to-state|US Capitals → States": {
+      "names": [
+        "Alaska",
+        "Arizona",
+        "Colorado",
+        "Georgia",
+        "Kansas",
+        "Maryland",
+        "Michigan",
+        "North Dakota",
+        "Wyoming"
+      ],
+      "total": 50,
+      "savedAt": 1794853440000
+    },
+    "province|china-provinces": {
+      "names": [
+        "Yunnan",
+        "Shanghai",
+        "Hunan",
+        "Jiangxi",
+        "Henan",
+        "Anhui"
+      ],
+      "total": 33,
+      "savedAt": 1794507840000
+    },
+    "us-city|Northeast": {
+      "names": [
+        "Syracuse",
+        "Albany",
+        "Yonkers",
+        "Philadelphia",
+        "Pittsburgh",
+        "Allentown",
+        "Erie",
+        "Reading",
+        "Lancaster",
+        "Harrisburg",
+        "Boston",
+        "Worcester",
+        "Cambridge",
+        "New Bedford",
+        "Newark",
+        "Paterson",
+        "Elizabeth",
+        "Trenton",
+        "Bridgeport",
+        "New Haven",
+        "Waterbury",
+        "Providence",
+        "Nashua",
+        "Portland",
+        "Bangor",
+        "Augusta",
+        "Burlington",
+        "Montpelier"
+      ],
+      "total": 40,
+      "savedAt": 1792519200000
+    },
+    "province|india-states": {
+      "names": [
+        "Ladakh",
+        "Arunachal Pradesh",
+        "Sikkim",
+        "Mizoram",
+        "Meghalaya",
+        "Punjab",
+        "Rajasthan",
+        "Jammu and Kashmir",
+        "Dadra and Nagar Haveli and Daman and Diu",
+        "Goa",
+        "Kerala",
+        "Lakshadweep",
+        "Jharkhand",
+        "Chandigarh",
+        "Madhya Pradesh"
+      ],
+      "total": 36,
+      "savedAt": 1793296800000
+    },
+    "province|russia-west": {
+      "names": [
+        "Pskov Oblast",
+        "Murmansk Oblast",
+        "Karelia",
+        "Kaliningrad Oblast",
+        "Smolensk Oblast",
+        "Kursk Oblast",
+        "Belgorod Oblast",
+        "Saint Petersburg",
+        "Lipetsk Oblast",
+        "Oryol Oblast",
+        "Kaluga Oblast",
+        "Kostroma Oblast",
+        "Yaroslavl Oblast",
+        "Vladimir Oblast",
+        "Ivanovo Oblast",
+        "Vologda Oblast",
+        "Novgorod Oblast",
+        "Tver Oblast",
+        "Moscow Oblast",
+        "Moscow",
+        "Komi Republic"
+      ],
+      "total": 29,
+      "savedAt": 1793728800000
+    }
+  },
+  "pin": {
+    "games": [
+      {
+        "at": 1790879040000,
+        "region": "Europe",
+        "diff": "hard",
+        "score": 1087,
+        "max": 2000,
+        "avgKm": 430
+      },
+      {
+        "at": 1791568800000,
+        "region": "World",
+        "diff": "normal",
+        "score": 1214,
+        "max": 2000,
+        "avgKm": 237
+      },
+      {
+        "at": 1792432800000,
+        "region": "North America",
+        "diff": "normal",
+        "score": 1180,
+        "max": 2000,
+        "avgKm": 296
+      },
+      {
+        "at": 1792607040000,
+        "region": "Asia",
+        "diff": "normal",
+        "score": 1079,
+        "max": 2000,
+        "avgKm": 249
+      },
+      {
+        "at": 1793124000000,
+        "region": "Africa",
+        "diff": "normal",
+        "score": 1095,
+        "max": 2000,
+        "avgKm": 328
+      },
+      {
+        "at": 1793211840000,
+        "region": "World",
+        "diff": "normal",
+        "score": 1259,
+        "max": 2000,
+        "avgKm": 244
+      },
+      {
+        "at": 1793384640000,
+        "region": "North America",
+        "diff": "normal",
+        "score": 1336,
+        "max": 2000,
+        "avgKm": 182
+      },
+      {
+        "at": 1793558880000,
+        "region": "North America",
+        "diff": "normal",
+        "score": 1337,
+        "max": 2000,
+        "avgKm": 171
+      },
+      {
+        "at": 1793642400000,
+        "region": "North America",
+        "diff": "normal",
+        "score": 1681,
+        "max": 2000,
+        "avgKm": 98
+      },
+      {
+        "at": 1793643840000,
+        "region": "Europe",
+        "diff": "hard",
+        "score": 1176,
+        "max": 2000,
+        "avgKm": 331
+      },
+      {
+        "at": 1793645280000,
+        "region": "Africa",
+        "diff": "normal",
+        "score": 1321,
+        "max": 2000,
+        "avgKm": 225
+      },
+      {
+        "at": 1793731680000,
+        "region": "Asia",
+        "diff": "normal",
+        "score": 1495,
+        "max": 2000,
+        "avgKm": 131
+      },
+      {
+        "at": 1793815200000,
+        "region": "World",
+        "diff": "normal",
+        "score": 1415,
+        "max": 2000,
+        "avgKm": 172
+      },
+      {
+        "at": 1794162240000,
+        "region": "World",
+        "diff": "normal",
+        "score": 1596,
+        "max": 2000,
+        "avgKm": 106
+      },
+      {
+        "at": 1794333600000,
+        "region": "World",
+        "diff": "normal",
+        "score": 1560,
+        "max": 2000,
+        "avgKm": 146
+      },
+      {
+        "at": 1794592800000,
+        "region": "Africa",
+        "diff": "normal",
+        "score": 1570,
+        "max": 2000,
+        "avgKm": 131
+      },
+      {
+        "at": 1794680640000,
+        "region": "Europe",
+        "diff": "normal",
+        "score": 1510,
+        "max": 2000,
+        "avgKm": 173
+      },
+      {
+        "at": 1794767040000,
+        "region": "Asia",
+        "diff": "normal",
+        "score": 1719,
+        "max": 2000,
+        "avgKm": 89
+      },
+      {
+        "at": 1794875280790,
+        "region": "Europe",
+        "diff": "normal",
+        "score": 1523,
+        "max": 2000,
+        "avgKm": 97
+      }
+    ],
+    "cities": {
+      "Moscow": [
+        [
+          1790879040000,
+          262
+        ],
+        [
+          1793643840000,
+          504
+        ],
+        [
+          1794680640000,
+          427
+        ],
+        [
+          1794875280790,
+          null
+        ]
+      ],
+      "London": [
+        [
+          1790879040000,
+          105
+        ],
+        [
+          1793643840000,
+          97
+        ],
+        [
+          1793815200000,
+          77
+        ],
+        [
+          1794680640000,
+          41
+        ],
+        [
+          1794875280790,
+          10
+        ]
+      ],
+      "Paris": [
+        [
+          1790879040000,
+          906
+        ],
+        [
+          1793643840000,
+          240
+        ],
+        [
+          1794680640000,
+          250
+        ],
+        [
+          1794875280790,
+          90
+        ]
+      ],
+      "Madrid": [
+        [
+          1793643840000,
+          81
+        ],
+        [
+          1793815200000,
+          54
+        ],
+        [
+          1794162240000,
+          71
+        ],
+        [
+          1794680640000,
+          23
+        ],
+        [
+          1794875280790,
+          63
+        ]
+      ],
+      "Berlin": [
+        [
+          1790879040000,
+          312
+        ],
+        [
+          1793643840000,
+          105
+        ],
+        [
+          1794680640000,
+          95
+        ],
+        [
+          1794875280790,
+          46
+        ]
+      ],
+      "Rome": [
+        [
+          1790879040000,
+          86
+        ],
+        [
+          1793643840000,
+          156
+        ],
+        [
+          1794680640000,
+          32
+        ],
+        [
+          1794875280790,
+          70
+        ]
+      ],
+      "Saint Petersburg": [
+        [
+          1790879040000,
+          317
+        ],
+        [
+          1793643840000,
+          273
+        ],
+        [
+          1794162240000,
+          160
+        ],
+        [
+          1794680640000,
+          51
+        ],
+        [
+          1794875280790,
+          117
+        ]
+      ],
+      "Barcelona": [
+        [
+          1791568800000,
+          125
+        ],
+        [
+          1793211840000,
+          189
+        ],
+        [
+          1793643840000,
+          null
+        ],
+        [
+          1794680640000,
+          82
+        ],
+        [
+          1794875280790,
+          47
+        ]
+      ],
+      "Kyiv": [
+        [
+          1790879040000,
+          137
+        ],
+        [
+          1793643840000,
+          124
+        ],
+        [
+          1794680640000,
+          76
+        ],
+        [
+          1794875280790,
+          35
+        ]
+      ],
+      "Milan": [
+        [
+          1790879040000,
+          312
+        ],
+        [
+          1793643840000,
+          320
+        ],
+        [
+          1794680640000,
+          179
+        ],
+        [
+          1794875280790,
+          233
+        ]
+      ],
+      "Vienna": [
+        [
+          1790879040000,
+          88
+        ],
+        [
+          1793643840000,
+          68
+        ],
+        [
+          1794680640000,
+          40
+        ],
+        [
+          1794875280790,
+          21
+        ]
+      ],
+      "Warsaw": [
+        [
+          1793211840000,
+          329
+        ],
+        [
+          1793643840000,
+          304
+        ],
+        [
+          1793815200000,
+          277
+        ],
+        [
+          1794680640000,
+          241
+        ],
+        [
+          1794875280790,
+          270
+        ]
+      ],
+      "Budapest": [
+        [
+          1790879040000,
+          372
+        ],
+        [
+          1793643840000,
+          208
+        ],
+        [
+          1794680640000,
+          82
+        ],
+        [
+          1794875280790,
+          173
+        ]
+      ],
+      "Bucharest": [
+        [
+          1791568800000,
+          46
+        ],
+        [
+          1793643840000,
+          84
+        ],
+        [
+          1793815200000,
+          48
+        ],
+        [
+          1794680640000,
+          45
+        ],
+        [
+          1794875280790,
+          null
+        ]
+      ],
+      "Munich": [
+        [
+          1790879040000,
+          169
+        ],
+        [
+          1793643840000,
+          89
+        ],
+        [
+          1794680640000,
+          119
+        ],
+        [
+          1794875280790,
+          18
+        ]
+      ],
+      "Prague": [
+        [
+          1790879040000,
+          575
+        ],
+        [
+          1793643840000,
+          419
+        ],
+        [
+          1794680640000,
+          578
+        ],
+        [
+          1794875280790,
+          96
+        ]
+      ],
+      "Amsterdam": [
+        [
+          1791568800000,
+          39
+        ],
+        [
+          1793211840000,
+          62
+        ],
+        [
+          1793643840000,
+          45
+        ],
+        [
+          1794680640000,
+          52
+        ],
+        [
+          1794875280790,
+          43
+        ]
+      ],
+      "Stockholm": [
+        [
+          1790879040000,
+          99
+        ],
+        [
+          1793643840000,
+          158
+        ],
+        [
+          1794680640000,
+          21
+        ],
+        [
+          1794875280790,
+          45
+        ]
+      ],
+      "Athens": [
+        [
+          1790879040000,
+          2138
+        ],
+        [
+          1793643840000,
+          1588
+        ],
+        [
+          1794680640000,
+          715
+        ],
+        [
+          1794875280790,
+          220
+        ]
+      ],
+      "Lisbon": [
+        [
+          1790879040000,
+          1338
+        ],
+        [
+          1793643840000,
+          1422
+        ],
+        [
+          1793815200000,
+          768
+        ],
+        [
+          1794680640000,
+          304
+        ],
+        [
+          1794875280790,
+          153
+        ]
+      ],
+      "Salvador": [
+        [
+          1791568800000,
+          431
+        ]
+      ],
+      "Guatemala City": [
+        [
+          1792432800000,
+          475
+        ],
+        [
+          1793211840000,
+          263
+        ],
+        [
+          1793384640000,
+          57
+        ],
+        [
+          1793558880000,
+          150
+        ],
+        [
+          1793642400000,
+          62
+        ]
+      ],
+      "Rio de Janeiro": [
+        [
+          1791568800000,
+          261
+        ],
+        [
+          1793211840000,
+          368
+        ],
+        [
+          1794162240000,
+          103
+        ]
+      ],
+      "Dubai": [
+        [
+          1791568800000,
+          185
+        ],
+        [
+          1792607040000,
+          138
+        ],
+        [
+          1793731680000,
+          103
+        ],
+        [
+          1794767040000,
+          126
+        ]
+      ],
+      "Montreal": [
+        [
+          1792432800000,
+          26
+        ],
+        [
+          1793211840000,
+          17
+        ],
+        [
+          1793384640000,
+          null
+        ],
+        [
+          1793558880000,
+          19
+        ],
+        [
+          1793642400000,
+          41
+        ]
+      ],
+      "Istanbul": [
+        [
+          1791568800000,
+          193
+        ],
+        [
+          1792607040000,
+          109
+        ],
+        [
+          1793731680000,
+          141
+        ],
+        [
+          1794333600000,
+          69
+        ],
+        [
+          1794767040000,
+          47
+        ]
+      ],
+      "Monterrey": [
+        [
+          1793384640000,
+          37
+        ],
+        [
+          1793558880000,
+          31
+        ],
+        [
+          1793642400000,
+          40
+        ],
+        [
+          1794162240000,
+          33
+        ],
+        [
+          1794333600000,
+          32
+        ]
+      ],
+      "Medellín": [
+        [
+          1791568800000,
+          530
+        ]
+      ],
+      "Havana": [
+        [
+          1791568800000,
+          47
+        ],
+        [
+          1792432800000,
+          57
+        ],
+        [
+          1793384640000,
+          18
+        ],
+        [
+          1793558880000,
+          23
+        ],
+        [
+          1793642400000,
+          60
+        ]
+      ],
+      "Dhaka": [
+        [
+          1791568800000,
+          440
+        ],
+        [
+          1792607040000,
+          432
+        ],
+        [
+          1793731680000,
+          427
+        ],
+        [
+          1794767040000,
+          104
+        ]
+      ],
+      "Fortaleza": [
+        [
+          1791568800000,
+          393
+        ]
+      ],
+      "Lagos": [
+        [
+          1793124000000,
+          94
+        ],
+        [
+          1793645280000,
+          46
+        ],
+        [
+          1794162240000,
+          71
+        ],
+        [
+          1794333600000,
+          41
+        ],
+        [
+          1794592800000,
+          12
+        ]
+      ],
+      "Christchurch": [
+        [
+          1791568800000,
+          488
+        ],
+        [
+          1793211840000,
+          168
+        ]
+      ],
+      "Newcastle": [
+        [
+          1791568800000,
+          304
+        ]
+      ],
+      "Nouméa": [
+        [
+          1791568800000,
+          67
+        ],
+        [
+          1794333600000,
+          122
+        ]
+      ],
+      "Karachi": [
+        [
+          1792607040000,
+          157
+        ],
+        [
+          1793731680000,
+          263
+        ],
+        [
+          1793815200000,
+          178
+        ],
+        [
+          1794162240000,
+          92
+        ],
+        [
+          1794767040000,
+          188
+        ]
+      ],
+      "Riyadh": [
+        [
+          1791568800000,
+          87
+        ],
+        [
+          1792607040000,
+          71
+        ],
+        [
+          1793731680000,
+          50
+        ],
+        [
+          1794162240000,
+          55
+        ],
+        [
+          1794767040000,
+          19
+        ]
+      ],
+      "Mexico City": [
+        [
+          1792432800000,
+          481
+        ],
+        [
+          1793384640000,
+          391
+        ],
+        [
+          1793558880000,
+          540
+        ],
+        [
+          1793642400000,
+          175
+        ]
+      ],
+      "New York": [
+        [
+          1792432800000,
+          77
+        ],
+        [
+          1793384640000,
+          77
+        ],
+        [
+          1793558880000,
+          70
+        ],
+        [
+          1793642400000,
+          74
+        ]
+      ],
+      "Los Angeles": [
+        [
+          1793211840000,
+          999
+        ],
+        [
+          1793384640000,
+          155
+        ],
+        [
+          1793558880000,
+          505
+        ],
+        [
+          1793642400000,
+          131
+        ],
+        [
+          1794162240000,
+          107
+        ]
+      ],
+      "Toronto": [
+        [
+          1793384640000,
+          169
+        ],
+        [
+          1793558880000,
+          null
+        ],
+        [
+          1793642400000,
+          67
+        ],
+        [
+          1793815200000,
+          56
+        ],
+        [
+          1794333600000,
+          31
+        ]
+      ],
+      "Chicago": [
+        [
+          1793558880000,
+          114
+        ],
+        [
+          1793642400000,
+          64
+        ],
+        [
+          1793815200000,
+          36
+        ],
+        [
+          1794162240000,
+          37
+        ],
+        [
+          1794333600000,
+          37
+        ]
+      ],
+      "Houston": [
+        [
+          1792432800000,
+          605
+        ],
+        [
+          1793384640000,
+          208
+        ],
+        [
+          1793558880000,
+          112
+        ],
+        [
+          1793642400000,
+          111
+        ]
+      ],
+      "Guadalajara": [
+        [
+          1792432800000,
+          150
+        ],
+        [
+          1793384640000,
+          375
+        ],
+        [
+          1793558880000,
+          172
+        ],
+        [
+          1793642400000,
+          265
+        ]
+      ],
+      "Washington, D.C.": [
+        [
+          1792432800000,
+          403
+        ],
+        [
+          1793384640000,
+          121
+        ],
+        [
+          1793558880000,
+          null
+        ],
+        [
+          1793642400000,
+          127
+        ]
+      ],
+      "Phoenix": [
+        [
+          1792432800000,
+          126
+        ],
+        [
+          1793211840000,
+          271
+        ],
+        [
+          1793384640000,
+          197
+        ],
+        [
+          1793558880000,
+          135
+        ],
+        [
+          1793642400000,
+          94
+        ]
+      ],
+      "Santo Domingo": [
+        [
+          1792432800000,
+          83
+        ],
+        [
+          1793384640000,
+          37
+        ],
+        [
+          1793558880000,
+          16
+        ],
+        [
+          1793642400000,
+          39
+        ]
+      ],
+      "Vancouver": [
+        [
+          1792432800000,
+          373
+        ],
+        [
+          1793384640000,
+          446
+        ],
+        [
+          1793558880000,
+          201
+        ],
+        [
+          1793642400000,
+          179
+        ],
+        [
+          1794333600000,
+          90
+        ]
+      ],
+      "Miami": [
+        [
+          1792432800000,
+          216
+        ],
+        [
+          1793384640000,
+          273
+        ],
+        [
+          1793558880000,
+          132
+        ],
+        [
+          1793642400000,
+          70
+        ],
+        [
+          1794333600000,
+          162
+        ]
+      ],
+      "Dallas": [
+        [
+          1793211840000,
+          102
+        ],
+        [
+          1793384640000,
+          77
+        ],
+        [
+          1793558880000,
+          26
+        ],
+        [
+          1793642400000,
+          22
+        ],
+        [
+          1794162240000,
+          17
+        ]
+      ],
+      "San Francisco": [
+        [
+          1792432800000,
+          139
+        ],
+        [
+          1793384640000,
+          179
+        ],
+        [
+          1793558880000,
+          191
+        ],
+        [
+          1793642400000,
+          157
+        ]
+      ],
+      "Panama City": [
+        [
+          1792432800000,
+          568
+        ],
+        [
+          1793384640000,
+          261
+        ],
+        [
+          1793558880000,
+          136
+        ],
+        [
+          1793642400000,
+          63
+        ]
+      ],
+      "Seattle": [
+        [
+          1792432800000,
+          331
+        ],
+        [
+          1793384640000,
+          179
+        ],
+        [
+          1793558880000,
+          505
+        ],
+        [
+          1793642400000,
+          127
+        ],
+        [
+          1793815200000,
+          61
+        ]
+      ],
+      "Tokyo": [
+        [
+          1792607040000,
+          77
+        ],
+        [
+          1793731680000,
+          72
+        ],
+        [
+          1794162240000,
+          23
+        ],
+        [
+          1794767040000,
+          14
+        ]
+      ],
+      "Delhi": [
+        [
+          1792607040000,
+          161
+        ],
+        [
+          1793731680000,
+          76
+        ],
+        [
+          1794767040000,
+          45
+        ]
+      ],
+      "Shanghai": [
+        [
+          1792607040000,
+          null
+        ],
+        [
+          1793731680000,
+          75
+        ],
+        [
+          1794333600000,
+          91
+        ],
+        [
+          1794767040000,
+          57
+        ]
+      ],
+      "Beijing": [
+        [
+          1792607040000,
+          417
+        ],
+        [
+          1793731680000,
+          254
+        ],
+        [
+          1794333600000,
+          194
+        ],
+        [
+          1794767040000,
+          88
+        ]
+      ],
+      "Mumbai": [
+        [
+          1792607040000,
+          176
+        ],
+        [
+          1793731680000,
+          73
+        ],
+        [
+          1794767040000,
+          96
+        ]
+      ],
+      "Seoul": [
+        [
+          1792607040000,
+          69
+        ],
+        [
+          1793731680000,
+          237
+        ],
+        [
+          1794333600000,
+          110
+        ],
+        [
+          1794767040000,
+          88
+        ]
+      ],
+      "Jakarta": [
+        [
+          1792607040000,
+          216
+        ],
+        [
+          1793211840000,
+          160
+        ],
+        [
+          1793731680000,
+          53
+        ],
+        [
+          1794162240000,
+          40
+        ],
+        [
+          1794767040000,
+          59
+        ]
+      ],
+      "Manila": [
+        [
+          1792607040000,
+          336
+        ],
+        [
+          1793731680000,
+          151
+        ],
+        [
+          1794333600000,
+          112
+        ],
+        [
+          1794767040000,
+          55
+        ]
+      ],
+      "Bangkok": [
+        [
+          1792607040000,
+          62
+        ],
+        [
+          1793211840000,
+          51
+        ],
+        [
+          1793731680000,
+          45
+        ],
+        [
+          1794767040000,
+          21
+        ]
+      ],
+      "Ho Chi Minh City": [
+        [
+          1792607040000,
+          487
+        ],
+        [
+          1793731680000,
+          130
+        ],
+        [
+          1794333600000,
+          174
+        ],
+        [
+          1794767040000,
+          106
+        ]
+      ],
+      "Tehran": [
+        [
+          1792607040000,
+          null
+        ],
+        [
+          1793211840000,
+          308
+        ],
+        [
+          1793731680000,
+          71
+        ],
+        [
+          1794162240000,
+          125
+        ],
+        [
+          1794767040000,
+          132
+        ]
+      ],
+      "Kolkata": [
+        [
+          1792607040000,
+          801
+        ],
+        [
+          1793731680000,
+          null
+        ],
+        [
+          1794767040000,
+          280
+        ]
+      ],
+      "Guangzhou": [
+        [
+          1792607040000,
+          null
+        ],
+        [
+          1793731680000,
+          45
+        ],
+        [
+          1794162240000,
+          45
+        ],
+        [
+          1794767040000,
+          76
+        ]
+      ],
+      "Singapore": [
+        [
+          1792607040000,
+          54
+        ],
+        [
+          1793731680000,
+          73
+        ],
+        [
+          1794162240000,
+          48
+        ],
+        [
+          1794767040000,
+          40
+        ]
+      ],
+      "Baghdad": [
+        [
+          1792607040000,
+          477
+        ],
+        [
+          1793731680000,
+          156
+        ],
+        [
+          1794333600000,
+          147
+        ],
+        [
+          1794767040000,
+          140
+        ]
+      ],
+      "Cairo": [
+        [
+          1793124000000,
+          672
+        ],
+        [
+          1793645280000,
+          335
+        ],
+        [
+          1793815200000,
+          170
+        ],
+        [
+          1794592800000,
+          137
+        ]
+      ],
+      "Kinshasa": [
+        [
+          1793124000000,
+          117
+        ],
+        [
+          1793645280000,
+          73
+        ],
+        [
+          1793815200000,
+          66
+        ],
+        [
+          1794592800000,
+          71
+        ]
+      ],
+      "Johannesburg": [
+        [
+          1793124000000,
+          259
+        ],
+        [
+          1793645280000,
+          216
+        ],
+        [
+          1794592800000,
+          170
+        ]
+      ],
+      "Luanda": [
+        [
+          1793124000000,
+          994
+        ],
+        [
+          1793645280000,
+          377
+        ],
+        [
+          1794592800000,
+          384
+        ]
+      ],
+      "Dar es Salaam": [
+        [
+          1793124000000,
+          348
+        ],
+        [
+          1793645280000,
+          258
+        ],
+        [
+          1794592800000,
+          182
+        ]
+      ],
+      "Khartoum": [
+        [
+          1793124000000,
+          1098
+        ],
+        [
+          1793645280000,
+          571
+        ],
+        [
+          1794592800000,
+          252
+        ]
+      ],
+      "Abidjan": [
+        [
+          1793124000000,
+          320
+        ],
+        [
+          1793645280000,
+          189
+        ],
+        [
+          1794592800000,
+          95
+        ]
+      ],
+      "Alexandria": [
+        [
+          1793124000000,
+          260
+        ],
+        [
+          1793645280000,
+          140
+        ],
+        [
+          1794162240000,
+          43
+        ],
+        [
+          1794592800000,
+          95
+        ]
+      ],
+      "Nairobi": [
+        [
+          1793124000000,
+          653
+        ],
+        [
+          1793645280000,
+          681
+        ],
+        [
+          1794333600000,
+          350
+        ],
+        [
+          1794592800000,
+          182
+        ]
+      ],
+      "Addis Ababa": [
+        [
+          1793124000000,
+          158
+        ],
+        [
+          1793645280000,
+          168
+        ],
+        [
+          1793815200000,
+          null
+        ],
+        [
+          1794333600000,
+          64
+        ],
+        [
+          1794592800000,
+          79
+        ]
+      ],
+      "Casablanca": [
+        [
+          1793124000000,
+          37
+        ],
+        [
+          1793645280000,
+          40
+        ],
+        [
+          1794592800000,
+          47
+        ]
+      ],
+      "Cape Town": [
+        [
+          1793124000000,
+          75
+        ],
+        [
+          1793645280000,
+          35
+        ],
+        [
+          1794592800000,
+          45
+        ]
+      ],
+      "Accra": [
+        [
+          1793124000000,
+          417
+        ],
+        [
+          1793645280000,
+          445
+        ],
+        [
+          1794592800000,
+          237
+        ]
+      ],
+      "Algiers": [
+        [
+          1793124000000,
+          102
+        ],
+        [
+          1793645280000,
+          59
+        ],
+        [
+          1794592800000,
+          67
+        ]
+      ],
+      "Dakar": [
+        [
+          1793124000000,
+          null
+        ],
+        [
+          1793211840000,
+          185
+        ],
+        [
+          1793645280000,
+          176
+        ],
+        [
+          1794592800000,
+          211
+        ]
+      ],
+      "Tripoli": [
+        [
+          1793124000000,
+          288
+        ],
+        [
+          1793645280000,
+          276
+        ],
+        [
+          1793815200000,
+          138
+        ],
+        [
+          1794592800000,
+          190
+        ]
+      ],
+      "Tunis": [
+        [
+          1793124000000,
+          91
+        ],
+        [
+          1793645280000,
+          35
+        ],
+        [
+          1794592800000,
+          18
+        ]
+      ],
+      "Kampala": [
+        [
+          1793124000000,
+          66
+        ],
+        [
+          1793645280000,
+          104
+        ],
+        [
+          1794592800000,
+          36
+        ]
+      ],
+      "Antananarivo": [
+        [
+          1793124000000,
+          190
+        ],
+        [
+          1793645280000,
+          280
+        ],
+        [
+          1794592800000,
+          107
+        ]
+      ],
+      "Manaus": [
+        [
+          1793211840000,
+          285
+        ]
+      ],
+      "Lima": [
+        [
+          1793211840000,
+          169
+        ],
+        [
+          1794162240000,
+          487
+        ]
+      ],
+      "Melbourne": [
+        [
+          1793211840000,
+          98
+        ],
+        [
+          1794333600000,
+          65
+        ]
+      ],
+      "Canberra": [
+        [
+          1793211840000,
+          369
+        ],
+        [
+          1793815200000,
+          194
+        ]
+      ],
+      "Perth": [
+        [
+          1793815200000,
+          40
+        ]
+      ],
+      "Adelaide": [
+        [
+          1793815200000,
+          142
+        ],
+        [
+          1794162240000,
+          null
+        ]
+      ],
+      "Brisbane": [
+        [
+          1793815200000,
+          236
+        ],
+        [
+          1794333600000,
+          43
+        ]
+      ],
+      "Dunedin": [
+        [
+          1793815200000,
+          119
+        ]
+      ],
+      "Darwin": [
+        [
+          1793815200000,
+          108
+        ]
+      ],
+      "Asunción": [
+        [
+          1793815200000,
+          499
+        ]
+      ],
+      "Montevideo": [
+        [
+          1794162240000,
+          218
+        ]
+      ],
+      "Wellington": [
+        [
+          1794162240000,
+          245
+        ]
+      ],
+      "Townsville": [
+        [
+          1794333600000,
+          283
+        ]
+      ],
+      "Recife": [
+        [
+          1794333600000,
+          709
+        ]
+      ]
+    }
+  },
+  "learn": {
+    "russia-south": {
+      "order": [
+        "Krasnodar Krai",
+        "Karachay-Cherkessia",
+        "Kabardino-Balkaria",
+        "North Ossetia",
+        "Ingushetia",
+        "Chechnya",
+        "Dagestan",
+        "Rostov Oblast",
+        "Orenburg Oblast",
+        "Saratov Oblast",
+        "Astrakhan Oblast",
+        "Volgograd Oblast",
+        "Kalmykia",
+        "Bashkortostan",
+        "Tatarstan",
+        "Ulyanovsk Oblast",
+        "Penza Oblast",
+        "Mordovia",
+        "Nizhny Novgorod Oblast",
+        "Chuvashia",
+        "Mari El",
+        "Kirov Oblast",
+        "Udmurtia",
+        "Perm Krai",
+        "Samara Oblast",
+        "Stavropol Krai",
+        "Adygea"
+      ],
+      "level": 9,
+      "savedAt": 1794859200000
+    },
+    "canada-provinces": {
+      "done": true,
+      "savedAt": 1793217600000
+    }
+  },
+  "mastery": {
+    "v": 2,
+    "items": {
+      "us-state": {
+        "Alabama": [
+          320,
+          5,
+          7,
+          4,
+          1,
+          1
+        ],
+        "Alaska": [
+          320,
+          5,
+          7,
+          6,
+          1
+        ],
+        "Arizona": [
+          320,
+          5,
+          7,
+          4,
+          2
+        ],
+        "Arkansas": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "California": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "Colorado": [
+          320,
+          5,
+          6,
+          5,
+          2
+        ],
+        "Connecticut": [
+          320,
+          5,
+          7,
+          4,
+          0,
+          2
+        ],
+        "Delaware": [
+          320,
+          5,
+          7,
+          6,
+          1
+        ],
+        "Florida": [
+          320,
+          5,
+          7,
+          4,
+          1
+        ],
+        "Georgia": [
+          320,
+          5,
+          7,
+          6,
+          1
+        ],
+        "Hawaii": [
+          320,
+          1,
+          2,
+          0,
+          7,
+          5
+        ],
+        "Idaho": [
+          320,
+          5,
+          6,
+          4,
+          2,
+          1
+        ],
+        "Illinois": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "Indiana": [
+          320,
+          5,
+          6,
+          6,
+          1,
+          1
+        ],
+        "Iowa": [
+          320,
+          5,
+          6,
+          5,
+          2
+        ],
+        "Kansas": [
+          320,
+          4,
+          8,
+          4,
+          2,
+          2
+        ],
+        "Kentucky": [
+          320,
+          5,
+          7,
+          7,
+          1
+        ],
+        "Louisiana": [
+          320,
+          5,
+          7,
+          6,
+          1
+        ],
+        "Maine": [
+          320,
+          5,
+          7,
+          7,
+          0,
+          1
+        ],
+        "Maryland": [
+          320,
+          5,
+          7,
+          7,
+          0,
+          1
+        ],
+        "Massachusetts": [
+          320,
+          4,
+          6,
+          2,
+          2,
+          1
+        ],
+        "Michigan": [
+          320,
+          4,
+          4,
+          2,
+          6,
+          4
+        ],
+        "Minnesota": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "Mississippi": [
+          320,
+          5,
+          7,
+          7,
+          1
+        ],
+        "Missouri": [
+          320,
+          5,
+          6,
+          5,
+          1,
+          1
+        ],
+        "Montana": [
+          320,
+          5,
+          6,
+          5,
+          1,
+          2
+        ],
+        "Nebraska": [
+          320,
+          2,
+          6,
+          0,
+          4,
+          3,
+          2
+        ],
+        "Nevada": [
+          320,
+          5,
+          6,
+          5,
+          1,
+          1
+        ],
+        "New Hampshire": [
+          320,
+          5,
+          7,
+          7,
+          0,
+          1
+        ],
+        "New Jersey": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "New Mexico": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "New York": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "North Carolina": [
+          320,
+          4,
+          9,
+          4,
+          1,
+          2
+        ],
+        "North Dakota": [
+          320,
+          5,
+          7,
+          7,
+          0,
+          1
+        ],
+        "Ohio": [
+          320,
+          5,
+          7,
+          7,
+          0,
+          1
+        ],
+        "Oklahoma": [
+          320,
+          5,
+          6,
+          5,
+          1,
+          1
+        ],
+        "Oregon": [
+          320,
+          5,
+          7,
+          6,
+          0,
+          1
+        ],
+        "Pennsylvania": [
+          320,
+          5,
+          7,
+          4,
+          1,
+          1
+        ],
+        "Rhode Island": [
+          320,
+          5,
+          8,
+          3,
+          1
+        ],
+        "South Carolina": [
+          320,
+          4,
+          8,
+          2,
+          1
+        ],
+        "South Dakota": [
+          320,
+          4,
+          7,
+          2,
+          2
+        ],
+        "Tennessee": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "Texas": [
+          320,
+          5,
+          7,
+          7,
+          1
+        ],
+        "Utah": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "Vermont": [
+          320,
+          5,
+          6,
+          4,
+          1,
+          2
+        ],
+        "Virginia": [
+          320,
+          5,
+          5,
+          3,
+          3,
+          1
+        ],
+        "Washington": [
+          320,
+          5,
+          7,
+          5,
+          1
+        ],
+        "West Virginia": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "Wisconsin": [
+          320,
+          5,
+          8,
+          8
+        ],
+        "Wyoming": [
+          320,
+          5,
+          8,
+          5,
+          0,
+          1
+        ]
+      },
+      "country": {
+        "Venezuela": [
+          319,
+          5,
+          6,
+          5,
+          0,
+          1
+        ],
+        "Uruguay": [
+          319,
+          5,
+          6,
+          6,
+          0,
+          2
+        ],
+        "Falkland Islands": [
+          319,
+          4,
+          5,
+          2,
+          3,
+          1
+        ],
+        "Suriname": [
+          319,
+          5,
+          8,
+          8
+        ],
+        "Peru": [
+          319,
+          1,
+          0,
+          0,
+          8,
+          5,
+          1
+        ],
+        "Paraguay": [
+          319,
+          5,
+          6,
+          5,
+          1,
+          1
+        ],
+        "Guyana": [
+          319,
+          4,
+          6,
+          3,
+          1,
+          3
+        ],
+        "Ecuador": [
+          319,
+          5,
+          7,
+          4,
+          1
+        ],
+        "Colombia": [
+          319,
+          5,
+          7,
+          7,
+          2
+        ],
+        "Chile": [
+          319,
+          2,
+          6,
+          0,
+          2,
+          1,
+          2
+        ],
+        "Brazil": [
+          319,
+          4,
+          4,
+          3,
+          1,
+          3
+        ],
+        "Bolivia": [
+          319,
+          5,
+          7,
+          6,
+          1,
+          1
+        ],
+        "Argentina": [
+          319,
+          5,
+          6,
+          5,
+          1,
+          1
+        ],
+        "United States": [
+          318,
+          5,
+          9,
+          9
+        ],
+        "Trinidad and Tobago": [
+          318,
+          4,
+          7,
+          3,
+          2,
+          2
+        ],
+        "Saint Vincent and the Grenadines": [
+          319,
+          2,
+          11,
+          2,
+          0,
+          1
+        ],
+        "Saint Lucia": [
+          318,
+          5,
+          9,
+          3,
+          1
+        ],
+        "Saint Kitts and Nevis": [
+          318,
+          5,
+          8,
+          4,
+          3,
+          2
+        ],
+        "Panama": [
+          318,
+          5,
+          8,
+          7,
+          1,
+          2
+        ],
+        "Nicaragua": [
+          318,
+          4,
+          5,
+          2,
+          3,
+          2
+        ],
+        "Mexico": [
+          318,
+          5,
+          8,
+          6,
+          2
+        ],
+        "Jamaica": [
+          318,
+          4,
+          10,
+          2,
+          1
+        ],
+        "Honduras": [
+          318,
+          5,
+          10,
+          10,
+          2
+        ],
+        "Haiti": [
+          318,
+          5,
+          7,
+          3,
+          1,
+          3
+        ],
+        "Guatemala": [
+          318,
+          5,
+          9,
+          9,
+          0,
+          1
+        ],
+        "Grenada": [
+          318,
+          2,
+          2,
+          0,
+          7,
+          1,
+          2
+        ],
+        "El Salvador": [
+          318,
+          5,
+          7,
+          3,
+          1,
+          1
+        ],
+        "Dominican Republic": [
+          318,
+          2,
+          5,
+          0,
+          2,
+          2,
+          2
+        ],
+        "Dominica": [
+          318,
+          5,
+          9,
+          6,
+          1
+        ],
+        "Cuba": [
+          319,
+          1,
+          1,
+          0,
+          8,
+          2
+        ],
+        "Costa Rica": [
+          318,
+          5,
+          7,
+          4,
+          2
+        ],
+        "Canada": [
+          318,
+          5,
+          9,
+          7,
+          0,
+          1
+        ],
+        "Belize": [
+          318,
+          2,
+          2,
+          0,
+          5,
+          5,
+          2
+        ],
+        "Barbados": [
+          318,
+          5,
+          7,
+          7,
+          3
+        ],
+        "Bahamas": [
+          318,
+          1,
+          4,
+          0,
+          3,
+          2
+        ],
+        "Antigua and Barbuda": [
+          318,
+          1,
+          2,
+          0,
+          4,
+          5
+        ],
+        "Zimbabwe": [
+          318,
+          3,
+          6,
+          2,
+          2,
+          1
+        ],
+        "Zambia": [
+          312,
+          5,
+          6,
+          6,
+          1
+        ],
+        "Uganda": [
+          315,
+          5,
+          7,
+          7,
+          2
+        ],
+        "Tunisia": [
+          312,
+          5,
+          7,
+          7,
+          1
+        ],
+        "Togo": [
+          312,
+          5,
+          7,
+          7,
+          1
+        ],
+        "Tanzania": [
+          319,
+          3,
+          4,
+          2,
+          3,
+          2
+        ],
+        "Eswatini": [
+          312,
+          5,
+          7,
+          7
+        ],
+        "South Sudan": [
+          312,
+          5,
+          8,
+          8
+        ],
+        "Sudan": [
+          312,
+          5,
+          7,
+          7
+        ],
+        "South Africa": [
+          315,
+          3,
+          4,
+          2,
+          2,
+          2
+        ],
+        "Somalia": [
+          318,
+          3,
+          2,
+          1,
+          6,
+          1
+        ],
+        "Somaliland": [
+          312,
+          5,
+          6,
+          5,
+          1
+        ],
+        "Sierra Leone": [
+          312,
+          3,
+          6,
+          1,
+          2
+        ],
+        "Senegal": [
+          313,
+          3,
+          3,
+          1,
+          5
+        ],
+        "Rwanda": [
+          312,
+          5,
+          6,
+          4,
+          1,
+          1
+        ],
+        "Nigeria": [
+          312,
+          5,
+          6,
+          4,
+          1
+        ],
+        "Niger": [
+          312,
+          3,
+          3,
+          1,
+          3,
+          1
+        ],
+        "Namibia": [
+          312,
+          3,
+          4,
+          1,
+          3
+        ],
+        "Mozambique": [
+          317,
+          5,
+          6,
+          6,
+          2
+        ],
+        "Morocco": [
+          312,
+          5,
+          6,
+          5,
+          2,
+          1
+        ],
+        "Western Sahara": [
+          318,
+          3,
+          7,
+          2,
+          1,
+          1
+        ],
+        "Mauritius": [
+          312,
+          3,
+          4,
+          1,
+          3
+        ],
+        "Mauritania": [
+          319,
+          3,
+          7,
+          3,
+          1,
+          2
+        ],
+        "Mali": [
+          312,
+          5,
+          7,
+          7
+        ],
+        "Malawi": [
+          312,
+          5,
+          6,
+          6,
+          1
+        ],
+        "Madagascar": [
+          316,
+          3,
+          4,
+          1,
+          4
+        ],
+        "Libya": [
+          312,
+          5,
+          7,
+          6,
+          2
+        ],
+        "Liberia": [
+          312,
+          4,
+          3,
+          3,
+          3,
+          1
+        ],
+        "Lesotho": [
+          319,
+          3,
+          6,
+          2,
+          2,
+          2
+        ],
+        "Kenya": [
+          320,
+          3,
+          5,
+          1,
+          5,
+          3
+        ],
+        "Guinea-Bissau": [
+          312,
+          5,
+          6,
+          5,
+          1
+        ],
+        "Guinea": [
+          317,
+          3,
+          6,
+          2,
+          1,
+          1
+        ],
+        "Ghana": [
+          312,
+          4,
+          4,
+          2,
+          2,
+          1
+        ],
+        "Gambia": [
+          312,
+          3,
+          4,
+          2,
+          2,
+          1
+        ],
+        "Gabon": [
+          312,
+          5,
+          5,
+          3,
+          1,
+          1
+        ],
+        "Ethiopia": [
+          320,
+          4,
+          5,
+          4,
+          2,
+          5
+        ],
+        "Eritrea": [
+          312,
+          5,
+          7,
+          7
+        ],
+        "Equatorial Guinea": [
+          319,
+          3,
+          10,
+          4,
+          2,
+          2
+        ],
+        "Egypt": [
+          312,
+          5,
+          8,
+          8
+        ],
+        "Djibouti": [
+          312,
+          5,
+          7,
+          7,
+          1
+        ],
+        "Ivory Coast": [
+          312,
+          3,
+          3,
+          2,
+          2,
+          2
+        ],
+        "Democratic Republic of the Congo": [
+          312,
+          4,
+          6,
+          2,
+          1
+        ],
+        "Republic of the Congo": [
+          316,
+          5,
+          8,
+          8
+        ],
+        "Comoros": [
+          312,
+          3,
+          4,
+          2,
+          2,
+          1
+        ],
+        "Chad": [
+          317,
+          5,
+          5,
+          5,
+          3
+        ],
+        "Central African Republic": [
+          316,
+          3,
+          3,
+          1,
+          5
+        ],
+        "Cape Verde": [
+          315,
+          3,
+          3,
+          1,
+          4,
+          1
+        ],
+        "Cameroon": [
+          312,
+          5,
+          7,
+          3,
+          1
+        ],
+        "Burundi": [
+          316,
+          3,
+          6,
+          1,
+          2
+        ],
+        "Burkina Faso": [
+          312,
+          5,
+          6,
+          3,
+          2
+        ],
+        "Botswana": [
+          316,
+          5,
+          7,
+          5,
+          1,
+          1
+        ],
+        "Benin": [
+          318,
+          3,
+          7,
+          2,
+          0,
+          2
+        ],
+        "Angola": [
+          312,
+          3,
+          3,
+          2,
+          1,
+          3
+        ],
+        "Algeria": [
+          319,
+          1,
+          1,
+          0,
+          3,
+          5,
+          1
+        ],
+        "Yemen": [
+          312,
+          5,
+          7,
+          5,
+          1
+        ],
+        "Vietnam": [
+          312,
+          5,
+          8,
+          8
+        ],
+        "Uzbekistan": [
+          312,
+          4,
+          3,
+          2,
+          3,
+          1
+        ],
+        "United Arab Emirates": [
+          316,
+          5,
+          7,
+          7,
+          1
+        ],
+        "Turkmenistan": [
+          312,
+          3,
+          5,
+          1,
+          2,
+          1
+        ],
+        "Turkey": [
+          312,
+          5,
+          6,
+          5,
+          0,
+          2
+        ],
+        "Timor-Leste": [
+          312,
+          4,
+          5,
+          3,
+          0,
+          2
+        ],
+        "Thailand": [
+          312,
+          5,
+          5,
+          5,
+          2
+        ],
+        "Tajikistan": [
+          312,
+          5,
+          4,
+          4,
+          1,
+          2
+        ],
+        "Taiwan": [
+          314,
+          5,
+          4,
+          4,
+          1,
+          3
+        ],
+        "Syria": [
+          312,
+          5,
+          8,
+          8,
+          2
+        ],
+        "Sri Lanka": [
+          312,
+          5,
+          6,
+          4,
+          1,
+          1
+        ],
+        "South Korea": [
+          312,
+          3,
+          4,
+          1,
+          2,
+          2
+        ],
+        "Saudi Arabia": [
+          320,
+          2,
+          6,
+          0,
+          2,
+          0,
+          2
+        ],
+        "Qatar": [
+          316,
+          3,
+          8,
+          1,
+          2
+        ],
+        "Philippines": [
+          317,
+          3,
+          6,
+          2,
+          1,
+          1
+        ],
+        "Pakistan": [
+          319,
+          3,
+          5,
+          2,
+          3,
+          2
+        ],
+        "Oman": [
+          312,
+          5,
+          5,
+          3,
+          2
+        ],
+        "North Korea": [
+          318,
+          4,
+          6,
+          3,
+          3,
+          2
+        ],
+        "Nepal": [
+          312,
+          3,
+          5,
+          2,
+          1,
+          2
+        ],
+        "Mongolia": [
+          317,
+          3,
+          5,
+          2,
+          2,
+          3
+        ],
+        "Malaysia": [
+          317,
+          2,
+          5,
+          0,
+          3,
+          2,
+          2
+        ],
+        "Lebanon": [
+          319,
+          3,
+          4,
+          1,
+          2,
+          5
+        ],
+        "Laos": [
+          312,
+          5,
+          7,
+          5,
+          0,
+          2
+        ],
+        "Kyrgyzstan": [
+          312,
+          5,
+          5,
+          3,
+          2
+        ],
+        "Kuwait": [
+          312,
+          5,
+          7,
+          7,
+          1
+        ],
+        "Kazakhstan": [
+          319,
+          4,
+          7,
+          3,
+          2,
+          2
+        ],
+        "Jordan": [
+          318,
+          5,
+          11,
+          9,
+          1
+        ],
+        "Japan": [
+          312,
+          5,
+          7,
+          5,
+          1
+        ],
+        "Israel": [
+          317,
+          3,
+          4,
+          2,
+          2,
+          2
+        ],
+        "Palestine": [
+          315,
+          3,
+          2,
+          2,
+          4,
+          2
+        ],
+        "Iraq": [
+          317,
+          2,
+          3,
+          1,
+          5,
+          2
+        ],
+        "Iran": [
+          312,
+          5,
+          7,
+          7
+        ],
+        "Indonesia": [
+          318,
+          3,
+          4,
+          1,
+          3,
+          2
+        ],
+        "India": [
+          315,
+          3,
+          5,
+          2,
+          3,
+          1
+        ],
+        "Georgia": [
+          319,
+          3,
+          2,
+          2,
+          5,
+          2
+        ],
+        "Northern Cyprus": [
+          312,
+          4,
+          6,
+          3,
+          0,
+          1
+        ],
+        "Cyprus": [
+          312,
+          3,
+          4,
+          1,
+          3,
+          1
+        ],
+        "China": [
+          318,
+          5,
+          7,
+          3,
+          2,
+          1
+        ],
+        "Cambodia": [
+          312,
+          5,
+          5,
+          5,
+          2
+        ],
+        "Myanmar": [
+          312,
+          5,
+          7,
+          7
+        ],
+        "Brunei": [
+          319,
+          5,
+          7,
+          7,
+          1
+        ],
+        "Bhutan": [
+          312,
+          4,
+          7,
+          2,
+          1
+        ],
+        "Bangladesh": [
+          312,
+          5,
+          5,
+          3,
+          2
+        ],
+        "Bahrain": [
+          315,
+          3,
+          5,
+          1,
+          3,
+          2
+        ],
+        "Azerbaijan": [
+          312,
+          5,
+          4,
+          3,
+          3
+        ],
+        "Armenia": [
+          313,
+          5,
+          7,
+          5,
+          0,
+          1
+        ],
+        "Afghanistan": [
+          312,
+          5,
+          6,
+          6,
+          0,
+          1
+        ],
+        "United Kingdom": [
+          319,
+          1,
+          2,
+          0,
+          5,
+          7,
+          1
+        ],
+        "Ukraine": [
+          319,
+          1,
+          1,
+          0,
+          10,
+          3
+        ],
+        "Switzerland": [
+          319,
+          5,
+          11,
+          10,
+          0,
+          2
+        ],
+        "Sweden": [
+          319,
+          4,
+          10,
+          3,
+          0,
+          3
+        ],
+        "Spain": [
+          319,
+          4,
+          11,
+          2,
+          4
+        ],
+        "Slovakia": [
+          319,
+          5,
+          12,
+          11,
+          2
+        ],
+        "Slovenia": [
+          319,
+          4,
+          6,
+          4,
+          4,
+          5
+        ],
+        "Serbia": [
+          319,
+          4,
+          10,
+          2,
+          3
+        ],
+        "Russia": [
+          319,
+          4,
+          9,
+          3,
+          2,
+          2
+        ],
+        "Romania": [
+          319,
+          3,
+          8,
+          2,
+          3,
+          3
+        ],
+        "Portugal": [
+          319,
+          5,
+          10,
+          4,
+          3,
+          1
+        ],
+        "Poland": [
+          320,
+          5,
+          11,
+          8,
+          3,
+          1
+        ],
+        "Norway": [
+          319,
+          5,
+          11,
+          10,
+          2,
+          1
+        ],
+        "Netherlands": [
+          319,
+          5,
+          8,
+          7,
+          4,
+          1
+        ],
+        "Montenegro": [
+          319,
+          5,
+          11,
+          10,
+          0,
+          2
+        ],
+        "Moldova": [
+          319,
+          5,
+          10,
+          5,
+          3,
+          1
+        ],
+        "North Macedonia": [
+          319,
+          2,
+          6,
+          0,
+          4,
+          3,
+          2
+        ],
+        "Luxembourg": [
+          319,
+          5,
+          9,
+          7,
+          2,
+          3
+        ],
+        "Lithuania": [
+          319,
+          5,
+          10,
+          7,
+          1,
+          2
+        ],
+        "Latvia": [
+          319,
+          5,
+          11,
+          3,
+          3
+        ],
+        "Kosovo": [
+          319,
+          3,
+          9,
+          2,
+          4,
+          1
+        ],
+        "Italy": [
+          319,
+          5,
+          13,
+          12,
+          0,
+          1
+        ],
+        "Ireland": [
+          319,
+          5,
+          10,
+          8,
+          1,
+          2
+        ],
+        "Iceland": [
+          319,
+          4,
+          6,
+          3,
+          6,
+          3
+        ],
+        "Hungary": [
+          319,
+          5,
+          8,
+          4,
+          3,
+          2
+        ],
+        "Greece": [
+          319,
+          5,
+          11,
+          9,
+          3,
+          1
+        ],
+        "Germany": [
+          319,
+          5,
+          9,
+          8,
+          1,
+          3
+        ],
+        "France": [
+          319,
+          5,
+          11,
+          8,
+          2
+        ],
+        "Finland": [
+          319,
+          5,
+          13,
+          13
+        ],
+        "Estonia": [
+          319,
+          5,
+          9,
+          4,
+          2,
+          2
+        ],
+        "Denmark": [
+          319,
+          5,
+          8,
+          6,
+          3,
+          2
+        ],
+        "Czech Republic": [
+          319,
+          5,
+          12,
+          12,
+          2
+        ],
+        "Croatia": [
+          319,
+          5,
+          12,
+          10,
+          1,
+          1
+        ],
+        "Bulgaria": [
+          319,
+          5,
+          10,
+          9,
+          1,
+          2
+        ],
+        "Bosnia and Herzegovina": [
+          319,
+          4,
+          13,
+          2,
+          1
+        ],
+        "Belgium": [
+          320,
+          5,
+          11,
+          8,
+          2,
+          1
+        ],
+        "Belarus": [
+          319,
+          5,
+          10,
+          9,
+          3,
+          1
+        ],
+        "Austria": [
+          319,
+          5,
+          12,
+          12,
+          0,
+          1
+        ],
+        "Albania": [
+          319,
+          1,
+          5,
+          0,
+          3,
+          6,
+          1
+        ],
+        "Vanuatu": [
+          315,
+          3,
+          6,
+          1,
+          1,
+          1
+        ],
+        "Solomon Islands": [
+          312,
+          3,
+          3,
+          1,
+          3
+        ],
+        "Papua New Guinea": [
+          316,
+          3,
+          5,
+          1,
+          1
+        ],
+        "New Zealand": [
+          312,
+          5,
+          6,
+          6
+        ],
+        "New Caledonia": [
+          312,
+          5,
+          5,
+          5
+        ],
+        "Fiji": [
+          312,
+          5,
+          5,
+          4,
+          1
+        ],
+        "Australia": [
+          312,
+          5,
+          4,
+          4,
+          2
+        ]
+      },
+      "province:canada": {
+        "British Columbia": [
+          318,
+          4,
+          6,
+          3,
+          0,
+          3
+        ],
+        "Alberta": [
+          311,
+          5,
+          5,
+          4,
+          3
+        ],
+        "Saskatchewan": [
+          319,
+          4,
+          6,
+          2,
+          2,
+          2
+        ],
+        "Manitoba": [
+          318,
+          4,
+          5,
+          4,
+          2,
+          2
+        ],
+        "Ontario": [
+          319,
+          4,
+          8,
+          2,
+          1
+        ],
+        "Quebec": [
+          318,
+          4,
+          6,
+          3,
+          2,
+          1
+        ],
+        "New Brunswick": [
+          311,
+          5,
+          6,
+          5,
+          2
+        ],
+        "Yukon": [
+          311,
+          5,
+          6,
+          6,
+          1
+        ],
+        "Nunavut": [
+          311,
+          5,
+          5,
+          4,
+          1,
+          1
+        ],
+        "Newfoundland and Labrador": [
+          314,
+          3,
+          6,
+          2,
+          2,
+          1
+        ],
+        "Nova Scotia": [
+          319,
+          1,
+          4,
+          0,
+          5,
+          2,
+          1
+        ],
+        "Northwest Territories": [
+          311,
+          4,
+          4,
+          2,
+          4
+        ],
+        "Prince Edward Island": [
+          318,
+          4,
+          6,
+          2,
+          3
+        ]
+      },
+      "us-capital": {
+        "Alabama": [
+          319,
+          5,
+          6,
+          3,
+          2
+        ],
+        "Alaska": [
+          319,
+          2,
+          3,
+          0,
+          3,
+          0,
+          2
+        ],
+        "Arizona": [
+          319,
+          2,
+          2,
+          0,
+          6,
+          1,
+          2
+        ],
+        "Arkansas": [
+          319,
+          5,
+          6,
+          6
+        ],
+        "California": [
+          319,
+          5,
+          5,
+          5,
+          1
+        ],
+        "Colorado": [
+          319,
+          1,
+          4,
+          1,
+          1,
+          3
+        ],
+        "Connecticut": [
+          319,
+          5,
+          5,
+          5,
+          1
+        ],
+        "Delaware": [
+          319,
+          5,
+          4,
+          3,
+          4
+        ],
+        "Florida": [
+          319,
+          5,
+          5,
+          5,
+          1
+        ],
+        "Georgia": [
+          319,
+          2,
+          6,
+          0,
+          1,
+          1,
+          2
+        ],
+        "Hawaii": [
+          319,
+          4,
+          4,
+          2,
+          4,
+          1
+        ],
+        "Idaho": [
+          319,
+          4,
+          4,
+          2,
+          3,
+          1
+        ],
+        "Illinois": [
+          319,
+          5,
+          4,
+          3,
+          4
+        ],
+        "Indiana": [
+          319,
+          5,
+          6,
+          6
+        ],
+        "Iowa": [
+          319,
+          4,
+          4,
+          2,
+          5
+        ],
+        "Kansas": [
+          319,
+          1,
+          4,
+          1,
+          1,
+          2
+        ],
+        "Kentucky": [
+          319,
+          5,
+          4,
+          4,
+          2
+        ],
+        "Louisiana": [
+          319,
+          5,
+          4,
+          3,
+          2,
+          1
+        ],
+        "Maine": [
+          319,
+          4,
+          6,
+          3,
+          2,
+          1
+        ],
+        "Maryland": [
+          319,
+          2,
+          3,
+          0,
+          3,
+          0,
+          2
+        ],
+        "Massachusetts": [
+          319,
+          4,
+          6,
+          3,
+          0,
+          1
+        ],
+        "Michigan": [
+          319,
+          2,
+          3,
+          0,
+          2,
+          1,
+          2
+        ],
+        "Minnesota": [
+          319,
+          5,
+          5,
+          3,
+          1,
+          2
+        ],
+        "Mississippi": [
+          319,
+          4,
+          4,
+          2,
+          3,
+          3
+        ],
+        "Missouri": [
+          319,
+          5,
+          6,
+          4,
+          0,
+          2
+        ],
+        "Montana": [
+          319,
+          5,
+          4,
+          3,
+          2
+        ],
+        "Nebraska": [
+          319,
+          5,
+          6,
+          4,
+          0,
+          2
+        ],
+        "Nevada": [
+          319,
+          5,
+          7,
+          3,
+          1
+        ],
+        "New Hampshire": [
+          319,
+          3,
+          3,
+          2,
+          2,
+          7
+        ],
+        "New Jersey": [
+          319,
+          4,
+          4,
+          2,
+          3,
+          1
+        ],
+        "New Mexico": [
+          319,
+          5,
+          5,
+          3,
+          2
+        ],
+        "New York": [
+          319,
+          5,
+          4,
+          3,
+          3,
+          1
+        ],
+        "North Carolina": [
+          319,
+          5,
+          5,
+          3,
+          3
+        ],
+        "North Dakota": [
+          319,
+          2,
+          4,
+          0,
+          2,
+          0,
+          2
+        ],
+        "Ohio": [
+          319,
+          5,
+          4,
+          4,
+          1,
+          2
+        ],
+        "Oklahoma": [
+          319,
+          4,
+          3,
+          3,
+          1,
+          7
+        ],
+        "Oregon": [
+          319,
+          5,
+          5,
+          3,
+          1
+        ],
+        "Pennsylvania": [
+          319,
+          4,
+          5,
+          2,
+          1,
+          2
+        ],
+        "Rhode Island": [
+          319,
+          4,
+          5,
+          3,
+          1,
+          4
+        ],
+        "South Carolina": [
+          319,
+          5,
+          6,
+          4,
+          0,
+          2
+        ],
+        "South Dakota": [
+          319,
+          5,
+          5,
+          3,
+          1,
+          1
+        ],
+        "Tennessee": [
+          319,
+          5,
+          4,
+          3,
+          2
+        ],
+        "Texas": [
+          319,
+          5,
+          4,
+          4,
+          2,
+          1
+        ],
+        "Utah": [
+          319,
+          4,
+          4,
+          3,
+          2,
+          3
+        ],
+        "Vermont": [
+          319,
+          5,
+          7,
+          3,
+          1
+        ],
+        "Virginia": [
+          319,
+          5,
+          4,
+          3,
+          3,
+          1
+        ],
+        "Washington": [
+          319,
+          5,
+          5,
+          5,
+          1
+        ],
+        "West Virginia": [
+          319,
+          5,
+          5,
+          5,
+          0,
+          1
+        ],
+        "Wisconsin": [
+          319,
+          5,
+          4,
+          4,
+          2
+        ],
+        "Wyoming": [
+          319,
+          1,
+          4,
+          1,
+          2,
+          2
+        ]
+      },
+      "city-pin": {
+        "Moscow": [
+          320,
+          1,
+          0,
+          0,
+          1,
+          3,
+          1
+        ],
+        "London": [
+          320,
+          5,
+          5,
+          5
+        ],
+        "Paris": [
+          320,
+          2,
+          1,
+          1,
+          2,
+          1
+        ],
+        "Madrid": [
+          320,
+          5,
+          6,
+          6
+        ],
+        "Berlin": [
+          320,
+          4,
+          3,
+          3,
+          1
+        ],
+        "Rome": [
+          320,
+          3,
+          3,
+          2,
+          1
+        ],
+        "Saint Petersburg": [
+          320,
+          2,
+          1,
+          0,
+          4,
+          0,
+          2
+        ],
+        "Barcelona": [
+          320,
+          3,
+          2,
+          2,
+          3,
+          1
+        ],
+        "Kyiv": [
+          320,
+          3,
+          2,
+          2,
+          2
+        ],
+        "Milan": [
+          320,
+          1,
+          0,
+          0,
+          4
+        ],
+        "Vienna": [
+          320,
+          4,
+          4,
+          4
+        ],
+        "Warsaw": [
+          320,
+          1,
+          0,
+          0,
+          5,
+          1
+        ],
+        "Budapest": [
+          320,
+          2,
+          1,
+          0,
+          3,
+          0,
+          2
+        ],
+        "Bucharest": [
+          320,
+          1,
+          5,
+          0,
+          0,
+          1,
+          1
+        ],
+        "Munich": [
+          320,
+          3,
+          2,
+          1,
+          2
+        ],
+        "Prague": [
+          320,
+          2,
+          1,
+          1,
+          0,
+          3
+        ],
+        "Amsterdam": [
+          320,
+          5,
+          5,
+          5,
+          1
+        ],
+        "Stockholm": [
+          320,
+          3,
+          3,
+          2,
+          1
+        ],
+        "Athens": [
+          320,
+          1,
+          0,
+          0,
+          1,
+          3
+        ],
+        "Lisbon": [
+          320,
+          1,
+          0,
+          0,
+          2,
+          3
+        ],
+        "Salvador": [
+          281,
+          1,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        "Guatemala City": [
+          305,
+          3,
+          2,
+          1,
+          3,
+          1
+        ],
+        "Rio de Janeiro": [
+          311,
+          2,
+          1,
+          1,
+          2
+        ],
+        "Dubai": [
+          318,
+          2,
+          1,
+          0,
+          3,
+          0,
+          2
+        ],
+        "Montreal": [
+          305,
+          3,
+          5,
+          2,
+          0,
+          1
+        ],
+        "Istanbul": [
+          318,
+          4,
+          3,
+          2,
+          2
+        ],
+        "Monterrey": [
+          313,
+          5,
+          6,
+          6,
+          0,
+          1
+        ],
+        "Medellín": [
+          281,
+          1,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        "Havana": [
+          305,
+          5,
+          5,
+          5
+        ],
+        "Dhaka": [
+          318,
+          2,
+          1,
+          1,
+          0,
+          3
+        ],
+        "Fortaleza": [
+          281,
+          1,
+          0,
+          0,
+          1
+        ],
+        "Lagos": [
+          316,
+          5,
+          6,
+          6
+        ],
+        "Christchurch": [
+          300,
+          1,
+          0,
+          0,
+          1,
+          1
+        ],
+        "Newcastle": [
+          281,
+          1,
+          0,
+          0,
+          1
+        ],
+        "Nouméa": [
+          313,
+          1,
+          1,
+          0,
+          1
+        ],
+        "Karachi": [
+          318,
+          2,
+          1,
+          0,
+          4,
+          1,
+          2
+        ],
+        "Riyadh": [
+          318,
+          5,
+          5,
+          5
+        ],
+        "Mexico City": [
+          305,
+          1,
+          0,
+          0,
+          2,
+          2
+        ],
+        "New York": [
+          305,
+          4,
+          4,
+          4
+        ],
+        "Los Angeles": [
+          311,
+          2,
+          1,
+          1,
+          2,
+          3
+        ],
+        "Toronto": [
+          313,
+          4,
+          3,
+          3,
+          3,
+          1
+        ],
+        "Chicago": [
+          313,
+          5,
+          5,
+          5,
+          2,
+          1
+        ],
+        "Houston": [
+          305,
+          3,
+          2,
+          2,
+          1,
+          1
+        ],
+        "Guadalajara": [
+          305,
+          1,
+          0,
+          0,
+          4
+        ],
+        "Washington, D.C.": [
+          305,
+          1,
+          0,
+          0,
+          2,
+          2
+        ],
+        "Phoenix": [
+          305,
+          2,
+          1,
+          1,
+          4
+        ],
+        "Santo Domingo": [
+          305,
+          4,
+          4,
+          4
+        ],
+        "Vancouver": [
+          313,
+          2,
+          1,
+          1,
+          3,
+          1
+        ],
+        "Miami": [
+          313,
+          2,
+          1,
+          0,
+          4,
+          0,
+          2
+        ],
+        "Dallas": [
+          311,
+          5,
+          6,
+          6
+        ],
+        "San Francisco": [
+          305,
+          1,
+          0,
+          0,
+          4
+        ],
+        "Panama City": [
+          305,
+          2,
+          1,
+          1,
+          2,
+          1
+        ],
+        "Seattle": [
+          307,
+          2,
+          1,
+          1,
+          3,
+          1
+        ],
+        "Tokyo": [
+          318,
+          4,
+          4,
+          4
+        ],
+        "Delhi": [
+          318,
+          3,
+          2,
+          2,
+          1
+        ],
+        "Shanghai": [
+          318,
+          4,
+          3,
+          3,
+          0,
+          1
+        ],
+        "Beijing": [
+          318,
+          2,
+          1,
+          1,
+          2,
+          1
+        ],
+        "Mumbai": [
+          318,
+          3,
+          2,
+          2,
+          1
+        ],
+        "Seoul": [
+          318,
+          3,
+          3,
+          2,
+          1
+        ],
+        "Jakarta": [
+          318,
+          4,
+          3,
+          3,
+          2
+        ],
+        "Manila": [
+          318,
+          3,
+          2,
+          2,
+          2
+        ],
+        "Bangkok": [
+          318,
+          4,
+          4,
+          4
+        ],
+        "Ho Chi Minh City": [
+          318,
+          2,
+          1,
+          1,
+          2,
+          1
+        ],
+        "Tehran": [
+          318,
+          2,
+          1,
+          0,
+          3,
+          1,
+          2
+        ],
+        "Kolkata": [
+          318,
+          1,
+          0,
+          0,
+          1,
+          2
+        ],
+        "Guangzhou": [
+          318,
+          4,
+          3,
+          3,
+          0,
+          1
+        ],
+        "Singapore": [
+          318,
+          4,
+          4,
+          4
+        ],
+        "Baghdad": [
+          318,
+          1,
+          0,
+          0,
+          3,
+          1
+        ],
+        "Cairo": [
+          316,
+          1,
+          0,
+          0,
+          3,
+          1
+        ],
+        "Kinshasa": [
+          316,
+          4,
+          3,
+          3,
+          1
+        ],
+        "Johannesburg": [
+          316,
+          1,
+          0,
+          0,
+          3
+        ],
+        "Luanda": [
+          316,
+          1,
+          0,
+          0,
+          2,
+          1
+        ],
+        "Dar es Salaam": [
+          316,
+          1,
+          0,
+          0,
+          3
+        ],
+        "Khartoum": [
+          316,
+          1,
+          0,
+          0,
+          1,
+          2
+        ],
+        "Abidjan": [
+          316,
+          2,
+          1,
+          1,
+          2
+        ],
+        "Alexandria": [
+          316,
+          3,
+          2,
+          2,
+          2
+        ],
+        "Nairobi": [
+          316,
+          1,
+          0,
+          0,
+          2,
+          2
+        ],
+        "Addis Ababa": [
+          316,
+          3,
+          2,
+          2,
+          2,
+          1
+        ],
+        "Casablanca": [
+          316,
+          3,
+          3,
+          3
+        ],
+        "Cape Town": [
+          316,
+          3,
+          3,
+          3
+        ],
+        "Accra": [
+          316,
+          1,
+          0,
+          0,
+          1,
+          2
+        ],
+        "Algiers": [
+          316,
+          3,
+          3,
+          3
+        ],
+        "Dakar": [
+          316,
+          1,
+          0,
+          0,
+          3,
+          1
+        ],
+        "Tripoli": [
+          316,
+          1,
+          0,
+          0,
+          4
+        ],
+        "Tunis": [
+          316,
+          3,
+          3,
+          3
+        ],
+        "Kampala": [
+          316,
+          3,
+          3,
+          3
+        ],
+        "Antananarivo": [
+          316,
+          2,
+          1,
+          1,
+          2
+        ],
+        "Manaus": [
+          300,
+          1,
+          0,
+          0,
+          1
+        ],
+        "Lima": [
+          311,
+          1,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        "Melbourne": [
+          313,
+          2,
+          2,
+          2
+        ],
+        "Canberra": [
+          307,
+          1,
+          0,
+          0,
+          2
+        ],
+        "Perth": [
+          307,
+          1,
+          1,
+          1
+        ],
+        "Adelaide": [
+          311,
+          1,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        "Brisbane": [
+          313,
+          2,
+          1,
+          1,
+          1
+        ],
+        "Dunedin": [
+          307,
+          1,
+          0,
+          0,
+          1
+        ],
+        "Darwin": [
+          307,
+          1,
+          1,
+          1
+        ],
+        "Asunción": [
+          307,
+          1,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        "Montevideo": [
+          311,
+          1,
+          0,
+          0,
+          1
+        ],
+        "Wellington": [
+          311,
+          1,
+          0,
+          0,
+          1
+        ],
+        "Townsville": [
+          313,
+          1,
+          0,
+          0,
+          1
+        ],
+        "Recife": [
+          313,
+          1,
+          0,
+          0,
+          0,
+          1,
+          1
+        ]
+      },
+      "province:china": {
+        "Xinjiang": [
+          315,
+          3,
+          3,
+          2,
+          2,
+          1
+        ],
+        "Tibet": [
+          315,
+          4,
+          3,
+          3,
+          2
+        ],
+        "Inner Mongolia": [
+          315,
+          4,
+          4,
+          3,
+          1,
+          1
+        ],
+        "Gansu": [
+          315,
+          5,
+          5,
+          5
+        ],
+        "Yunnan": [
+          316,
+          3,
+          4,
+          1,
+          1,
+          2
+        ],
+        "Heilongjiang": [
+          315,
+          4,
+          5,
+          3,
+          0,
+          1
+        ],
+        "Jilin": [
+          318,
+          3,
+          3,
+          2,
+          3,
+          1
+        ],
+        "Liaoning": [
+          315,
+          4,
+          4,
+          2,
+          1
+        ],
+        "Guangxi": [
+          315,
+          3,
+          2,
+          1,
+          3,
+          1
+        ],
+        "Hong Kong": [
+          315,
+          3,
+          4,
+          1,
+          1
+        ],
+        "Guangdong": [
+          318,
+          3,
+          3,
+          2,
+          3,
+          1
+        ],
+        "Hainan": [
+          315,
+          4,
+          3,
+          2,
+          1,
+          2
+        ],
+        "Fujian": [
+          315,
+          4,
+          3,
+          2,
+          2
+        ],
+        "Zhejiang": [
+          315,
+          4,
+          4,
+          3,
+          0,
+          2
+        ],
+        "Shanghai": [
+          319,
+          3,
+          6,
+          3,
+          1,
+          1
+        ],
+        "Jiangsu": [
+          315,
+          4,
+          3,
+          2,
+          2,
+          1
+        ],
+        "Shandong": [
+          315,
+          4,
+          3,
+          3,
+          2,
+          1
+        ],
+        "Hebei": [
+          315,
+          4,
+          4,
+          2,
+          1
+        ],
+        "Tianjin": [
+          315,
+          3,
+          3,
+          1,
+          1,
+          1
+        ],
+        "Macau": [
+          315,
+          5,
+          5,
+          5
+        ],
+        "Beijing": [
+          315,
+          4,
+          4,
+          2,
+          1
+        ],
+        "Sichuan": [
+          315,
+          3,
+          2,
+          1,
+          3
+        ],
+        "Chongqing": [
+          315,
+          4,
+          4,
+          3,
+          1
+        ],
+        "Guizhou": [
+          315,
+          4,
+          3,
+          3,
+          0,
+          2
+        ],
+        "Hunan": [
+          316,
+          3,
+          3,
+          1,
+          2,
+          1
+        ],
+        "Ningxia": [
+          315,
+          4,
+          4,
+          3,
+          1
+        ],
+        "Shaanxi": [
+          315,
+          5,
+          4,
+          4,
+          1
+        ],
+        "Qinghai": [
+          315,
+          5,
+          5,
+          5
+        ],
+        "Shanxi": [
+          315,
+          3,
+          3,
+          1,
+          2
+        ],
+        "Jiangxi": [
+          316,
+          3,
+          3,
+          1,
+          3
+        ],
+        "Henan": [
+          316,
+          3,
+          4,
+          1,
+          2
+        ],
+        "Hubei": [
+          315,
+          5,
+          5,
+          5
+        ],
+        "Anhui": [
+          316,
+          3,
+          4,
+          1,
+          1,
+          1
+        ]
+      },
+      "us-city": {
+        "New York": [
+          315,
+          2,
+          2,
+          1,
+          0,
+          1
+        ],
+        "Buffalo": [
+          315,
+          2,
+          2,
+          1,
+          1
+        ],
+        "Rochester": [
+          317,
+          2,
+          2,
+          0,
+          1,
+          0,
+          2
+        ],
+        "Syracuse": [
+          316,
+          3,
+          2,
+          2,
+          0,
+          1
+        ],
+        "Albany": [
+          319,
+          2,
+          1,
+          1,
+          1,
+          3
+        ],
+        "Yonkers": [
+          317,
+          2,
+          1,
+          1,
+          1,
+          2
+        ],
+        "Philadelphia": [
+          316,
+          3,
+          2,
+          2,
+          0,
+          1
+        ],
+        "Pittsburgh": [
+          318,
+          2,
+          1,
+          1,
+          2,
+          1
+        ],
+        "Allentown": [
+          317,
+          3,
+          2,
+          2,
+          1
+        ],
+        "Erie": [
+          319,
+          2,
+          2,
+          1,
+          1,
+          1
+        ],
+        "Reading": [
+          318,
+          2,
+          1,
+          1,
+          2,
+          1
+        ],
+        "Scranton": [
+          318,
+          3,
+          3,
+          3
+        ],
+        "Lancaster": [
+          316,
+          3,
+          2,
+          2,
+          0,
+          1
+        ],
+        "Harrisburg": [
+          315,
+          2,
+          1,
+          1,
+          1,
+          1
+        ],
+        "Boston": [
+          316,
+          3,
+          2,
+          2,
+          0,
+          1
+        ],
+        "Worcester": [
+          318,
+          3,
+          2,
+          2,
+          1
+        ],
+        "Springfield": [
+          318,
+          3,
+          3,
+          3
+        ],
+        "Cambridge": [
+          316,
+          2,
+          1,
+          1,
+          2
+        ],
+        "Lowell": [
+          316,
+          2,
+          2,
+          1,
+          1
+        ],
+        "New Bedford": [
+          318,
+          2,
+          1,
+          0,
+          2,
+          0,
+          2
+        ],
+        "Newark": [
+          319,
+          2,
+          1,
+          1,
+          0,
+          4
+        ],
+        "Jersey City": [
+          319,
+          2,
+          2,
+          1,
+          2
+        ],
+        "Paterson": [
+          319,
+          3,
+          2,
+          2,
+          0,
+          2
+        ],
+        "Elizabeth": [
+          316,
+          2,
+          1,
+          1,
+          1,
+          1
+        ],
+        "Trenton": [
+          318,
+          3,
+          2,
+          2,
+          1
+        ],
+        "Bridgeport": [
+          318,
+          3,
+          2,
+          2,
+          1
+        ],
+        "New Haven": [
+          318,
+          3,
+          2,
+          2,
+          1
+        ],
+        "Hartford": [
+          319,
+          2,
+          2,
+          0,
+          1,
+          0,
+          2
+        ],
+        "Stamford": [
+          319,
+          3,
+          3,
+          3
+        ],
+        "Waterbury": [
+          319,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1
+        ],
+        "Providence": [
+          315,
+          2,
+          1,
+          1,
+          1,
+          1
+        ],
+        "Warwick": [
+          317,
+          1,
+          1,
+          0,
+          2
+        ],
+        "Manchester": [
+          317,
+          2,
+          2,
+          1,
+          0,
+          1
+        ],
+        "Nashua": [
+          318,
+          2,
+          1,
+          1,
+          2
+        ],
+        "Concord": [
+          317,
+          1,
+          1,
+          0,
+          1,
+          1
+        ],
+        "Portland": [
+          317,
+          2,
+          1,
+          0,
+          1,
+          1,
+          2
+        ],
+        "Bangor": [
+          319,
+          2,
+          1,
+          0,
+          2,
+          0,
+          2
+        ],
+        "Augusta": [
+          319,
+          1,
+          1,
+          0,
+          0,
+          3,
+          1
+        ],
+        "Burlington": [
+          315,
+          2,
+          1,
+          1,
+          1,
+          1
+        ],
+        "Montpelier": [
+          319,
+          3,
+          2,
+          2,
+          1
+        ]
+      },
+      "province:india": {
+        "Ladakh": [
+          315,
+          3,
+          3,
+          2,
+          1,
+          1
+        ],
+        "Arunachal Pradesh": [
+          315,
+          3,
+          3,
+          2,
+          1,
+          1
+        ],
+        "Sikkim": [
+          317,
+          3,
+          2,
+          2,
+          3,
+          1
+        ],
+        "West Bengal": [
+          318,
+          4,
+          4,
+          3,
+          1
+        ],
+        "Assam": [
+          318,
+          4,
+          3,
+          3,
+          2
+        ],
+        "Uttarakhand": [
+          313,
+          4,
+          3,
+          3,
+          1
+        ],
+        "Nagaland": [
+          318,
+          4,
+          3,
+          3,
+          1,
+          1
+        ],
+        "Manipur": [
+          318,
+          3,
+          4,
+          2,
+          1,
+          1
+        ],
+        "Mizoram": [
+          317,
+          3,
+          3,
+          2,
+          1,
+          2
+        ],
+        "Tripura": [
+          313,
+          4,
+          4,
+          4
+        ],
+        "Meghalaya": [
+          319,
+          3,
+          2,
+          2,
+          2,
+          3
+        ],
+        "Punjab": [
+          317,
+          3,
+          2,
+          2,
+          3,
+          1
+        ],
+        "Rajasthan": [
+          315,
+          3,
+          3,
+          2,
+          1,
+          1
+        ],
+        "Gujarat": [
+          316,
+          3,
+          4,
+          1,
+          1
+        ],
+        "Himachal Pradesh": [
+          315,
+          3,
+          2,
+          1,
+          1,
+          2
+        ],
+        "Jammu and Kashmir": [
+          316,
+          3,
+          3,
+          2,
+          2
+        ],
+        "Bihar": [
+          319,
+          4,
+          3,
+          3,
+          2
+        ],
+        "Uttar Pradesh": [
+          313,
+          4,
+          4,
+          4
+        ],
+        "Andhra Pradesh": [
+          319,
+          4,
+          3,
+          3,
+          2
+        ],
+        "Odisha": [
+          319,
+          4,
+          4,
+          3,
+          1
+        ],
+        "Dadra and Nagar Haveli and Daman and Diu": [
+          315,
+          3,
+          2,
+          2,
+          2,
+          1
+        ],
+        "Maharashtra": [
+          316,
+          3,
+          4,
+          1,
+          1
+        ],
+        "Goa": [
+          318,
+          4,
+          3,
+          2,
+          2
+        ],
+        "Karnataka": [
+          315,
+          3,
+          2,
+          1,
+          3
+        ],
+        "Kerala": [
+          317,
+          3,
+          2,
+          1,
+          2,
+          2
+        ],
+        "Puducherry": [
+          318,
+          4,
+          3,
+          3,
+          1,
+          1
+        ],
+        "Tamil Nadu": [
+          319,
+          4,
+          3,
+          3,
+          2
+        ],
+        "Lakshadweep": [
+          317,
+          2,
+          3,
+          1,
+          3,
+          1
+        ],
+        "Andaman and Nicobar Islands": [
+          316,
+          3,
+          2,
+          1,
+          3
+        ],
+        "Jharkhand": [
+          317,
+          2,
+          1,
+          1,
+          3,
+          3
+        ],
+        "Delhi": [
+          316,
+          3,
+          2,
+          1,
+          3
+        ],
+        "Chandigarh": [
+          319,
+          2,
+          1,
+          0,
+          5,
+          1,
+          2
+        ],
+        "Madhya Pradesh": [
+          317,
+          3,
+          3,
+          2,
+          1,
+          2
+        ],
+        "Chhattisgarh": [
+          313,
+          4,
+          4,
+          4
+        ],
+        "Haryana": [
+          313,
+          4,
+          4,
+          4
+        ],
+        "Telangana": [
+          317,
+          3,
+          4,
+          1,
+          1
+        ]
+      },
+      "province:russia": {
+        "Pskov Oblast": [
+          318,
+          2,
+          1,
+          0,
+          2,
+          1,
+          2
+        ],
+        "Murmansk Oblast": [
+          315,
+          3,
+          2,
+          2,
+          1
+        ],
+        "Karelia": [
+          319,
+          1,
+          1,
+          0,
+          2,
+          2,
+          1
+        ],
+        "Leningrad Oblast": [
+          317,
+          2,
+          3,
+          1,
+          0,
+          1
+        ],
+        "Kaliningrad Oblast": [
+          319,
+          3,
+          2,
+          2,
+          1,
+          1
+        ],
+        "Smolensk Oblast": [
+          319,
+          1,
+          1,
+          0,
+          1,
+          2,
+          1
+        ],
+        "Bryansk Oblast": [
+          319,
+          1,
+          2,
+          0,
+          1,
+          1,
+          1
+        ],
+        "Kursk Oblast": [
+          316,
+          3,
+          2,
+          2,
+          1
+        ],
+        "Belgorod Oblast": [
+          317,
+          2,
+          1,
+          0,
+          1,
+          2,
+          2
+        ],
+        "Voronezh Oblast": [
+          316,
+          2,
+          2,
+          1,
+          0,
+          2
+        ],
+        "Nenets Okrug": [
+          319,
+          3,
+          3,
+          2,
+          0,
+          1
+        ],
+        "Saint Petersburg": [
+          319,
+          1,
+          0,
+          0,
+          2,
+          5
+        ],
+        "Arkhangelsk Oblast": [
+          317,
+          1,
+          1,
+          0,
+          2,
+          1
+        ],
+        "Lipetsk Oblast": [
+          318,
+          2,
+          2,
+          1,
+          1,
+          2
+        ],
+        "Tambov Oblast": [
+          319,
+          2,
+          3,
+          1,
+          0,
+          2
+        ],
+        "Oryol Oblast": [
+          319,
+          3,
+          2,
+          2,
+          1,
+          1
+        ],
+        "Kaluga Oblast": [
+          316,
+          2,
+          1,
+          1,
+          1,
+          2
+        ],
+        "Kostroma Oblast": [
+          319,
+          1,
+          0,
+          0,
+          3,
+          2
+        ],
+        "Yaroslavl Oblast": [
+          315,
+          2,
+          1,
+          1,
+          2
+        ],
+        "Vladimir Oblast": [
+          318,
+          2,
+          2,
+          1,
+          0,
+          3
+        ],
+        "Ryazan Oblast": [
+          318,
+          2,
+          3,
+          1,
+          0,
+          1
+        ],
+        "Ivanovo Oblast": [
+          315,
+          2,
+          1,
+          1,
+          1,
+          1
+        ],
+        "Tula Oblast": [
+          317,
+          2,
+          2,
+          1,
+          2
+        ],
+        "Vologda Oblast": [
+          319,
+          1,
+          1,
+          0,
+          1,
+          2,
+          1
+        ],
+        "Novgorod Oblast": [
+          318,
+          2,
+          1,
+          0,
+          2,
+          1,
+          2
+        ],
+        "Tver Oblast": [
+          317,
+          3,
+          2,
+          2,
+          0,
+          2
+        ],
+        "Moscow Oblast": [
+          319,
+          1,
+          0,
+          0,
+          4
+        ],
+        "Moscow": [
+          315,
+          2,
+          1,
+          1,
+          0,
+          3
+        ],
+        "Komi Republic": [
+          318,
+          3,
+          2,
+          2,
+          1
+        ]
+      }
+    },
+    "days": {
+      "251": [
+        1,
+        50,
+        28,
+        284
+      ],
+      "256": [
+        2,
+        36,
+        19,
+        243
+      ],
+      "258": [
+        2,
+        102,
+        38,
+        670
+      ],
+      "262": [
+        1,
+        39,
+        9,
+        258
+      ],
+      "263": [
+        2,
+        57,
+        38,
+        449
+      ],
+      "264": [
+        2,
+        52,
+        18,
+        314
+      ],
+      "265": [
+        2,
+        87,
+        54,
+        554
+      ],
+      "269": [
+        1,
+        39,
+        21,
+        177
+      ],
+      "270": [
+        2,
+        93,
+        54,
+        689
+      ],
+      "273": [
+        3,
+        118,
+        49,
+        845
+      ],
+      "274": [
+        2,
+        52,
+        37,
+        324
+      ],
+      "278": [
+        1,
+        184,
+        107,
+        1422
+      ],
+      "281": [
+        1,
+        20,
+        7,
+        145
+      ],
+      "282": [
+        3,
+        33,
+        25,
+        217
+      ],
+      "283": [
+        2,
+        67,
+        41,
+        414
+      ],
+      "285": [
+        1,
+        50,
+        23,
+        302
+      ],
+      "289": [
+        1,
+        33,
+        13,
+        259
+      ],
+      "291": [
+        2,
+        25,
+        11,
+        222
+      ],
+      "292": [
+        2,
+        45,
+        16,
+        226
+      ],
+      "293": [
+        3,
+        61,
+        25,
+        404
+      ],
+      "294": [
+        2,
+        55,
+        41,
+        434
+      ],
+      "295": [
+        3,
+        62,
+        51,
+        387
+      ],
+      "296": [
+        4,
+        64,
+        43,
+        426
+      ],
+      "297": [
+        4,
+        64,
+        46,
+        457
+      ],
+      "298": [
+        2,
+        44,
+        35,
+        233
+      ],
+      "299": [
+        4,
+        111,
+        53,
+        670
+      ],
+      "300": [
+        3,
+        75,
+        53,
+        606
+      ],
+      "301": [
+        4,
+        114,
+        68,
+        745
+      ],
+      "302": [
+        3,
+        75,
+        56,
+        454
+      ],
+      "303": [
+        1,
+        23,
+        16,
+        164
+      ],
+      "304": [
+        3,
+        124,
+        82,
+        925
+      ],
+      "305": [
+        4,
+        65,
+        29,
+        659
+      ],
+      "306": [
+        3,
+        97,
+        58,
+        814
+      ],
+      "307": [
+        3,
+        79,
+        58,
+        678
+      ],
+      "309": [
+        2,
+        89,
+        58,
+        577
+      ],
+      "310": [
+        3,
+        94,
+        70,
+        505
+      ],
+      "311": [
+        5,
+        136,
+        91,
+        969
+      ],
+      "312": [
+        4,
+        262,
+        186,
+        1703
+      ],
+      "313": [
+        4,
+        114,
+        85,
+        663
+      ],
+      "314": [
+        3,
+        78,
+        53,
+        495
+      ],
+      "315": [
+        4,
+        138,
+        107,
+        872
+      ],
+      "316": [
+        3,
+        75,
+        52,
+        468
+      ],
+      "317": [
+        4,
+        98,
+        67,
+        607
+      ],
+      "318": [
+        4,
+        98,
+        77,
+        604
+      ],
+      "319": [
+        5,
+        157,
+        125,
+        1060
+      ],
+      "320": [
+        3,
+        75,
+        64,
+        680
+      ]
+    },
+    "life": [
+      123,
+      3709,
+      2357,
+      25273,
+      46,
+      17,
+      320,
+      12
+    ]
+  },
+  "resetAt": 0
+}

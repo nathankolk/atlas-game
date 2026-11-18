@@ -218,7 +218,7 @@ never touch `atlas-records` or the focus list (as today) but do record mastery.
 - Commit your stage in the repo when it passes (one commit, imperative subject, body says what and why;
   the orchestrator pushes). End the commit message with exactly:
   ```
-  (attribution trailer supplied by the session)
+  Co-Authored-By: (redacted)
   Claude-Session: https://claude.ai/code/session_016wRonfzB1ykfySm71EK6kH
   ```
   Do not push, do not open a pull request, do not add planning documents to the repo.

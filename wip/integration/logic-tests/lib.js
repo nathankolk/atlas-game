@@ -87,11 +87,20 @@ function pageHelpers() {
   // Returns false if no wrong target exists.
   T.attempt = (right) => {
     const mode = st.gameMode;
-    if (mode === 'us-state-to-capital') {
+    if (mode === 'us-state-to-capital' || mode === 'capital-pick') {
+      const answer = mode === 'capital-pick' ? A.Quiz.capitalOf(A.WORLD_FACTS, st.current).capital : T.capitalOf(st.current);
       const btns = Array.from(document.querySelectorAll('#choices-panel .choice-btn'));
-      const capital = document.querySelector('#choices-panel .choice-btn') && btns.find(b => !b.disabled && (b.dataset.capital === T.capitalOf(st.current)) === right);
+      const capital = document.querySelector('#choices-panel .choice-btn') && btns.find(b => !b.disabled && (b.dataset.capital === answer) === right);
       if (!capital) return false;
       capital.click();
+      return true;
+    }
+    if (mode === 'name-it') {
+      // Typed into the field as a player would: a complete name is taken as it is typed, anything else on Enter
+      const name = right ? st.current : A.levelByKey(st.startArg).names().find(n => n !== st.current);
+      if (!name) return false;
+      T.typeAnswer(name);
+      if (!st.interactionLocked) document.getElementById('answer-form').requestSubmit();
       return true;
     }
     if (mode === 'us-city') {
@@ -108,6 +117,12 @@ function pageHelpers() {
     if (!key) return false;
     T.tapKey(key);
     return true;
+  };
+  // Puts text into Name It's field the way typing does (an input event), without pressing Enter
+  T.typeAnswer = (text) => {
+    const input = document.getElementById('answer-input');
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
   };
   T.capitalOf = (stateName) => {
     // The correct button is the one the game marks; find it through a throwaway reveal-free lookup:

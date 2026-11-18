@@ -1,0 +1,241 @@
+Zimbabwe: Botswana, Mozambique, South Africa, Zambia
+Zambia: Angola, Dem. Rep. Congo, Malawi, Mozambique, Namibia, Tanzania, Zimbabwe
+Yemen: Oman, Saudi Arabia
+Vietnam: Cambodia, China, Laos
+Venezuela: Brazil, Colombia, Guyana
+Vatican: Italy
+Vanuatu: 
+Uzbekistan: Afghanistan, Kazakhstan, Kyrgyzstan, Tajikistan, Turkmenistan
+Uruguay: Argentina, Brazil
+Micronesia: 
+Marshall Is.: 
+N. Mariana Is.: 
+U.S. Virgin Is.: 
+Guam: 
+American Samoa: 
+Puerto Rico: 
+United States of America: Canada, Mexico
+S. Geo. and the Is.: 
+Br. Indian Ocean Ter.: 
+Saint Helena: 
+Pitcairn Is.: 
+Anguilla: 
+Falkland Is.: 
+Cayman Is.: 
+Bermuda: 
+British Virgin Is.: 
+Turks and Caicos Is.: 
+Montserrat: 
+Jersey: 
+Guernsey: 
+Isle of Man: 
+United Kingdom: Ireland
+United Arab Emirates: Oman, Saudi Arabia
+Ukraine: Belarus, Hungary, Moldova, Poland, Romania, Russia, Slovakia
+Uganda: Dem. Rep. Congo, Kenya, Rwanda, S. Sudan, Tanzania
+Turkmenistan: Afghanistan, Iran, Kazakhstan, Uzbekistan
+Turkey: Armenia, Azerbaijan, Bulgaria, Georgia, Greece, Iran, Iraq, Syria
+Tunisia: Algeria, Libya
+Trinidad and Tobago: 
+Tonga: 
+Togo: Benin, Burkina Faso, Ghana
+Timor-Leste: Indonesia
+Thailand: Cambodia, Laos, Malaysia, Myanmar
+Tanzania: Burundi, Dem. Rep. Congo, Kenya, Malawi, Mozambique, Rwanda, Uganda, Zambia
+Tajikistan: Afghanistan, China, Kyrgyzstan, Uzbekistan
+Taiwan: 
+Syria: Iraq, Israel, Jordan, Lebanon, Turkey
+Switzerland: Austria, France, Germany, Italy, Liechtenstein
+Sweden: Finland, Norway
+eSwatini: Mozambique, South Africa
+Suriname: Brazil, France, Guyana
+S. Sudan: Central African Rep., Dem. Rep. Congo, Ethiopia, Kenya, Sudan, Uganda
+Sudan: Central African Rep., Chad, Egypt, Eritrea, Ethiopia, Libya, S. Sudan
+Sri Lanka: 
+Spain: Andorra, France, Portugal
+South Korea: North Korea
+South Africa: Botswana, Lesotho, Mozambique, Namibia, Zimbabwe, eSwatini
+Somalia: Ethiopia, Kenya, Somaliland
+Somaliland: Djibouti, Ethiopia, Somalia
+Solomon Is.: 
+Slovakia: Austria, Czechia, Hungary, Poland, Ukraine
+Slovenia: Austria, Croatia, Hungary, Italy
+Singapore: 
+Sierra Leone: Guinea, Liberia
+Seychelles: 
+Serbia: Bosnia and Herz., Bulgaria, Croatia, Hungary, Kosovo, Macedonia, Montenegro, Romania
+Senegal: Gambia, Guinea, Guinea-Bissau, Mali, Mauritania
+Saudi Arabia: Iraq, Jordan, Kuwait, Oman, Qatar, United Arab Emirates, Yemen
+São Tomé and Principe: 
+San Marino: Italy
+Samoa: 
+St. Vin. and Gren.: 
+Saint Lucia: 
+St. Kitts and Nevis: 
+Rwanda: Burundi, Dem. Rep. Congo, Tanzania, Uganda
+Russia: Azerbaijan, Belarus, China, Estonia, Finland, Georgia, Kazakhstan, Latvia, Lithuania, Mongolia, North Korea, Norway, Poland, Ukraine
+Romania: Bulgaria, Hungary, Moldova, Serbia, Ukraine
+Qatar: Saudi Arabia
+Portugal: Spain
+Poland: Belarus, Czechia, Germany, Lithuania, Russia, Slovakia, Ukraine
+Philippines: 
+Peru: Bolivia, Brazil, Chile, Colombia, Ecuador
+Paraguay: Argentina, Bolivia, Brazil
+Papua New Guinea: Indonesia
+Panama: Colombia, Costa Rica
+Palau: 
+Pakistan: Afghanistan, China, India, Iran, Siachen Glacier
+Oman: Saudi Arabia, United Arab Emirates, Yemen
+Norway: Finland, Russia, Sweden
+North Korea: China, Russia, South Korea
+Nigeria: Benin, Cameroon, Chad, Niger
+Niger: Algeria, Benin, Burkina Faso, Chad, Libya, Mali, Nigeria
+Nicaragua: Costa Rica, Honduras
+New Zealand: 
+Niue: 
+Cook Is.: 
+Netherlands: Belgium, Germany
+Aruba: 
+Curaçao: 
+Nepal: China, India
+Nauru: 
+Namibia: Angola, Botswana, South Africa, Zambia
+Mozambique: Malawi, South Africa, Tanzania, Zambia, Zimbabwe, eSwatini
+Morocco: Algeria, W. Sahara
+W. Sahara: Algeria, Mauritania, Morocco
+Montenegro: Albania, Bosnia and Herz., Croatia, Kosovo, Serbia
+Mongolia: China, Russia
+Moldova: Romania, Ukraine
+Monaco: France
+Mexico: Belize, Guatemala, United States of America
+Mauritius: 
+Mauritania: Algeria, Mali, Senegal, W. Sahara
+Malta: 
+Mali: Algeria, Burkina Faso, Côte d'Ivoire, Guinea, Mauritania, Niger, Senegal
+Maldives: 
+Malaysia: Brunei, Indonesia, Thailand
+Malawi: Mozambique, Tanzania, Zambia
+Madagascar: 
+Macedonia: Albania, Bulgaria, Greece, Kosovo, Serbia
+Luxembourg: Belgium, France, Germany
+Lithuania: Belarus, Latvia, Poland, Russia
+Liechtenstein: Austria, Switzerland
+Libya: Algeria, Chad, Egypt, Niger, Sudan, Tunisia
+Liberia: Côte d'Ivoire, Guinea, Sierra Leone
+Lesotho: South Africa
+Lebanon: Israel, Syria
+Latvia: Belarus, Estonia, Lithuania, Russia
+Laos: Cambodia, China, Myanmar, Thailand, Vietnam
+Kyrgyzstan: China, Kazakhstan, Tajikistan, Uzbekistan
+Kuwait: Iraq, Saudi Arabia
+Kosovo: Albania, Macedonia, Montenegro, Serbia
+Kiribati: 
+Kenya: Ethiopia, S. Sudan, Somalia, Tanzania, Uganda
+Kazakhstan: China, Kyrgyzstan, Russia, Turkmenistan, Uzbekistan
+Jordan: Iraq, Israel, Palestine, Saudi Arabia, Syria
+Japan: 
+Jamaica: 
+Italy: Austria, France, San Marino, Slovenia, Switzerland, Vatican
+Israel: Egypt, Jordan, Lebanon, Palestine, Syria
+Palestine: Egypt, Israel, Jordan
+Ireland: United Kingdom
+Iraq: Iran, Jordan, Kuwait, Saudi Arabia, Syria, Turkey
+Iran: Afghanistan, Armenia, Azerbaijan, Iraq, Pakistan, Turkey, Turkmenistan
+Indonesia: Malaysia, Papua New Guinea, Timor-Leste
+India: Bangladesh, Bhutan, China, Myanmar, Nepal, Pakistan, Siachen Glacier
+Iceland: 
+Hungary: Austria, Croatia, Romania, Serbia, Slovakia, Slovenia, Ukraine
+Honduras: El Salvador, Guatemala, Nicaragua
+Haiti: Dominican Rep.
+Guyana: Brazil, Suriname, Venezuela
+Guinea-Bissau: Guinea, Senegal
+Guinea: Côte d'Ivoire, Guinea-Bissau, Liberia, Mali, Senegal, Sierra Leone
+Guatemala: Belize, El Salvador, Honduras, Mexico
+Grenada: 
+Greece: Albania, Bulgaria, Macedonia, Turkey
+Ghana: Burkina Faso, Côte d'Ivoire, Togo
+Germany: Austria, Belgium, Czechia, Denmark, France, Luxembourg, Netherlands, Poland, Switzerland
+Georgia: Armenia, Azerbaijan, Russia, Turkey
+Gambia: Senegal
+Gabon: Cameroon, Congo, Eq. Guinea
+France: Andorra, Belgium, Brazil, Germany, Italy, Luxembourg, Monaco, Spain, Suriname, Switzerland
+St. Pierre and Miquelon: 
+Wallis and Futuna Is.: 
+St-Martin: Sint Maarten
+St-Barthélemy: 
+Fr. Polynesia: 
+New Caledonia: 
+Fr. S. Antarctic Lands: 
+Åland: 
+Finland: Norway, Russia, Sweden
+Fiji: 
+Ethiopia: Djibouti, Eritrea, Kenya, S. Sudan, Somalia, Somaliland, Sudan
+Estonia: Latvia, Russia
+Eritrea: Djibouti, Ethiopia, Sudan
+Eq. Guinea: Cameroon, Gabon
+El Salvador: Guatemala, Honduras
+Egypt: Israel, Libya, Palestine, Sudan
+Ecuador: Colombia, Peru
+Dominican Rep.: Haiti
+Dominica: 
+Djibouti: Eritrea, Ethiopia, Somaliland
+Greenland: 
+Faeroe Is.: 
+Denmark: Germany
+Czechia: Austria, Germany, Poland, Slovakia
+N. Cyprus: Cyprus
+Cyprus: N. Cyprus
+Cuba: 
+Croatia: Bosnia and Herz., Hungary, Montenegro, Serbia, Slovenia
+Côte d'Ivoire: Burkina Faso, Ghana, Guinea, Liberia, Mali
+Costa Rica: Nicaragua, Panama
+Dem. Rep. Congo: Angola, Burundi, Central African Rep., Congo, Rwanda, S. Sudan, Tanzania, Uganda, Zambia
+Congo: Angola, Cameroon, Central African Rep., Dem. Rep. Congo, Gabon
+Comoros: 
+Colombia: Brazil, Ecuador, Panama, Peru, Venezuela
+China: Afghanistan, Bhutan, Hong Kong, India, Kazakhstan, Kyrgyzstan, Laos, Macao, Mongolia, Myanmar, Nepal, North Korea, Pakistan, Russia, Siachen Glacier, Tajikistan, Vietnam
+Macao: China
+Hong Kong: China
+Chile: Argentina, Bolivia, Peru
+Chad: Cameroon, Central African Rep., Libya, Niger, Nigeria, Sudan
+Central African Rep.: Cameroon, Chad, Congo, Dem. Rep. Congo, S. Sudan, Sudan
+Cabo Verde: 
+Canada: United States of America
+Cameroon: Central African Rep., Chad, Congo, Eq. Guinea, Gabon, Nigeria
+Cambodia: Laos, Thailand, Vietnam
+Myanmar: Bangladesh, China, India, Laos, Thailand
+Burundi: Dem. Rep. Congo, Rwanda, Tanzania
+Burkina Faso: Benin, Côte d'Ivoire, Ghana, Mali, Niger, Togo
+Bulgaria: Greece, Macedonia, Romania, Serbia, Turkey
+Brunei: Malaysia
+Brazil: Argentina, Bolivia, Colombia, France, Guyana, Paraguay, Peru, Suriname, Uruguay, Venezuela
+Botswana: Namibia, South Africa, Zimbabwe
+Bosnia and Herz.: Croatia, Montenegro, Serbia
+Bolivia: Argentina, Brazil, Chile, Paraguay, Peru
+Bhutan: China, India
+Benin: Burkina Faso, Niger, Nigeria, Togo
+Belize: Guatemala, Mexico
+Belgium: France, Germany, Luxembourg, Netherlands
+Belarus: Latvia, Lithuania, Poland, Russia, Ukraine
+Barbados: 
+Bangladesh: India, Myanmar
+Bahrain: 
+Bahamas: 
+Azerbaijan: Armenia, Georgia, Iran, Russia, Turkey
+Austria: Czechia, Germany, Hungary, Italy, Liechtenstein, Slovakia, Slovenia, Switzerland
+Australia: 
+Indian Ocean Ter.: 
+Heard I. and McDonald Is.: 
+Norfolk Island: 
+Ashmore and Cartier Is.: 
+Armenia: Azerbaijan, Georgia, Iran, Turkey
+Argentina: Bolivia, Brazil, Chile, Paraguay, Uruguay
+Antigua and Barb.: 
+Angola: Congo, Dem. Rep. Congo, Namibia, Zambia
+Andorra: France, Spain
+Algeria: Libya, Mali, Mauritania, Morocco, Niger, Tunisia, W. Sahara
+Albania: Greece, Kosovo, Macedonia, Montenegro
+Afghanistan: China, Iran, Pakistan, Tajikistan, Turkmenistan, Uzbekistan
+Siachen Glacier: China, India, Pakistan
+Antarctica: 
+Sint Maarten: St-Martin

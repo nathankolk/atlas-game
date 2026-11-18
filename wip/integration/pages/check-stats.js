@@ -49,7 +49,9 @@ const checks = {
           total: tb.querySelector('.mtable-group .mtable-total').textContent,
           levels: Array.from(tb.querySelectorAll('.mtable-level')).map(r => ({ name: r.querySelector('th').textContent, n: cells(r), total: r.querySelector('.mtable-total').textContent })) };
       });
-      const levelSums = A.LEVELS.filter(l => l.available).map(l => { const s = m.summary(l.skill, l.names()); return { title: l.title, n: [s.mastered, s.familiar, s.learning, s.new], total: s.total }; });
+      // A level of a collection with two sets (Capitals) is listed with its set: "Europe · Find the country"
+      const fullTitle = l => { const c = A.COLLECTIONS.find(x => x.key === l.collection); const v = l.variant && c.variants.find(x => x.key === l.variant); return v ? l.title + ' · ' + v.label : l.title; };
+      const levelSums = A.LEVELS.filter(l => l.available).map(l => { const s = m.summary(l.skill, l.names()); return { title: fullTitle(l), n: [s.mastered, s.familiar, s.learning, s.new], total: s.total }; });
       const records = JSON.parse(localStorage.getItem('atlas-records'));
       const pin = JSON.parse(localStorage.getItem('atlas-pin'));
       return {
@@ -88,7 +90,7 @@ const checks = {
       eq(rows[i].name + ' ' + rows[i].n.join(','), want.title + ' ' + want.n.join(','), 'mastery row ' + want.title);
       eq(num(rows[i].total), want.total, 'total for ' + want.title);
     });
-    eq(got.groups.length, 4, 'four collections');
+    eq(got.groups.length, 7, 'seven collections');
     eq(got.groups.reduce((n, g) => n + g.group[0], 0), got.mastered, 'collection rows add up to the headline figure');
 
     // Records: one row per stored key (all of the seed's keys belong to playable levels or the Daily Five)
@@ -211,7 +213,7 @@ const checks = {
     eq(got.kpis.join(''), '—————', 'five dashes, not zeros');
     eq(got.empties.length, 4, 'needs work, Daily Five, Pin the City and records each say they are empty: ' + got.empties.join(' | '));
     ok(/Nothing has been played/.test(got.lead), 'the page says why it is empty');
-    eq(got.mrows, 24, 'the mastery table still lists every level');
+    eq(got.mrows, 52, 'the mastery table still lists every level');
     eq(got.cal, 84, 'the calendar is drawn empty');
     ok(!got.storage.some(k => /atlas-(records|focus|pin|learn|daily|mastery)/.test(k)), 'looking at Stats wrote no progress: ' + got.storage.join(','));
     await h.page.locator('#stats-content [data-action="play-daily"]').click();

@@ -620,7 +620,9 @@ Later the same day (commit 6aaeacb, pushed; one small edit after it: the unknown
 
 ## Stage: Explore view, and Learn for more levels
 
-Status: IN PROGRESS (started 2026-11-17 16:40 UTC from 4bf934c, tree clean, nothing of this stage existed).
+Status: DONE. Built 2026-11-17 16:40–17:16 UTC from 4bf934c (commits 1628408, 8a4be64, e97df55, fd779a9, all pushed).
+The first agent was stopped during its last suite run; a second agent finished that run at 21:15 UTC and wrote the
+final state below. The second agent changed nothing in the repo: public/index.html is byte for byte fd779a9's.
 Working files: `$S/work/integration/explore/` (nb-raw.js = neighbours straight from the topology, check-explore.js =
 this stage's suite, shoot-explore.js = screenshots). Screenshots: `$S/shots/app/explore/`.
 
@@ -638,9 +640,8 @@ this stage's suite, shoot-explore.js = screenshots). Screenshots: `$S/shots/app/
   this atlas are left out, except the five European microstates (Andorra, Liechtenstein, Monaco, San Marino,
   Vatican City), shown as plain chips so that France or Italy's list is complete.
 
-### State at 18:25 UTC (commits 1628408 Learn, 8a4be64 + e97df55 + fd779a9 Explore; all pushed, tree clean)
-DONE in public/index.html and verified by `explore/check-explore.js` (desktop 185+ and --mobile 185 on e97df55; the
-groups touched since were re-run):
+### What was built (commits 1628408 Learn; 8a4be64, e97df55, fd779a9 Explore)
+In public/index.html, verified by `explore/check-explore.js` (192 desktop, 192 phone on the final tree):
 - **Learn widened**: `LEVELS[].learn` (true for the six continents, `us-state`, the province levels); the sheet, the
   Home card ("Learning · level n of N"), `linkedLevel()` (`&learn=1`) and `startGame` all read it. Ladder key =
   `level.key` (`state.learn.levelKey`; was `roundKey`). `learnAnchor(feature)` / `anchorInBox(feature, box)`: on a
@@ -669,8 +670,6 @@ groups touched since were re-run):
   `explore-search-clear`, `explore-zoom`, `explore-map-style`. Hook: `window.__atlas.explore`, `.selectCountry`,
   `.searchCountries`.
 - CLAUDE.md: Explore paragraph, Learn paragraph rewritten, `&learn=1`.
-REMAINING: full suite chain on the final tree (`explore/run-suites.sh` -> `explore/suites.log`), fix what it
-finds (expected: check-shell / check-stats may count nav links or panels), final screenshots looked at, report.
 
 ### Traps and notes for successors
 - Never call `frameMap()` / `applyMapStyle()` for a round while `explore.on` is true: they would measure and style
@@ -682,9 +681,111 @@ finds (expected: check-shell / check-stats may count nav links or panels), final
 - Test tools: `explore/check-explore.js [--mobile] [--only=nav,neighbours,select,search,colour,satellite,keys,
   roundtrip,links,stats,learn,nogl]`, `explore/shoot-explore.js [--mobile] [--dark] [--size=WxH] [--only=explore,
   search,colour,satellite,stats,link,sizes,learn,learnsheet]`, `explore/nb-raw.js` (topology neighbours, raw names),
-  `explore/run-suites.sh` (every suite; writes explore/suites.log and explore/suites/*.log).
+  `explore/run-suites.sh` (every suite; writes explore/suites.log and explore/suites/*.log), `explore/run-rest.sh`
+  (the suites the stopped run had not finished; writes explore/rest.log and explore/suites-rest/*.log).
+
+### Final state of this stage
+Every suite passes on the final tree (public/index.html sha1 a3744e01…, the file of fd779a9; HEAD 1330e48 adds only
+wip/ snapshots). Two runs make up the record, both on that same file:
+- Run of 17:19–17:58 UTC (`explore/suites.log`), suites not touched since: stats 168 desktop / 170 phone, settings
+  93 / 93, globe 123 / 121, modes 163 / 170, smoke desktop 13.
+- Run of 20:44–21:15 UTC (`explore/rest.log`): shell 246 desktop / 242 phone, game 110 desktop / 115 phone, edges 37,
+  smoke phone 13, explore 192 / 192, logic: syntax ok, the five paste checks (mastery, globe, quiz, world facts, flag
+  font), t1 38, t2 46, t3 40, t4 67, t5 4, t6 7, t7 (records function) passed, v-b4-learn 10.
+Expectations that were out of date with an intended change, corrected in the suites (the app was not changed for
+any of them, and no check was weakened):
+- `shell/check-shell.js` (before: `check-shell.before-explore.js`): a new continent level's sheet offers Play and
+  Learn (was Play only); Africa with a focus list offers Play, Focus Practice and Learn.
+- `game/check-game.js` (phone HUD layout) and `globe-stage/check-edges.js`: `.mapctl` became ambiguous once Explore
+  had its own map controls; both now read `#game-screen .mapctl`.
+- `logic-tests/t3-links-b4-d6.js` (before: `t3-links-b4-d6.before-explore.js`): `?play=europe&learn=1` used to be the
+  case of a level without Learn; it now opens Europe's ladder, so the test asserts that, and uses
+  `?play=world&learn=1` for the level without one (a plain round of 184). It had timed out waiting for a question.
+Screenshots (`$S/shots/app/explore/`, 120 files, desktop and phone, both themes; 113 taken by the first agent between
+16:47 and 17:17 UTC, so the desktop light colour, satellite and search shots predate e97df55 and fd779a9; the seven
+dark phone shots of search, the Stats link and the Japan link were missing and were taken at 21:13 UTC). The second
+agent opened fifteen and changed nothing: Explore open (desktop light), France (desktop light: ten borders with
+Brazil and Suriname, Andorra and Monaco named below the chips), Barbados (phone light: "No land borders."), Germany
+(phone dark), colour by Capital (desktop dark and light, legend counts), satellite coloured with Egypt selected
+(phone light, Esri credit showing), search results (phone light), the Stats chips (phone light), Learn study for
+Europe (desktop dark) and Africa (phone light), Learn quiz for Europe (phone dark), and in dark on a phone the
+alias search ("holl" finds Netherlands), Explore as the Stats link opens it, and `#explore=japan` for a new player.
+One thing seen and left for the polish stage: on a phone the search list drops over the Colour by panel, and a
+one-result list ends halfway down it, across the top of the segmented control. It is a list over the panel (the
+panel is not broken and comes back when the list closes), but it looks untidy.
+Neighbours: the suite's hand-checked table (24 countries with borders, 13 islands, and the full list of 28 with no
+land border) was read through again by the second agent, from its own knowledge of the borders, not against a
+printed atlas; no disagreement.
+
+Not done / not verified:
+- Real Esri imagery, the live site, Safari, Firefox and real touch devices: not reachable here. Satellite in
+  Explore was only seen over the harness's stand-in tiles.
+- The place card as a live region was checked by its attributes in the suite, not with a screen reader.
+- Not every screenshot was opened by the second agent (15 of 120); the landscape-phone and 800x700 shots, the
+  States ladder and most colour-by settings were not opened again.
+- Stats, settings, globe, modes and desktop smoke were not re-run after 17:58 UTC; they passed on the same file.
+- Learn study on a phone turns the globe to the newest name, so on a long ladder (Africa, level 22) earlier names
+  can be off screen until the player drags; this is how the province ladders already behaved.
+- `state.learn`'s comment in the state object still says "province ladder" (index.html, `learn: null`); it is
+  the Learn run for any level with a ladder. Left for the polish stage rather than change the file after the run.
+- atlas_handoff.md does not describe Explore or the wider Learn; CLAUDE.md does.
 
 Orchestrator note, 2026-11-17 18:00 UTC: the pipeline was stopped at the owner's request (they need the rest of
 this usage window) while the Explore stage was on its final suite run; tree clean at 245bb57, Explore's code is
 fd779a9. What is left of the stage is in the resume note (`$S/resume-note-explore.txt`); a resume is scheduled
 for 20:41 UTC with `atlas-learning-resume.js` (quiz and modes pinned, Explore to finish, then Polish).
+
+
+## Stage: performance, accessibility, polish, housekeeping, docs
+
+Status: IN PROGRESS (started 2026-11-17 21:15 UTC from 1330e48, tree clean, nothing of this stage existed).
+Working files: `$S/work/integration/polish/`. Screenshots: `$S/shots/app/polish/`.
+
+### Plan (commit + push after each)
+1. Orchestrator defects: phone continent frame (fit width), Night Chart land vs dim, start-to-first-question
+   (prebuild the map on Home / sheet), landscape-phone prompt card, Pin after-drop centring.
+2. Performance: measure old vs new (bytes, requests, first screen, start→question, frame cost, memory); fix.
+3. Accessibility: focus rings, focus traps, live region, reduced motion, contrast.
+4. Visual sweep at five sizes, both themes.
+5. Housekeeping: dead code, vendor README, tools/tests/ (modules tested out of index.html).
+6. Docs: CLAUDE.md, atlas_handoff.md.
+
+### State at 22:25 UTC (commits 287b894, 23f7e36, both pushed; the full suite chain is running on 23f7e36)
+DONE in the repo (each verified as noted):
+- Performance: `listedOnce()` memo for `countryNames` / `quizNames` (Home's draw 230 ms -> 30 ms); capital-find `asks`
+  no longer calls `Quiz.capitalPrompt`; `<link rel=preload>` for the 50m world; `initGlobe()` deferred until Home has
+  painted (rAF + timeout; `startGame` and `renderExplore` make the globe themselves if it is not there yet);
+  `startGame` sets `body[data-screen=game]` before `frameMap()` so the canvases are sized once, and the first prompt
+  goes up in a 0 ms round timer (was 80 ms, with a second `frameMap`); `prepareLevelMap(level)` (from
+  `openLevelSheet`) fetches a level's map and builds it (`syncMapLayers(country)`) unless Explore has the globe;
+  US states are TopoJSON (`public/data/us-states.json`, object `states`; `state.usBorders`); the daily countdown
+  ticks only for `.screen.active [data-countdown]` and `switchScreen` restarts it.
+  Numbers (stock harness flags, fonts answered from memory, medians of 3-5): Home usable 516 -> 208 ms desktop,
+  646 -> 240 ms phone (old app 200); Start -> first question Europe 172 -> 65 ms, States 304 -> 67, India 233 -> 93,
+  Europe on satellite 302 -> 94 (old app: Europe 479, States 668); level link 832 -> 718 (old 600). Heap 11 MB on
+  Home, 17.7 MB after ten rounds, 17.9 after twenty; listeners constant. Tools: `polish/perf.js`, `profile.js`,
+  `timeline.js`, `sizes.js`, `cls.js`; raw numbers `polish/perf-results*.jsonl`.
+- Frames: `TALL_FRAMES` (places that bound Europe, Africa, North America) + `balancedCentre()` for a stage taller
+  than wide; short wide windows put the prompt card at the left (CSS block `(max-height: 520px) and (min-width: 600px)`,
+  `stageClearArea` `cardAtSide`, `placeGlobeHost` shifts the host sideways too). Pin the City's opening frame was
+  measured, not changed: its twenty cities sit inside the clear area (the card only covers land with no city).
+- Tokens: `--g-dim` (both themes; dark land `#485a73` vs dim `#223c56`), `--focus-color`, `--control-border`,
+  map marks re-toned so found / second / missed differ in lightness. `polish/contrast.js` measures every pair.
+- A11y: results summary takes focus (`#results-summary` tabindex -1), Escape leaves results, transparent outline
+  under the focus shadow, Explore search box ring.
+- Explore phone: `.is-searching` hides the Colour by panel under the list; `.has-sheet` + `(max-height: 780px)`
+  hides it while a country's sheet is open; sheet max-height 44%.
+- Stats: `.recs` rows replace the records table below 900px. `.view { scrollbar-gutter: stable }`.
+- Housekeeping: `tools/tests/` (extract.js, run.js, mastery/quiz/world-facts/globe tests, fixtures, globe harness
+  + pages) — all pass from the repo (709, 180, 44, world facts OK, globe 291/291); `public/vendor/README.md`;
+  unused tokens and classes removed; module banners reworded (the QUIZ banner line changed, so the scratch
+  `check-quiz-paste.js` is retired: `logic-tests/run-all.sh` runs `tools/tests/run.js --quick` instead; the copy
+  from before is `run-all.before-polish.sh`).
+- Suite of this stage: `polish/check-polish.js` (groups contrast, perf, frames, a11y, explore), runner
+  `polish/run-suites.sh [names]` (two lanes; `polish/suites.log`). Sweep: `polish/sweep.sh` + `shot.js --audit`.
+REMAINING: read the suite results and fix or adapt; docs (CLAUDE.md, atlas_handoff.md); final measurements table;
+final commit + push; report.
+
+Orchestrator note, 2026-11-17 22:49 UTC: with a usage limit close, the orchestrator committed the docs as they stood
+(a commit titled "Checkpoint: CLAUDE.md and the handoff rewritten for the new app, in progress") and pushed. The
+polish stage may amend the two files further in a commit of its own; check git log before assuming they are uncommitted.

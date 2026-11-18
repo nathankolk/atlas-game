@@ -189,7 +189,8 @@ groups.view = async () => {
   await start(page, 'Europe');
   await page.waitForTimeout(300);
   const s0 = await st(page);
-  r.check('view: the round opens on its frame', Math.abs(s0.view.lon - 10) < 3 && s0.view.lat > 45 && s0.view.lat < 62 && Math.abs(s0.view.k - s0.home.k) < 1e-6, s0.view);
+  // (a phone held upright opens on the places that bound Europe's countries, balanced as drawn: a little east of the box's middle)
+  r.check('view: the round opens on its frame', Math.abs(s0.view.lon - 10) < (mobile ? 5 : 3) && s0.view.lat > 45 && s0.view.lat < 62 && Math.abs(s0.view.k - s0.home.k) < 1e-6, s0.view);
   await page.evaluate(() => { document.documentElement.dataset.motion = 'reduce'; });
   await page.keyboard.press('+');
   let s = await st(page);
@@ -213,7 +214,11 @@ groups.view = async () => {
   // The frame sits inside what the HUD leaves clear
   const fit = await page.evaluate(() => {
     const A = window.__atlas, g = A.globe, c = A.map.clear;
-    const corners = [[-25, 34], [45, 34], [-25, 72], [45, 72], [10, 34], [10, 72]].map(ll => g.project(ll));
+    // A wide stage holds the continent's whole box; a tall one (a phone held upright) the places that bound its
+    // countries: Iceland's west, Ireland's west, Lisbon's coast, Malta, Crete, Rhodes, Ukraine's east, the North Cape
+    const tall = c.right - c.left < c.bottom - c.top;
+    const corners = (tall ? [[-24.5, 65.5], [-10.5, 52], [-9.6, 38.7], [14.4, 35.8], [24, 34.8], [28.3, 36], [40.3, 48.5], [26, 71.2]]
+      : [[-25, 34], [45, 34], [-25, 72], [45, 72], [10, 34], [10, 72]]).map(ll => g.project(ll));
     return { inside: corners.every(p => p.x >= c.left - 1 && p.x <= c.right + 1 && p.y >= c.top - 1 && p.y <= c.bottom + 1), corners: corners.map(p => [Math.round(p.x), Math.round(p.y)]), clear: c };
   });
   r.check('view: Europe\'s frame fits what the HUD leaves clear', fit.inside, fit);

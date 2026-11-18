@@ -1,0 +1,75 @@
+SELF
+  1186.7  (idle) :-1
+   680.6  (program) :-1
+   115.7  fold :12835
+    63.0  resize :11454
+    47.2  (garbage collector) :-1
+    32.1  loadPolygon :8977
+    31.2  addLine :9311
+    24.4  (anon) earcut.min.js:0
+    17.7  buildFeature :9439
+    17.6  (anon) topojson-client.min.js:1
+    14.7  renderMasthead :4544
+    14.4  grown :8889
+    14.1  capitalOwners :13172
+    13.8  tessellate :9238
+    13.5  (anon) :13189
+    11.6  capitalPrompt :13185
+    10.6  createGLRenderer :9796
+    10.5  (anon) :9809
+    10.0  O earcut.min.js:0
+     8.0  trimmed :10824
+     6.7  (anon) :4111
+     6.6  r earcut.min.js:0
+     6.4  edgeMidpoint :9224
+     5.8  (anon) :1
+     5.7  attachTo :11883
+     5.5  capitalOf :13157
+     5.4  upload :9887
+     5.1  edgeTooLong :9215
+INCLUSIVE
+  2506.5  (root)
+  1186.7  (idle)
+   680.6  (program)
+   346.1  init
+   231.6  refreshView
+   230.7  renderHome
+   206.4  runBuild
+   204.8  names
+   202.8  quizNames
+   200.5  skillSummaries
+   194.7  asks
+   193.8  buildSome
+   191.7  capitalPrompt
+   137.4  buildLayerFeature
+   136.7  buildFeature
+   132.6  fold
+   130.3  renderMasthead
+   113.7  initGlobe
+    99.8  create
+    96.9  renderCollections
+    91.0  capitalOwners
+    86.4  tessellate
+    70.6  attachTo
+    64.9  resize
+    48.7  r
+    47.2  (garbage collector)
+    40.6  addLine
+    38.0  O
+    34.0  loadWorldFeatures
+    32.1  loadPolygon
+    26.0  createGLRenderer
+    23.0  c
+    17.5  e.mesh
+    14.5  capitalOf
+    14.4  grown
+    12.9  i
+    12.8  compile
+    12.8  syncMapLayers
+    11.7  setLayers
+    11.1  commitLayers
+    10.1  e
+    10.1  uploadLayer
+     9.7  e.feature
+     9.3  fact
+     8.9  a

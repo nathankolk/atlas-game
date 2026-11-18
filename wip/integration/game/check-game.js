@@ -172,7 +172,7 @@ groups.capitals = async () => {
   r.eq('capitals: marks by outcome', await page.evaluate(() => { const m = window.__t.marks(); return [m.found, m.second, m.missed]; }), [1, 1, 1]);
 
   await start(page, 'us-capital-to-state');
-  r.eq('capitals → states: prompt label, no choices', [await text(page, '#prompt-label'), await page.evaluate(() => document.getElementById('choices-panel').hidden)], ['Find the state with this capital', true]);
+  r.eq('capitals → states: prompt label, no choices', [await text(page, '#prompt-label'), await page.evaluate(() => document.getElementById('choices-panel').hidden)], ['Which state’s capital is', true]);
   await start(page, 'northeast-cities');
   r.eq('cities: prompt label', await text(page, '#prompt-label'), 'Find the city');
   r.check('cities: the prompt names the state too', /, [A-Z]/.test(await text(page, '#prompt-country')), await text(page, '#prompt-country'));

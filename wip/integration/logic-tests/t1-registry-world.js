@@ -24,8 +24,11 @@ const EXPECTED_SLUGS = ['world', 'daily', 'africa', 'asia', 'europe', 'north-ame
       };
     });
     r.eq('hook version', reg.version, 2);
-    r.eq('27 levels', reg.keys.length, 27);
-    r.eq('every old slug is a level key (plus daily)', EXPECTED_SLUGS.filter(s => s !== 'daily').sort(), reg.keys.slice().sort());
+    r.eq('55 levels', reg.keys.length, 55);
+    // The 27 levels from before the country quizzes keep their slugs; the 28 quiz levels are checked in modes/check-modes.js
+    const QUIZ_KEY = /^(capitals|flags|name)-/;
+    r.eq('every old slug is a level key (plus daily)', EXPECTED_SLUGS.filter(s => s !== 'daily').sort(), reg.keys.filter(k => !QUIZ_KEY.test(k)).sort());
+    r.eq('28 country quiz levels beside them', reg.keys.filter(k => QUIZ_KEY.test(k)).length, 28);
     r.check('level keys are unique', new Set(reg.keys).size === reg.keys.length);
     r.check('every level has the same fields', new Set(reg.fields).size === 1, reg.fields[0]);
     r.eq('levelByKey', [reg.byKey, reg.none], ['china-provinces', null]);

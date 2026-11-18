@@ -129,7 +129,9 @@ groups.resize = async () => {
   await page.screenshot({ path: path.join(SHOTS, 'm4-rotated-m.png') });
   r.eq('resize: turned on its side mid-round, the phone keeps the marks, the score and the question', [side.marks, side.score, side.current], [before.marks, before.score, before.current]);
   r.check('resize: the globe fills the new shape and the untouched view is fitted again, every country in the clear area',
-    side.canvas[0] === side.host[0] && side.host[0] === 844 && side.atHome && side.inClear && Math.abs(side.view.k - before.view.k) > 0.01, side);
+    // (on its side the prompt card stands at the left and the host reaches past the stage's right edge, so that
+    // the globe's middle is the middle of what is beside the card)
+    side.canvas[0] === side.host[0] && side.host[0] >= 844 && side.atHome && side.inClear && Math.abs(side.view.k - before.view.k) > 0.01, side);
   await lib.answer(page, 'first');
   r.eq('resize: play goes on in the new shape', (await snap()).marks.found, before.marks.found + 1);
   await goHome();

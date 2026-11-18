@@ -8,7 +8,7 @@ const files = [
   ['/home/user/atlas-game/public/data/countries-50m.json', 'topo'],
   [S + '/vendor/node_modules/world-atlas/countries-50m.json', 'topo'],
   [S + '/vendor/node_modules/world-atlas/countries-110m.json', 'topo'],
-  ['/home/user/atlas-game/public/data/us-states-detail.json', 'auto'],
+  ['/home/user/atlas-game/public/data/us-states.json', 'auto'],
   [S + '/vendor/node_modules/us-atlas/states-10m.json', 'topo'],
   ['/home/user/atlas-game/public/data/provinces-canada.json', 'topo'],
   ['/home/user/atlas-game/public/data/provinces-china.json', 'topo'],

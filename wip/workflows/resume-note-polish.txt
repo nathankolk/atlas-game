@@ -1,0 +1,24 @@
+The stage's work is committed and pushed: 287b894 (speed, framing, US states as TopoJSON), 23f7e36
+(accessibility and polish), 2e19ffc (the orchestrator's checkpoint of the docs) and c15645d (docs, a prompt
+label). The tree was clean at c15645d, equal to origin, when the attempt was cut off by the usage limit at
+23:14 UTC on 2026-11-17, during its final run of every suite on c15645d. BUILD NOTHING NEW: what is left is to
+close the stage.
+That run's results are in polish/suites.log and polish/suites/*.log. Passed on c15645d: polish 112, explore
+192 desktop / 192 phone, shell 246 / 242, stats 168 / 170, settings 93 / 93, game 110 / 115, globe phone 121,
+modes phone 170. FAILED: globe-desktop, 2 of 123:
+ (1) "input: the cursor is a hand over a place that can be picked": got "", want "pointer";
+ (2) "imagery (normal, russia-west, learn): tiles arrive and the note stops saying Loading": the note still
+     said Loading with 160 tiles in.
+Not finished when cut off: modes-desktop, smoke-desktop, smoke-mobile, edges, logic, b4-learn, t7.
+To do, in this order:
+1. Re-run globe-desktop on its own (polish/run-suites.sh globe-desktop) to tell a failure under load from a
+   defect. If either check fails again, find out whether this stage's changes caused it (the deferred
+   initGlobe, prepareLevelMap, hover and cursor handling, the imagery note; compare with tree 1330e48 if that
+   helps) and fix whichever is wrong, the app (commit and push) or the check.
+2. Run what did not finish (polish/run-suites.sh modes-desktop smoke-desktop smoke-mobile edges logic b4-learn
+   t7) and node tools/tests/run.js --quick; add --globe only if the engine section changed.
+3. In progress.md, replace this stage's IN PROGRESS status and its REMAINING line with the finished record:
+   the final table of measurements (the figures are in the 22:25 note and polish/perf-results*.jsonl; measure
+   again only what changed since), the suite numbers on the final tree, and what is not done or cannot be
+   verified here.
+4. Return the report.

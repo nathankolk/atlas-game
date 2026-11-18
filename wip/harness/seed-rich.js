@@ -18,7 +18,12 @@
 //
 // Options: weeks (10), seed (7, the PRNG seed), now (ms or ISO; default Date.now()), playedToday (true),
 //          streakDays (12: the run of active days ending today), earlierRun (17: the longer run before
-//          it), catalog (reuse a level catalog).
+//          it), catalog (reuse a level catalog),
+//          quiz (false): the player has also taken up Capitals, Flags and Name It in the last weeks
+//          (CLI --quiz, default file seed-quiz.json). Off by default so the standard seed keeps its history.
+//          heavy (false): a player who has played EVERY level in the catalog, every day for 57 weeks,
+//          several rounds a day: every skill filled, every store near its largest (CLI --heavy,
+//          default file seed-heavy.json).
 'use strict';
 const path = require('path');
 const fs = require('fs');
@@ -26,6 +31,8 @@ const S = path.resolve(__dirname, '..');
 const Mastery = require(path.join(S, 'work/mastery/mastery.js'));
 
 const DAY = 86400000;
+
+const QUIZ_MODES = ['capital-pick', 'capital-find', 'flag', 'name-it'];
 
 // What a level's records and focus list are keyed by (resolveGameTarget(arg).region in the app)
 const US_REGIONS = {
@@ -38,6 +45,8 @@ function regionOf(level) {
   if (US_REGIONS[level.mode]) return US_REGIONS[level.mode];
   if (level.mode === 'us-city') return level.title.replace(/^Cities: /, '');
   if (level.mode === 'city-pin') return level.title;
+  // Capitals, Flags, Name It: the continent, or 'World'
+  if (QUIZ_MODES.indexOf(level.mode) !== -1) return level.title === 'The World' ? 'World' : level.title;
   return level.key;   // province rounds
 }
 
@@ -93,14 +102,25 @@ const PLAN = [
   ['canada-provinces', 1.6, 8], ['china-provinces', 1.5, 5], ['india-states', 1.2, 4], ['russia-west', 0.9, 2],
   ['pin-europe', 2.4, 7], ['pin-world', 2.2, 6], ['pin-north-america', 1.6, 5], ['pin-asia', 1.4, 4], ['pin-africa', 1.2, 3]
 ];
+// With options.quiz: the country quizzes, taken up in the last few weeks
+const QUIZ_PLAN = [
+  ['capitals-europe', 2.4, 4], ['capitals-find-europe', 1.6, 3], ['capitals-south-america', 1.4, 3], ['capitals-africa', 1.2, 2],
+  ['capitals-world', 0.6, 2], ['capitals-find-asia', 1, 2],
+  ['flags-europe', 2.2, 4], ['flags-south-america', 1.4, 3], ['flags-asia', 1.2, 2], ['flags-world', 0.6, 2],
+  ['name-europe', 2, 3], ['name-south-america', 1.4, 3], ['name-africa', 1, 2], ['name-oceania', 1, 2]
+];
 // Levels sometimes played above Normal
 const HARD = { 'africa': 0.2, 'europe': 0.25, 'us-state': 0.15, 'canada-provinces': 0.2, 'pin-europe': 0.2 };
 const UNCHARTED = { 'europe': 0.1 };
 // Where a skill's first-try rate starts for this player
-const BASE = { 'country': 0.4, 'us-state': 0.62, 'us-capital': 0.4, 'us-city': 0.35 };
+const BASE = { 'country': 0.4, 'us-state': 0.62, 'us-capital': 0.4, 'us-city': 0.35, 'capital': 0.38, 'flag': 0.42, 'country-name': 0.55 };
 
 function buildSeed(catalog, options) {
-  const o = Object.assign({ weeks: 10, seed: 7, playedToday: true, streakDays: 12, earlierRun: 17 }, options || {});
+  const o = Object.assign({ seed: 7, playedToday: true, streakDays: 12, earlierRun: 17 }, options || {});
+  if (o.weeks == null) o.weeks = o.heavy ? 57 : 10;
+  // The levels this player picks from
+  let plan = PLAN.concat(o.quiz ? QUIZ_PLAN : []);
+  if (o.heavy) plan = catalog.map(l => [l.key, 1, 999]);
   const now = o.now == null ? Date.now() : (typeof o.now === 'number' ? o.now : Date.parse(o.now));
   const rnd = mulberry32(o.seed);
   const byKey = {};
@@ -246,14 +266,15 @@ function buildSeed(catalog, options) {
     const weeksBack = back / 7;
     // The current run, a day off before it, a longer run before that, and patchier play further back
     const dayOff = back === o.streakDays || back === o.streakDays + o.earlierRun + 1;
-    const active = back < o.streakDays ? (back > 0 || o.playedToday)
+    const active = o.heavy ? true
+      : back < o.streakDays ? (back > 0 || o.playedToday)
       : dayOff ? false
       : back <= o.streakDays + o.earlierRun ? true
       : rnd() < 0.55;
     if (active) {
-      const pool = PLAN.filter(p => byKey[p[0]] && weeksBack <= p[2]);
+      const pool = plan.filter(p => byKey[p[0]] && weeksBack <= p[2]);
       const weight = pool.reduce((sum, p) => sum + p[1], 0);
-      const rounds = 1 + Math.floor(rnd() * 3);
+      const rounds = o.heavy ? 4 + Math.floor(rnd() * 4) : 1 + Math.floor(rnd() * 3);
       // A level that has come into reach and not been tried yet is played first, so every level
       // in the plan has a history whatever the dice say
       const untried = pool.filter(p => !started.has(p[0]));
@@ -264,7 +285,9 @@ function buildSeed(catalog, options) {
         started.add(chosen[0]);
         const level = byKey[chosen[0]];
         const r = rnd();
-        const difficulty = r < (UNCHARTED[level.key] || 0) ? 'uncharted'
+        // The heavy player plays everything at every difficulty
+        const difficulty = o.heavy ? (r < 0.25 ? 'uncharted' : r < 0.55 ? 'hard' : 'normal')
+          : r < (UNCHARTED[level.key] || 0) ? 'uncharted'
           : r < (UNCHARTED[level.key] || 0) + (HARD[level.key] || 0) ? 'hard' : 'normal';
         const when = at(back, 18 + i * 0.4);
         if (level.mode === 'city-pin') playPin(level, difficulty, when);
@@ -313,6 +336,8 @@ function buildSeed(catalog, options) {
   if (byKey['canada-provinces']) learn['canada-provinces'] = { done: true, savedAt: at(20, 20) };
 
   clock = now;
+  // The game keeps the last 200 Pin the City rounds
+  pin.games = pin.games.slice(-200);
   const str = v => JSON.stringify(v);
   const seed = {
     'atlas-mastery': storage.getItem(Mastery.KEY),
@@ -342,11 +367,12 @@ module.exports = { makeSeed, buildSeed, levelCatalog, regionOf };
 if (require.main === module) {
   const opt = k => { const a = process.argv.find(x => x.startsWith('--' + k + '=')); return a ? a.slice(k.length + 3) : null; };
   (async () => {
+    const quiz = process.argv.includes('--quiz'), heavy = process.argv.includes('--heavy');
     const seed = await makeSeed({
-      weeks: Number(opt('weeks') || 10), seed: Number(opt('seed') || 7),
-      playedToday: !process.argv.includes('--unplayed'), now: opt('now') || undefined
+      weeks: opt('weeks') ? Number(opt('weeks')) : undefined, seed: Number(opt('seed') || 7),
+      playedToday: !process.argv.includes('--unplayed'), now: opt('now') || undefined, quiz: quiz, heavy: heavy
     });
-    const out = opt('out') || path.join(__dirname, 'scratch', 'seed-rich.json');
+    const out = opt('out') || path.join(__dirname, 'scratch', heavy ? 'seed-heavy.json' : quiz ? 'seed-quiz.json' : 'seed-rich.json');
     fs.mkdirSync(path.dirname(out), { recursive: true });
     fs.writeFileSync(out, JSON.stringify(seed));
     console.log('wrote', out);

@@ -2,10 +2,12 @@
 # and an optional note for the stage that was cut off. Usage: make-resume.py [note-stage note-file]
 import json, sys
 W = '/root/.claude/projects/-home-user-atlas-game/7ba1e6a5-1a5b-5e2b-9103-7f072aa14db0/workflows/scripts/'
-J = '/root/.claude/projects/-home-user-atlas-game/7ba1e6a5-1a5b-5e2b-9103-7f072aa14db0/subagents/workflows/wf_a0037ef9-053/journal.jsonl'
+B = '/root/.claude/projects/-home-user-atlas-game/7ba1e6a5-1a5b-5e2b-9103-7f072aa14db0/subagents/workflows/'
+JOURNALS = [B + r + '/journal.jsonl' for r in ('wf_a0037ef9-053', 'wf_efece3ab-2bd', 'wf_cae25b30-a8e')]   # runs of this pipeline, oldest first
 label_of, pinned = {}, {}
 keyname = {'quiz-module': 'quiz', 'new-modes': 'modes', 'explore-learn': 'explore', 'polish-perf-docs': 'polish'}
-for line in open(J):
+import itertools
+for line in itertools.chain.from_iterable(open(j) for j in JOURNALS):
     try: o = json.loads(line)
     except Exception: continue
     if o.get('type') == 'started': label_of[o['agentId']] = o['label']

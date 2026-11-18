@@ -121,9 +121,14 @@ const stores = (page) => page.evaluate(() => ['atlas-records', 'atlas-focus', 'a
       s = await snap(page);
       r.eq('&learn=1 opens Learn', [s.screen, s.learnPhase, s.learnLevel, await page.evaluate(() => location.search)], ['game-screen', 'study', 1, '?play=china-provinces&learn=1']);
       s = await open('?play=europe&learn=1');
-      await page.waitForFunction(() => window.__t.snapshot().current);
+      await page.waitForFunction(() => window.__t.snapshot().learnPhase === 'study', null, { timeout: 20000 });
       s = await snap(page);
-      r.eq('&learn=1 on a level without Learn plays it', [s.screen, s.learnPhase, s.total], ['game-screen', null, 39]);
+      r.eq('&learn=1 opens a continent\'s ladder too', [s.screen, s.learnPhase, s.learnLevel, await page.evaluate(() => location.search)], ['game-screen', 'study', 1, '?play=europe&learn=1']);
+      // The World has no ladder (184 names is too long a one), so the link plays the level
+      s = await open('?play=world&learn=1');
+      await page.waitForFunction(() => window.__t.snapshot().current, null, { timeout: 20000 });
+      s = await snap(page);
+      r.eq('&learn=1 on a level without Learn plays it', [s.screen, s.learnPhase, s.total], ['game-screen', null, 184]);
       s = await open('?play=PIN-EUROPE');
       await page.waitForFunction(() => window.__t.snapshot().current);
       s = await snap(page);
@@ -152,7 +157,7 @@ const stores = (page) => page.evaluate(() => ['atlas-records', 'atlas-focus', 'a
         const out = {};
         return window.__atlas.LEVELS.map(l => l.key).length;
       });
-      r.eq('registry intact after reloads', links, 27);
+      r.eq('registry intact after reloads', links, 55);
       r.eq('no page errors (links)', h.errors, []);
     } catch (e) { r.check('links script ran to the end', false, String(e && e.stack || e)); }
     await h.close();
