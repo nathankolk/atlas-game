@@ -13,7 +13,10 @@
 /* ===== Constants ===== */
 
 const TOKEN_RE = /^[a-f0-9]{32}$/i;     // 128-bit hex
-const MAX_BODY_BYTES = 64 * 1024;        // 64 KB per user — generous; records blob is tiny
+// 256 KB per user. The blob holds every progress store, including the per-item
+// mastery history; with every store as full as the app lets it get, it is
+// a little over 100 KB.
+const MAX_BODY_BYTES = 256 * 1024;
 
 /* ===== Helpers ===== */
 
@@ -56,7 +59,8 @@ export async function onRequest(context) {
   if (request.method === 'POST') {
     const text = await request.text();
 
-    if (text.length > MAX_BODY_BYTES) {
+    // Counted in bytes as stored, not characters ("São Paulo" is 10 bytes)
+    if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) {
       return json({ error: 'payload_too_large' }, 413);
     }
 
