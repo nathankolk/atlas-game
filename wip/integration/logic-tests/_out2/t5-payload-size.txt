@@ -1,8 +1,0 @@
-   stores (chars): {"atlas-mastery":37576,"atlas-records":16780,"atlas-focus":5719,"atlas-pin":34573,"atlas-learn":2741,"atlas-daily-attempts":11041}; mastery items: 729
-   payload: 108554 chars, 108584 bytes (106.0 KB) of 256 KB
-PASS  payload carries the heavy stores
-PASS  mastery survives the trip (all items)
-PASS  a heavy player fits with room to spare (under half the limit)
-PASS  no page errors
-
-payload size: 4 passed, 0 failed

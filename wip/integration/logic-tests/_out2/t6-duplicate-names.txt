@@ -1,9 +1,0 @@
-PASS  the later Springfield is told apart by state; the earlier keeps its name
-PASS  US city names are unique across regions
-PASS  pin city names are unique; none is lost
-PASS  prompts read "City, State" once
-PASS  mastery keeps the two Springfields apart
-PASS  pin prompt shows the plain name and the country
-PASS  no page errors
-
-duplicate names: 7 passed, 0 failed
