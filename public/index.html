@@ -7687,6 +7687,7 @@
     dotHover: null,        // name of the dot under the mouse
     labels: [],            // Learn: the names laid out over the provinces being studied
     home: null,            // the view the round opened on
+    homeStale: false,      // the window has changed shape since that view was fitted (see refitMapSoon)
     clear: null,           // what the HUD leaves free, in the host's px: { left, right, top, bottom }
     blocked: [],           // boxes of the HUD that stand inside it (a narrow stage's lower corners), same px
     ink: {},               // the map's colours for what is drawn over it
@@ -8125,6 +8126,7 @@
     g.setView(view);
     g.setHome(view);
     map.home = g.getView();
+    map.homeStale = false;
     map.round = state.roundId;
   }
 
@@ -15824,6 +15826,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     map.globe.zoomBy(factor, { animate: !reducedMotion() });
   }
   function zoomReset() {
+    // The window changed shape while the player had the globe elsewhere:
+    // the round's opening view is fitted to it now, and flown to from here
+    if (map.homeStale && !explore.on) {
+      const from = map.globe.getView();
+      frameMap();
+      map.globe.setView(from);
+    }
     map.globe.resetView({ animate: !reducedMotion() });
   }
   // Turns the globe a step east (dx) or north (dy): a sixth of what is in view
@@ -15891,19 +15900,23 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   });
 
   // A new window size (a phone turned on its side, or its keyboard coming
-  // up): the globe keeps its picture and its marks. The round's opening
-  // view, where Recentre goes, is fitted to the new shape; a view the
-  // player has made is kept, and a country a question is showing is
-  // brought back into what is left of the map
+  // up): the globe keeps its picture and its marks; a view the player has
+  // not moved is fitted to the new shape, and a country a question is
+  // showing is brought back into what is left of the map. A view the
+  // player has made is left alone, wherever it is going: the round's
+  // opening view is then fitted when Recentre next asks for it (zoomReset).
   let resizeTimer;
   function refitMapSoon() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       if (!map.globe || !document.getElementById('game-screen').classList.contains('active')) return;
       const shown = map.layer === 'world' && map.promptKey ? map.globe.featureInfo('world', map.promptKey) : null;
-      const own = mapAtHome() || shown ? null : map.globe.getView();
-      frameMap();
-      if (own) map.globe.setView(own);
+      if (mapAtHome() || shown) {
+        frameMap();
+      } else {
+        placeGlobeHost();
+        map.homeStale = true;
+      }
       if (shown) turnToCountry(shown.feature);
       placeLearnLabels();
     }, 200);
