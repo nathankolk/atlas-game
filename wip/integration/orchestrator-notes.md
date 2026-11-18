@@ -46,3 +46,16 @@ lenses stay in the script (args.reviewers) and the Verify phase is behind args.f
   offline costs a round synced elsewhere in between its records and mastery.
 - Left to do on "resume": read status.log; if the suites are clean (bar the flake above), remove wip/ in a
   final commit, push, and give the final report. Nothing is scheduled.
+
+## 18 Nov 11:38 UTC: re-check finished (work/review/recheck/status.log) — two things to look at on "resume"
+- Stage suites: all pass but the known explore (phone) Learn flake. Module tests: world facts, quiz 46, mastery 709, zones 180 pass.
+- smoke-desktop "us-modes" failed in 2 of 4 runs (recheck/smoke-desktop-1.log, -2.log). New: suspect the crowded-dots fix (a43b3e8, dotPoints/dotNear) against the harness's taps on city dots. Find out whether it is the harness or the app.
+- tools/tests globe engine: "draw.outline (A10): five country outlines per frame cost a few ms of JS" failed once, median 6.40 ms (fixer had 295/295 at ddb7cf8). Re-run alone; compare with the engine before ddb7cf8.
+- Only after those two: remove wip/, final report.
+
+## 18 Nov, 13:30 UTC: the two open items settled
+- smoke "us-modes" on New York: the harness tapped the city's true spot, the game now draws crowded dots apart. smoke.js aims at
+  the dots as drawn (dotPoints); us-modes 6 of 6. logic-tests/x-city-dots.js: all 40 Northeast cities answered first try by a real
+  tap on the drawn dot at the opening view, 1280x800 mouse and 390x844 touch.
+- globe engine "five country outlines per frame": the filled path is line for line the code of 84f0c03; interleaved runs give
+  new 4.3-6.2 ms, old 4.1-7.7 ms. Noise at a 6 ms limit; limit set to 10 ms in tools/tests/globe.test.js.

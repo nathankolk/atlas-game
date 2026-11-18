@@ -141,13 +141,22 @@ function installMapProbe() {
   }
 
   // US cities are dots drawn over the globe; a tap goes to the nearest dot within reach
+  // Where the game draws each dot (crowded dots are drawn apart, so not always on the city itself)
+  function gDrawnDots() {
+    const A = window.__atlas;
+    if (typeof A.dotPoints === 'function') return A.dotPoints().map(at => ({ name: at.dot.name, x: at.x, y: at.y, visible: at.visible }));
+    return gmap().dots.map(dot => { const p = globe().project(dot.lonlat); return { name: dot.name, x: p.x, y: p.y, visible: p.visible }; });
+  }
+
   function gDotAt(x, y) {
     const r = hostEl().getBoundingClientRect();
+    const marks = gmap().dotMarks;
     let best = null, bestD = 12;
-    gmap().dots.forEach(dot => {
-      const p = globe().project(dot.lonlat);
-      const d = Math.hypot(r.left + p.x - x, r.top + p.y - y);
-      if (p.visible && d <= bestD) { best = dot.name; bestD = d; }
+    gDrawnDots().forEach(at => {
+      // An answered dot takes no tap: the nearest still to be found does
+      if (!at.visible || (marks && marks.has(at.name))) return;
+      const d = Math.hypot(r.left + at.x - x, r.top + at.y - y);
+      if (d <= bestD) { best = at.name; bestD = d; }
     });
     return best;
   }
@@ -155,7 +164,10 @@ function installMapProbe() {
   function gLocateDot(name, minScore) {
     const dot = gmap().dots.find(d => d.name === name);
     if (!dot) return { error: 'no dot on the globe is named "' + name + '"' };
+    // Aim at the dot as drawn, which is where a player taps
     const c = gClient(dot.lonlat);
+    const drawn = gDrawnDots().find(at => at.name === name);
+    if (drawn) { const r = hostEl().getBoundingClientRect(); c.x = r.left + drawn.x; c.y = r.top + drawn.y; }
     const x = Math.round(c.x), y = Math.round(c.y);
     const hit = (px, py) => gTopAt(px, py) && gDotAt(px, py) === name;
     if (c.facing && hit(x, y)) {
