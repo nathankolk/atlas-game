@@ -12,7 +12,7 @@ This doc is the deeper reference for the game: full feature catalog, design deci
 
 A geography learning app with a parchment-and-compass aesthetic. Players learn the world's countries four ways (find them on the globe, name them, their capitals, their flags), the US states, capitals and cities, the provinces of Canada, China, India and Russia, and where the world's big cities are. The app remembers how well each place is known, brings places back for review when they are due, keeps personal records, and has a daily challenge à la Wordle with share-friendly results.
 
-The whole game lives in **one HTML file** (`public/index.html`, about 745 KB and 16,100 lines) with embedded CSS and JavaScript — no build step, no frameworks. Everything it needs is served from the site's own origin:
+The whole game lives in **one HTML file** (`public/index.html`, about 770 KB and 16,700 lines) with embedded CSS and JavaScript — no build step, no frameworks. Everything it needs is served from the site's own origin:
 
 - `public/vendor/` — d3-array, d3-geo, topojson-client and earcut (minified, loaded by `<script>` tags) and the flag font. `public/vendor/README.md` lists each file's version, source and licence.
 - `public/data/` — the map files, all TopoJSON: the world at 1:50m and 1:110m (the world-atlas package's files, Natural Earth), the US states, and one file per province country.
