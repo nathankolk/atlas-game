@@ -208,7 +208,7 @@ Measured on the development machine in November 2026 (headless Chromium with a s
 | Cold load of Home: requests / transferred (brotli) | 9 / 494 KB | 10 / 508 KB | 10 / 510 KB |
 | US states file: raw / brotli | 1,037 KB / 185 KB | same | 445 KB / 132 KB |
 
-On satellite the start times fall into two groups, about half the runs in each: either the first question is up 77–91 ms after Start, or its task waits behind a frame the software GL driver is still drawing and it is up after 261–271 ms. No script runs during that wait, and the game's own work is one task of about 70 ms in both cases; what a real GPU does with it could not be measured.
+On satellite the start times fall into two groups, about half the runs in each: either the first question is up 77–91 ms after Start, or it is up after 261–271 ms. The game's own work is one task of about 70 ms in both cases and no long task was recorded in the extra wait, so the likeliest cause is the question's task falling behind a frame the software GL driver was still drawing; what a real GPU does with it could not be measured.
 
 While the globe is turned or zoomed, the main thread does about 3 ms of work per frame (0.5–0.9 ms of it script), on the chart and on satellite alike; the old SVG map needed 3–20 ms per frame for style, layout and paint, and a further 50 ms of reprojection after each gesture on satellite. Frame *rates* could not be measured: that machine has no GPU. The JS heap is about 11 MB on Home and about 18 MB after ten rounds, and stays there after twenty.
 
