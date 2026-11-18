@@ -14333,6 +14333,64 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     return spot;
   }
 
+  // Marks the points of an n x n grid over a [west, east, south, north] box
+  // that lie in a polygon (its rings, holes included): inside[i][j] for
+  // the point in column i, row j. Each row is cut by the ring edges that
+  // cross its latitude, and the points between an odd crossing and the next
+  // are inside. That is plane geometry on longitude and latitude, good at a
+  // country's scale; a ring that goes round a pole has no inside in those
+  // terms, and its polygon is tested point by point on the sphere instead.
+  function markGridInside(rings, box, n, inside) {
+    const stepLon = (box[1] - box[0]) / n, stepLat = (box[3] - box[2]) / n;
+    const middle = (box[0] + box[1]) / 2;
+    const rows = [];
+    for (let j = 0; j < n; j++) rows.push([]);
+    for (const ring of rings) {
+      // The ring's longitudes as one unbroken run (a step of more than half
+      // a turn is a crossing of the antimeridian), on the turn nearest the box
+      const lons = [];
+      let turn = 0, west = Infinity, east = -Infinity;
+      for (let k = 0; k < ring.length; k++) {
+        const step = k ? ring[k][0] - ring[k - 1][0] : 0;
+        if (step > 180) turn -= 360;
+        else if (step < -180) turn += 360;
+        lons.push(ring[k][0] + turn);
+        west = Math.min(west, lons[k]);
+        east = Math.max(east, lons[k]);
+      }
+      if (turn !== 0) {
+        const polygon = { type: 'Polygon', coordinates: rings };
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            if (!inside[i][j] && d3.geoContains(polygon, [box[0] + (i + 0.5) * stepLon, box[2] + (j + 0.5) * stepLat])) inside[i][j] = true;
+          }
+        }
+        return;
+      }
+      const shift = 360 * Math.round((middle - (west + east) / 2) / 360);
+      for (let k = 0; k + 1 < ring.length; k++) {
+        const lat0 = ring[k][1], lat1 = ring[k + 1][1];
+        const south = Math.min(lat0, lat1), north = Math.max(lat0, lat1);
+        if (south === north || north < box[2] || south > box[3]) continue;
+        // The rows whose latitude is in [south, north)
+        const first = Math.max(0, Math.ceil((south - box[2]) / stepLat - 0.5));
+        const last = Math.min(n - 1, Math.ceil((north - box[2]) / stepLat - 0.5) - 1);
+        for (let j = first; j <= last; j++) {
+          const lat = box[2] + (j + 0.5) * stepLat;
+          rows[j].push(lons[k] + shift + (lat - lat0) / (lat1 - lat0) * (lons[k + 1] - lons[k]));
+        }
+      }
+    }
+    rows.forEach((cuts, j) => {
+      cuts.sort((p, q) => p - q);
+      for (let c = 0; c + 1 < cuts.length; c += 2) {
+        const from = Math.max(0, Math.ceil((cuts[c] - box[0]) / stepLon - 0.5));
+        const to = Math.min(n - 1, Math.ceil((cuts[c + 1] - box[0]) / stepLon - 0.5) - 1);
+        for (let i = from; i <= to; i++) inside[i][j] = true;
+      }
+    });
+  }
+
   // The point of a feature, inside a [west, east, south, north] box, that is
   // furthest from the feature's edges and the box's: found on a grid laid
   // over the box. Null when the feature has no grid point in the box.
@@ -14341,10 +14399,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     const stepLon = (box[1] - box[0]) / n, stepLat = (box[3] - box[2]) / n;
     const at = (i, j) => [box[0] + (i + 0.5) * stepLon, box[2] + (j + 0.5) * stepLat];
     const inside = [];
-    for (let i = 0; i < n; i++) {
-      inside.push([]);
-      for (let j = 0; j < n; j++) inside[i].push(d3.geoContains(feature, at(i, j)));
-    }
+    for (let i = 0; i < n; i++) inside.push(new Array(n).fill(false));
+    const geometry = feature.geometry || {};
+    const polygons = geometry.type === 'Polygon' ? [geometry.coordinates]
+      : geometry.type === 'MultiPolygon' ? geometry.coordinates : [];
+    polygons.forEach(rings => markGridInside(rings, box, n, inside));
     // How many cells lie between this one and the nearest that is off the feature or outside the box
     const depth = (i, j) => {
       for (let r = 1; r < n; r++) {
