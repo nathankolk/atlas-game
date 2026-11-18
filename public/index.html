@@ -6471,7 +6471,9 @@
   // The part of the stage the HUD leaves clear, in stage px: under the
   // prompt card (or beside it), over the actions, and on a wide stage
   // inside the map controls and over the tally. On a narrow one those two
-  // sit over the map's lower corners instead, and the map keeps its width.
+  // sit over the map's lower corners instead, and the map keeps its width:
+  // their boxes are given in `blocked`, for the round's frame to keep what
+  // it asks about out from under them (clearOfCorners).
   function stageClearArea(width, height) {
     const stage = document.getElementById('map-wrap').getBoundingClientRect();
     const box = (sel) => {
@@ -6495,11 +6497,13 @@
       if (r) bottom = Math.min(bottom, r.top - stage.top);
     });
     if (cardAtSide) {
-      return { left: card.right - stage.left + gap, right: width - side, top: top + gap, bottom: bottom - gap };
+      return { left: card.right - stage.left + gap, right: width - side, top: top + gap, bottom: bottom - gap, blocked: [] };
     }
     // A short window has no room to keep the map clear of the card as well
     if (card && bottom - (card.bottom - stage.top) > 200) top = card.bottom - stage.top;
-    return { left: side, right: width - side, top: top + gap, bottom: bottom - gap };
+    const blocked = wide ? [] : [box('#game-screen .mapctl'), box('#game-legend')].filter(r => r && r.top - stage.top < bottom)
+      .map(r => ({ left: r.left - stage.left, right: r.right - stage.left, top: r.top - stage.top, bottom: r.bottom - stage.top }));
+    return { left: side, right: width - side, top: top + gap, bottom: bottom - gap, blocked: blocked };
   }
 
   function isEligible(feature) {
@@ -7570,6 +7574,7 @@
     labels: [],            // Learn: the names laid out over the provinces being studied
     home: null,            // the view the round opened on
     clear: null,           // what the HUD leaves free, in the host's px: { left, right, top, bottom }
+    blocked: [],           // boxes of the HUD that stand inside it (a narrow stage's lower corners), same px
     ink: {},               // the map's colours for what is drawn over it
     round: 0               // state.roundId of the round the map was last made ready for
   };
@@ -7604,6 +7609,7 @@
   const DATASET_LAYER = { world: 'world', us: 'us', province: 'prov' };
   const CITY_DOT_RADIUS = 6;                 // px, at every zoom
   const PROMPT_MIN_PX = 40;                  // a country a question shows is drawn at least this wide
+  const HUD_CLEAR_PX = 60;                   // ...and this much of it, round its anchor, is kept out from under the HUD
 
   // A CSS colour as [r, g, b, a]: r, g and b 0–255, a 0–1
   function cssRgba(value) {
@@ -7833,6 +7839,74 @@
     host.style.right = Math.min(0, -beside) + 'px';
     map.globe.resize();
     map.clear = { left: clear.left - left, right: clear.right - left, top: clear.top - top, bottom: clear.bottom - top };
+    map.blocked = clear.blocked.map(b => ({ left: b.left - left, right: b.right - left, top: b.top - top, bottom: b.bottom - top }));
+  }
+
+  // True when a disc of the host (centre x, y; radius r) lies partly under
+  // the controls or the tally where they stand over the map
+  function underHud(x, y, r) {
+    return map.blocked.some(b => x + r > b.left && x - r < b.right && y + r > b.top && y - r < b.bottom);
+  }
+
+  // Where each thing the round asks for is: the places to tap, the dots,
+  // or the cities to pin
+  function roundSpots() {
+    if (state.pin) return pinCitiesFor(state.currentContinent).map(c => [c.lon, c.lat]);
+    if (state.gameMode === 'us-city') return map.dots.map(dot => dot.lonlat);
+    const spots = [];
+    map.eligible.forEach(key => {
+      const at = map.globe.anchor(map.layer, key);
+      if (at) spots.push(at);
+    });
+    return spots;
+  }
+
+  // The view that draws everything (dx, dy) px from where `view` draws it
+  function shiftedView(view, dx, dy) {
+    const rad = Math.PI / 180;
+    const radius = map.globe.radiusPx() / map.globe.getView().k * view.k;
+    const x = -dx / radius, y = dy / radius, z = Math.sqrt(Math.max(0, 1 - x * x - y * y));
+    const lat0 = view.lat * rad;
+    return {
+      lon: view.lon + Math.atan2(x, z * Math.cos(lat0) - y * Math.sin(lat0)) / rad,
+      lat: Math.asin(Math.max(-1, Math.min(1, z * Math.sin(lat0) + y * Math.cos(lat0)))) / rad,
+      k: view.k
+    };
+  }
+
+  // An opening view in which none of the round's spots sits under the
+  // controls or the tally: `view`, or failing that the frame moved within
+  // the room the clear area leaves around it, drawn smaller only as far as
+  // it takes. `reach` is how far the frame extends from the view's centre,
+  // in px at view.k: { left, right, up, down }.
+  function clearOfCorners(view, reach) {
+    if (!map.blocked.length) return view;
+    const spots = roundSpots();
+    const margin = 10;
+    const free = v => spots.every(spot => {
+      const p = projectInView(spot, v);
+      return p.z <= 0 || !underHud(p.x, p.y, margin);
+    });
+    if (free(view)) return view;
+    const host = document.getElementById('globe-host');
+    const centreX = host.clientWidth / 2, centreY = host.clientHeight / 2;
+    const c = map.clear, pad = 12, steps = 6;
+    for (let scale = 1; scale > 0.6; scale -= 0.04) {
+      const smaller = { lon: view.lon, lat: view.lat, k: view.k * scale };
+      const left = Math.max(0, centreX - reach.left * scale - c.left - pad), right = Math.max(0, c.right - pad - centreX - reach.right * scale);
+      const up = Math.max(0, centreY - reach.up * scale - c.top - pad), down = Math.max(0, c.bottom - pad - centreY - reach.down * scale);
+      let best = null, least = Infinity;
+      for (let a = 0; a <= steps; a++) {
+        for (let b = 0; b <= steps; b++) {
+          const dx = -left + (left + right) * a / steps, dy = -up + (up + down) * b / steps;
+          if (Math.hypot(dx, dy) >= least) continue;
+          const moved = shiftedView(smaller, dx, dy);
+          if (free(moved)) { best = moved; least = Math.hypot(dx, dy); }
+        }
+      }
+      if (best) return best;
+    }
+    return view;
   }
 
   // Points along the edges of a longitude/latitude box, for fitting a view to it
@@ -7915,15 +7989,21 @@
       // How far the frame reaches from the centre of that view, in globe radii
       const host = document.getElementById('globe-host');
       const centreX = host.clientWidth / 2, centreY = host.clientHeight / 2, radius = g.radiusPx();
-      let reachX = 0.01, reachY = 0.01;
+      const reach = { left: 0.01, right: 0.01, up: 0.01, down: 0.01 };
       const p = { x: 0, y: 0, visible: false, z: 0 };
       eachPosition(frame, lonlat => {
         g.project(lonlat, p);
-        reachX = Math.max(reachX, Math.abs(p.x - centreX) / radius);
-        reachY = Math.max(reachY, Math.abs(p.y - centreY) / radius);
+        reach.left = Math.max(reach.left, (centreX - p.x) / radius);
+        reach.right = Math.max(reach.right, (p.x - centreX) / radius);
+        reach.up = Math.max(reach.up, (centreY - p.y) / radius);
+        reach.down = Math.max(reach.down, (p.y - centreY) / radius);
       });
+      const reachX = Math.max(reach.left, reach.right), reachY = Math.max(reach.up, reach.down);
       const k = Math.min((halfW - 12) / reachX, (halfH - 12) / reachY) / base;
       view = { lon: fitted.lon, lat: fitted.lat, k: Math.max(k, whole) };
+      // The same reach in px of that view
+      Object.keys(reach).forEach(side => { reach[side] *= base * view.k; });
+      view = clearOfCorners(view, reach);
     }
     // Room to zoom in on the smallest places, and out to the whole globe
     g.setOptions({ minZoom: Math.min(1, whole), maxZoom: Math.max(80, 60 * view.k) });
@@ -7954,7 +8034,7 @@
   function bringIntoView(target, opts) {
     const g = map.globe;
     const view = g.getView();
-    let lonlat = target, k = view.k;
+    let lonlat = target, k = view.k, around = 12;
     if (!Array.isArray(target)) {
       const key = featureKey(target);
       const info = g.featureInfo(map.layer, key);
@@ -7962,11 +8042,12 @@
       lonlat = g.anchor(map.layer, key) || info.centroid;
       const size = 2 * g.radiusPx() * Math.sin(Math.min(info.radiusDeg, 90) * Math.PI / 180);
       if (size < 10 && !(opts && opts.keepZoom)) k = view.k * 24 / Math.max(size, 0.01);
+      around = Math.min(size / 2, HUD_CLEAR_PX);
     }
     const p = g.project(lonlat);
     const c = map.clear, edge = 36;
     const inSight = p.z > 0.35 && p.x >= c.left + edge && p.x <= c.right - edge &&
-      p.y >= c.top + edge && p.y <= c.bottom - edge;
+      p.y >= c.top + edge && p.y <= c.bottom - edge && !underHud(p.x, p.y, around);
     if (inSight && k === view.k) return 0;
     g.flyTo({ lon: lonlat[0], lat: lonlat[1], k: k }, { duration: reducedMotion() ? 0 : 550 });
     return k > view.k ? view.k : 0;
@@ -8071,7 +8152,8 @@
     const p = projectInView(lonlat, home);
     const c = map.clear, edge = 48;
     const atHome = across * home.k >= PROMPT_MIN_PX && p.z > 0.5 &&
-      p.x >= c.left + edge && p.x <= c.right - edge && p.y >= c.top + edge && p.y <= c.bottom - edge;
+      p.x >= c.left + edge && p.x <= c.right - edge && p.y >= c.top + edge && p.y <= c.bottom - edge &&
+      !underHud(p.x, p.y, Math.min(across * home.k / 2, HUD_CLEAR_PX));
     const view = atHome ? home
       : { lon: lonlat[0], lat: lonlat[1], k: Math.max(home.k, PROMPT_MIN_PX / Math.max(across, 1e-6)) };
     const now = g.getView();
@@ -13884,7 +13966,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     const g = map.globe, pin = state.pin, view = g.getView(), c = map.clear, edge = 40;
     const inSight = lonlat => {
       const p = g.project(lonlat);
-      return p.z > 0.35 && p.x >= c.left + edge && p.x <= c.right - edge && p.y >= c.top + edge && p.y <= c.bottom - edge;
+      return p.z > 0.35 && p.x >= c.left + edge && p.x <= c.right - edge && p.y >= c.top + edge && p.y <= c.bottom - edge &&
+        !underHud(p.x, p.y, 16);
     };
     const apart = guess ? d3.geoDistance(guess, truth) : 0;
     const both = !!guess && apart < 2.1;            // under about 120°: one view shows both ends
