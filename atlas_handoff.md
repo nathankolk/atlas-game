@@ -210,6 +210,8 @@ Measured on the development machine in November 2026 (headless Chromium with a s
 
 On satellite the start times fall into two groups, about half the runs in each: either the first question is up 77–91 ms after Start, or it is up after 261–271 ms. The game's own work is one task of about 70 ms in both cases and no long task was recorded in the extra wait, so the likeliest cause is the question's task falling behind a frame the software GL driver was still drawing; what a real GPU does with it could not be measured.
 
+A cold start is the one place the old app still measures faster on that machine: Home is usable some 10–70 ms later and a level link's first question some 60–150 ms later, run to run (a later set of five runs gave 217 against 150 ms and 712 against 558 ms). The page is two and a half times the size to parse (744 KB against 300 KB), and a level link builds the 50m world for the engine before its first question. That is the price of one self-contained file and is accepted; these figures leave out the old app's two extra origins (cdnjs, jsDelivr), which answered from disk here and cost a connection each on a real line.
+
 While the globe is turned or zoomed, the main thread does about 3 ms of work per frame (0.5–0.9 ms of it script), on the chart and on satellite alike; the old SVG map needed 3–20 ms per frame for style, layout and paint, and a further 50 ms of reprojection after each gesture on satellite. Frame *rates* could not be measured: that machine has no GPU. The JS heap is about 11 MB on Home and about 18 MB after ten rounds, and stays there after twenty.
 
 ---
