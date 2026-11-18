@@ -15,6 +15,8 @@ const args = process.argv.slice(2);
 const MOBILE = args.includes('--mobile');
 const onlyArg = args.find(a => a.startsWith('--only='));
 const ONLY = onlyArg ? onlyArg.slice(7).split(',') : null;
+// --root=<dir> serves another copy of the app (to show a check failing on an earlier tree)
+const ROOT = (args.find(a => a.startsWith('--root=')) || '').slice(7) || undefined;
 const r = lib.reporter('explore' + (MOBILE ? ' (phone)' : ' (desktop)'));
 const SEED = JSON.parse(fs.readFileSync(path.join(S, 'harness/scratch/seed-quiz.json'), 'utf8'));
 
@@ -24,7 +26,8 @@ async function open(opts) {
   return lib.launchApp(Object.assign({
     seedStorage: Object.assign({ 'atlas-theme': 'light' }, opts.seed === null ? {} : (opts.seed || SEED), opts.extra || {}),
     fast: opts.fast || false,
-    query: opts.query || ''
+    query: opts.query || '',
+    root: ROOT
   }, size));
 }
 const st = (page, fn, arg) => page.evaluate(fn, arg);
@@ -827,8 +830,27 @@ groups.learn = async () => {
     all.europe = { order: names.slice(0, 5).concat(['Russia']).concat(names.slice(5)), level: 6, savedAt: Date.now() };
     localStorage.setItem('atlas-learn', JSON.stringify(all));
   });
+  // Every point-on-the-sphere test the page asks d3 for from here on is counted
+  await st(page, () => { const real = d3.geoContains; window.__contains = 0; d3.geoContains = function () { window.__contains++; return real.apply(this, arguments); }; });
   await lib.startLevel(page, 'Europe', { learn: true });
   await still(page);
+  const asked = await st(page, () => window.__contains);
+  r.eq('learn: finding where Russia\'s name goes in Europe costs no point-by-point tests of its whole outline', asked, 0);
+  // The spot is the one a point-by-point search of the same 30 x 30 grid finds
+  const ref = await st(page, () => {
+    const A = window.__atlas, box = [-25, 45, 34, 72], n = 30, f = A.state.featureByCanonical.get('Russia');
+    const stepLon = (box[1] - box[0]) / n, stepLat = (box[3] - box[2]) / n;
+    const at = (i, j) => [box[0] + (i + 0.5) * stepLon, box[2] + (j + 0.5) * stepLat];
+    const inside = [];
+    for (let i = 0; i < n; i++) { inside.push([]); for (let j = 0; j < n; j++) inside[i].push(d3.geoContains(f, at(i, j))); }
+    const depth = (i, j) => { for (let q = 1; q < n; q++) for (let a = -q; a <= q; a++) for (const c of [[i + a, j - q], [i + a, j + q], [i - q, j + a], [i + q, j + a]])
+      if (c[0] < 0 || c[0] >= n || c[1] < 0 || c[1] >= n || !inside[c[0]][c[1]]) return q; return n; };
+    let best = null, bestDepth = 0;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const d = inside[i][j] ? depth(i, j) : 0; if (d > bestDepth) { bestDepth = d; best = at(i, j); } }
+    const label = A.map.labels.find(l => l.name === 'Russia');
+    return { best: best, got: label && label.lonlat };
+  });
+  r.check('learn: and it is the spot the point-by-point search finds', !!ref.got && Math.abs(ref.got[0] - ref.best[0]) < 1e-9 && Math.abs(ref.got[1] - ref.best[1]) < 1e-9, ref);
   const eu = await st(page, () => {
     const A = window.__atlas, label = A.map.labels.find(l => l.name === 'Russia');
     const p = label ? A.globe.project(label.lonlat) : null;

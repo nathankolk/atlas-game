@@ -16,6 +16,8 @@ const args = process.argv.slice(2);
 const MOBILE = args.includes('--mobile');
 const onlyArg = args.find(a => a.startsWith('--only='));
 const ONLY = onlyArg ? onlyArg.slice(7).split(',') : null;
+// --root=<dir> serves another copy of the app (to show a check failing on an earlier tree)
+const ROOT = (args.find(a => a.startsWith('--root=')) || '').slice(7) || undefined;
 const r = lib.reporter('country quizzes' + (MOBILE ? ' (phone)' : ' (desktop)'));
 
 // Makes this browser draw no flags at all: the outcome Quiz.flagSupport calls 'none'
@@ -33,6 +35,7 @@ async function open(opts) {
   const fonts = [];
   const h = await lib.launchApp(Object.assign({
     seedStorage: Object.assign({ 'atlas-theme': 'light' }, opts.seed || {}),
+    root: ROOT,
     fast: opts.fast === undefined ? 25 : opts.fast,
     query: opts.query || '',
     beforeLoad: async hh => {
@@ -324,13 +327,21 @@ groups.flag = async () => {
   const q = await st(page, () => {
     const A = window.__atlas, el = document.getElementById('prompt-country');
     const cs = getComputedStyle(el), box = el.getBoundingClientRect();
-    return { label: document.getElementById('prompt-label').textContent, text: el.textContent, want: A.Quiz.flagPrompt(A.WORLD_FACTS, A.state.current).flag,
-      family: cs.fontFamily, size: parseFloat(cs.fontSize), height: box.height, loaded: document.fonts.check("32px 'Atlas Flags'", el.textContent),
+    // What is read out: the live region's text without what is hidden from assistive technology
+    const spoken = node => node.nodeType === 3 ? node.nodeValue
+      : node.nodeType !== 1 || node.hidden || node.getAttribute('aria-hidden') === 'true' ? ''
+      : Array.from(node.childNodes).map(spoken).join(' ');
+    const seen = el.querySelector('[aria-hidden="true"]') || el;
+    return { label: document.getElementById('prompt-label').textContent, text: seen.textContent, want: A.Quiz.flagPrompt(A.WORLD_FACTS, A.state.current).flag,
+      spoken: spoken(document.getElementById('prompt')).replace(/\s+/g, ' ').trim(),
+      family: cs.fontFamily, size: parseFloat(cs.fontSize), height: box.height, loaded: document.fonts.check("32px 'Atlas Flags'", seen.textContent),
       support: null, title: document.getElementById('region-tag').textContent, total: A.state.totalQuestions };
   });
   r.eq('flag: title', q.title, 'Flags of Europe');
   r.eq('flag: label', q.label, 'Which country’s flag is this');
   r.check('flag: the card shows the country’s flag', q.text === q.want && q.text.length === 4, q);
+  r.check('flag: the question is read out without the flag itself (a screen reader would name its country)',
+    !/[\u{1F1E6}-\u{1F1FF}]/u.test(q.spoken) && /Which country’s flag is this/.test(q.spoken) && /A flag is shown/.test(q.spoken), q.spoken);
   r.check('flag: drawn from the flag font, large', /^"?Atlas Flags/.test(q.family) && q.size >= (MOBILE ? 96 : 120) && q.loaded, q);
   r.eq('flag: the font was fetched once a flag was due', h.fonts.length, 1);
   const support = await st(page, () => window.__atlas.Quiz.flagSupport(document));
@@ -469,6 +480,20 @@ groups.name = async () => {
   const typedStory = await st(p2, () => (document.querySelector('#results-screen li small') || {}).textContent);
   r.check('name: “You typed Japan, then Portugal”', /You typed Japan, then Portugal/.test(typedStory || ''), typedStory);
 
+  // A short form that begins its own country's full name waits, so the full name can be typed out
+  await ask('name-europe', 'Bosnia and Herzegovina');
+  a = await typed('Bosnia', false);
+  r.check('name: “Bosnia” is not taken while typing (it may become Bosnia and Herzegovina)', !a.locked && a.score === 0 && a.attempts === 0, a);
+  a = await typed('Bosnia and Herzegovin', false);
+  r.check('name: nor is anything on the way to the full name', !a.locked && a.score === 0, a);
+  a = await typed('Bosnia and Herzegovina', false);
+  r.check('name: the full name is taken as its last letter is typed', a.locked && a.score === 2 && a.value === 'Bosnia and Herzegovina', a);
+  await results();
+  await ask('name-europe', 'Bosnia and Herzegovina');
+  a = await typed('Bosnia', true);
+  r.check('name: on Enter “Bosnia” is right', a.locked && a.score === 2 && /Well done — Bosnia and Herzegovina/.test(a.toast), a);
+  await results();
+
   // Records, mastery, a full round
   await lib.startLevel(p2, 'name-oceania');
   await finish(p2);
@@ -478,6 +503,33 @@ groups.name = async () => {
   r.check('name: mastery under country-name', done.skills.includes('country-name') && done.seen >= 7, done);
   r.eq('no errors', h2.errors, []);
   await h2.close();
+
+  // Typing that runs on past a name taken as typed, at the game's real pace (no shortened delays), key by key
+  const h3 = await open({ fast: false });
+  const p3 = h3.page;
+  for (let i = 0; i < 12; i++) {
+    await lib.startLevel(p3, 'name-north-america', { practice: ['United States', 'Canada'] });
+    if (await st(p3, () => window.__atlas.state.current) === 'United States') break;
+  }
+  const field = () => st(p3, () => { const A = window.__atlas, t = document.getElementById('toast');
+    return { current: A.state.current, value: document.getElementById('answer-input').value, score: A.state.score, attempts: A.state.attempts,
+      note: /show/.test(t.className) && /note|wrong/.test(t.className) ? t.textContent.trim() : '', locked: A.state.interactionLocked }; });
+  r.eq('name, typing on: the United States is asked first', (await field()).current, 'United States');
+  await p3.focus('#answer-input');
+  await p3.keyboard.type('United States of America', { delay: 110 });
+  await p3.keyboard.press('Enter');
+  await p3.waitForFunction(() => window.__atlas.state.current === 'Canada' && !window.__atlas.state.interactionLocked, null, { timeout: 10000 });
+  await p3.waitForTimeout(300);
+  let f3 = await field();
+  r.check('name, typing on: “United States of America” typed in one go is one right answer, and none of it lands in the next question',
+    f3.current === 'Canada' && f3.value === '' && f3.score === 2 && f3.attempts === 0 && f3.note === '', f3);
+  await p3.waitForTimeout(1100);
+  await p3.keyboard.type('Canada', { delay: 110 });
+  await p3.waitForTimeout(200);
+  f3 = await st(p3, () => ({ score: window.__atlas.state.score, value: document.getElementById('answer-input').value }));
+  r.check('name, typing on: after a pause the field takes the next answer as usual', f3.score === 4 && f3.value === 'Canada', f3);
+  r.eq('no errors', h3.errors, []);
+  await h3.close();
 };
 
 /* ----- keys: S types, Escape skips, the field keeps the focus ----- */

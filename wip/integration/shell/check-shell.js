@@ -7,13 +7,16 @@ const S = path.resolve(__dirname, '../../..');
 const { launch } = require(path.join(S, 'harness/atlas-harness.js'));
 const mobile = process.argv.includes('--mobile');
 const only = (process.argv.find(a => a.startsWith('--only=')) || '').slice(7);
+// --root=<dir> serves another copy of the app (to show a check failing on an earlier tree)
+const ROOT = (process.argv.find(a => a.startsWith('--root=')) || '').slice(7) || undefined;
 const seedOf = f => JSON.parse(fs.readFileSync(path.join(__dirname, f), 'utf8'));
 let fails = 0, passes = 0;
 const ok = (cond, what) => { if (cond) passes++; else { fails++; console.log('  FAIL: ' + what); } };
 const eq = (a, b, what) => ok(a === b, what + ' (got ' + JSON.stringify(a) + ', want ' + JSON.stringify(b) + ')');
 
 async function open(seed, urlTail, size) {
-  const h = await launch(Object.assign({ seedStorage: seed || {} }, mobile ? { mobile: true } : (size || { width: 1280, height: 800 })));
+  const h = await launch(Object.assign({ seedStorage: seed || {}, root: ROOT }, mobile ? { mobile: true } : (size || { width: 1280, height: 800 })));
+  if (size && size.before) await size.before(h);
   await h.page.goto(h.url + (urlTail || ''));
   await h.page.waitForFunction(() => window.__atlas && window.__atlas.state.allFeatures.length > 0 && document.getElementById('library-collections'), null, { timeout: 20000 });
   await h.page.waitForTimeout(300);
@@ -334,6 +337,165 @@ const checks = {
       return k + ':' + (card.querySelector('.ring b') ? card.querySelector('.ring b').textContent : '-');
     }));
     ok(/russia-west:\d+/.test(rings.join(' ')), 'province cards fill in once their map arrives: ' + rings.join(' '));
+    eq(h.errors.length, 0, 'page errors: ' + h.errors.join(' | '));
+    await h.close();
+  },
+
+  // What a level card says in its corners, and links that name no level
+  async 'cards: ladder done, due pills; odd links'() {
+    const h = await open({ 'atlas-learn': JSON.stringify({ oceania: { done: true, savedAt: Date.now() - 60000 } }) });
+    const page = h.page;
+    const card = key => page.evaluate(k => { const a = document.querySelector('[data-level="' + k + '"]');
+      return { due: a.querySelector('.level-due').textContent, isDue: a.querySelector('.level-due').classList.contains('is-due'), best: (a.querySelector('.level-best') || {}).textContent || '', said: a.getAttribute('aria-label') }; }, key);
+    let c = await card('oceania');
+    ok(c.due === '' && c.best === 'Ladder complete' && /Ladder complete/.test(c.said) && !/New/.test(c.said), 'a level whose Learn ladder is finished is not called New: ' + JSON.stringify(c));
+    c = await card('south-america');
+    eq(c.due, 'New', 'a level never touched still is');
+    // Something due in Pin the City (which Smart Review cannot bring back) and in a country skill (which it can)
+    await page.evaluate(() => { const A = window.__atlas; A.mastery.record('city-pin', 'Paris', 'miss'); A.mastery.record('country', 'France', 'miss'); A.showView('stats'); A.showView('home'); });
+    await page.waitForTimeout(200);
+    const pinWorld = await card('pin-world'), pinEurope = await card('pin-europe'), europe = await card('europe');
+    ok(!/due/.test(pinWorld.due) && !pinWorld.isDue && !/due/.test(pinEurope.due) && !/due/.test(pinEurope.said), 'Pin the City cards promise no review that Smart Review does not hold: ' + JSON.stringify([pinWorld, pinEurope]));
+    ok(europe.due === '1 due' && europe.isDue && /1 due/.test(europe.said), 'a country level still shows what is due: ' + JSON.stringify(europe));
+    const review = await page.evaluate(() => document.querySelector('.review').textContent);
+    ok(/France/.test(review) && !/Paris/.test(review), 'and Smart Review offers the country, not the city: ' + review.slice(0, 120));
+    // Links whose slug is a property every object has
+    for (const slug of ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'no-such-level']) {
+      await page.goto(h.url + '?play=' + slug);
+      await page.waitForFunction(() => window.__atlas && window.__atlas.state.allFeatures.length > 0 && document.getElementById('library-collections'), null, { timeout: 20000 });
+      await page.waitForTimeout(300);
+      const said = await page.evaluate(() => ({ screen: document.body.dataset.screen, notice: Array.from(document.querySelectorAll('[role="status"], [role="alert"], .notice')).map(n => n.textContent.trim()).filter(Boolean).join(' | '), search: location.search }));
+      ok(said.screen === 'menu' && /That link doesn’t lead to a level/.test(said.notice) && said.search === '', '?play=' + slug + ' is told it leads to no level: ' + JSON.stringify(said));
+    }
+    eq(h.errors.length, 0, 'page errors: ' + h.errors.join(' | '));
+    await h.close();
+  },
+
+  // The browser's back button after moving about with the app's own controls
+  async 'back button: views, sheet, round'() {
+    const h = await open({});
+    const page = h.page;
+    const navTo = async view => { await press(page, (mobile ? '#tabbar' : '#topnav-links') + ' a[data-view="' + view + '"]'); await page.waitForFunction(v => window.__atlas.state.view === v, view); };
+    const where = () => page.evaluate(() => ({ screen: document.body.dataset.screen, view: window.__atlas.state.view, sheet: !document.getElementById('level-sheet').hidden,
+      here: location.href.indexOf(location.origin) === 0, search: location.search, hash: location.hash }));
+    const back = async () => { await page.goBack({ waitUntil: 'commit' }).catch(() => {}); await page.waitForTimeout(400); return page.url().indexOf(h.url) === 0 ? where() : { left: page.url() }; };
+    // Views
+    await navTo('stats');
+    await navTo('settings');
+    let w = await back();
+    ok(w.view === 'stats' && w.screen === 'stats' && w.hash === '#stats', 'Back after Home > Stats > Settings by the navigation shows Stats: ' + JSON.stringify(w));
+    w = await back();
+    ok(w.view === 'home' && w.screen === 'menu' && w.hash === '', 'Back again shows Home, still in the app: ' + JSON.stringify(w));
+    // A level sheet
+    await navTo('stats');
+    await navTo('home');
+    await press(page, '[data-level="oceania"]');
+    await page.waitForFunction(() => !document.getElementById('level-sheet').hidden);
+    await page.waitForTimeout(150);
+    w = await back();
+    ok(w.screen === 'menu' && w.sheet === false && w.view === 'home', 'Back with a level sheet open closes the sheet and stays on Home: ' + JSON.stringify(w));
+    // Closed with Escape, the sheet leaves nothing behind for Back to trip over
+    await press(page, '[data-level="oceania"]');
+    await page.waitForFunction(() => !document.getElementById('level-sheet').hidden);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    // A round started from the sheet
+    await press(page, '[data-level="oceania"]');
+    await page.waitForFunction(() => !document.getElementById('level-sheet').hidden);
+    await press(page, '#sheet-start-btn');
+    await waitGame(page);
+    await page.waitForTimeout(200);
+    eq((await where()).search, '?play=oceania', 'the address names the round');
+    w = await back();
+    ok(w.screen === 'menu' && w.sheet === false && w.search === '', 'Back during a round leaves the round for Home: ' + JSON.stringify(w));
+    await page.goForward({ waitUntil: 'commit' }).catch(() => {});
+    await page.waitForTimeout(400);
+    w = await where();
+    ok(w.screen === 'menu' && w.search === '', 'Forward does not start the round again: ' + JSON.stringify(w));
+    // A round left with the app's own button: its entry goes with it
+    await press(page, '[data-level="oceania"]');
+    await page.waitForFunction(() => !document.getElementById('level-sheet').hidden);
+    await press(page, '#sheet-start-btn');
+    await waitGame(page);
+    await press(page, '#back-btn');
+    await page.waitForFunction(() => document.body.dataset.screen === 'menu');
+    await page.waitForTimeout(300);
+    eq((await where()).search, '', 'the address is Home\'s again');
+    w = await back();
+    ok(w.view === 'stats' && w.screen === 'stats', 'one Back from Home then shows the view before it (Stats), not a spent round or sheet: ' + JSON.stringify(w));
+    eq(h.errors.length, 0, 'page errors: ' + h.errors.join(' | '));
+    await h.close();
+  },
+
+  // A round that ends in another tab: this tab's Home shows its best as well as its mastery
+  async 'second tab'() {
+    const h = await open({});
+    const page = h.page;
+    const other = await h.context.newPage();
+    await other.goto(h.url);
+    await other.waitForFunction(() => window.__atlas && window.__atlas.state.allFeatures.length > 0, null, { timeout: 20000 });
+    // The stores a finished round writes, in its order: the learning history first, the records after
+    await other.evaluate(async () => {
+      const A = window.__atlas;
+      A.levelByKey('oceania').names().forEach(n => A.mastery.record('country', n, 'first'));
+      A.mastery.recordSession({ questions: 7, firstTry: 7, seconds: 30 });
+      await new Promise(r => setTimeout(r, 60));
+      const day = new Date().toISOString().slice(0, 10);
+      localStorage.setItem('atlas-records', JSON.stringify({ 'world-country|Oceania|normal': { gamesPlayed: 1, bestScore: { value: 14, max: 14, date: day },
+        bestTime: { value: 30, total: 7, date: day }, bestAccuracy: { correct: 7, total: 7, pct: 100, date: day }, lastPlayed: day } }));
+    });
+    await page.waitForTimeout(700);
+    const card = await page.evaluate(() => { const a = document.querySelector('[data-level="oceania"]'); return { best: (a.querySelector('.level-best') || {}).textContent || '', ring: !!a.querySelector('.ring b'), said: a.getAttribute('aria-label') }; });
+    ok(/Best\s*7 \/ 7/.test(card.best) && card.ring, 'the other tab\'s round shows on this tab\'s card, best and mastery both: ' + JSON.stringify(card));
+    eq(h.errors.length, 0, 'page errors: ' + h.errors.join(' | '));
+    await other.close();
+    await h.close();
+  },
+
+  // The Daily Five card at UTC midnight with Home left open, and what a played card's buttons act on
+  async 'daily card rolls over'() {
+    const attempt = (key, number, countries) => ({ dateKey: key, puzzleNumber: number, countries: countries, sequence: [2, 2, 1, 0, 2], score: 7, correct: 4, wrong: 1, total: 5,
+      timeSeconds: 40, hardMode: false, difficulty: 'normal', completedAt: Date.parse(key + 'T12:00:00Z') });
+    // Day 1 of the puzzle is 2026-04-26, so 1 December is No. 220
+    const seed = { 'atlas-daily-attempts': JSON.stringify({ '2026-11-30': attempt('2026-11-30', 219, ['Chile', 'Kenya', 'Laos', 'Togo', 'Fiji']),
+      '2026-12-01': attempt('2026-12-01', 220, ['Peru', 'Chad', 'Iran', 'Mali', 'Cuba']) }) };
+    const h = await open(seed, '', { width: mobile ? 390 : 1280, height: mobile ? 844 : 800, before: async (hh) => {
+      await hh.page.clock.install({ time: new Date('2026-12-01T23:59:30Z') });
+      await hh.page.addInitScript(() => {
+        window.__shared = [];
+        try { Object.defineProperty(navigator, 'share', { value: undefined, configurable: true }); } catch (e) {}
+        try { Object.defineProperty(navigator, 'clipboard', { value: { writeText: t => { window.__shared.push(t); return Promise.resolve(); } }, configurable: true }); } catch (e) {}
+      });
+    } });
+    const page = h.page;
+    const card = () => page.evaluate(() => { const c = document.querySelector('#menu-screen .daily'); return { state: c.dataset.daily, no: (c.querySelector('.eyebrow b') || {}).textContent, date: c.dataset.date || null,
+      lede: document.querySelector('.masthead .lede').textContent }; });
+    let c = await card();
+    ok(c.state === 'played' && c.no === 'No. 220' && /Daily Five is done/.test(c.lede), 'before midnight the card shows the day\'s finished puzzle: ' + JSON.stringify(c));
+    // A played card's buttons act on the day the card is for, whatever today is: here a card made to stand for the day before
+    const acted = await page.evaluate(async () => {
+      const el = document.querySelector('#menu-screen .daily');
+      el.dataset.date = '2026-11-30';
+      el.querySelector('[data-action="share-daily"]').click();
+      await Promise.resolve();
+      el.querySelector('[data-action="replay-daily"]').click();
+      return { shared: window.__shared.slice(), replay: window.__atlas.state.dailyReplay };
+    });
+    ok(acted.shared.length === 1 && /#219\b/.test(acted.shared[0]), 'Share on a played card shares that card\'s puzzle: ' + JSON.stringify(acted.shared));
+    eq(acted.replay && acted.replay.dateKey, '2026-11-30', 'Practice Replay on a played card replays that card\'s puzzle');
+    await page.waitForFunction(() => document.body.dataset.screen === 'game', null, { timeout: 20000 });
+    await page.evaluate(() => window.__atlas.showView('home'));
+    await page.waitForFunction(() => document.body.dataset.screen === 'menu');
+    c = await card();
+    ok(c.state === 'played' && c.no === 'No. 220', 'back on Home before midnight: still the finished puzzle: ' + JSON.stringify(c));
+    // Midnight passes with Home open
+    await page.clock.fastForward(40000);
+    await page.waitForTimeout(300);
+    c = await card();
+    ok(c.state === 'unplayed' && c.no === 'No. 221', 'after UTC midnight the card is the new day\'s puzzle, still to play: ' + JSON.stringify(c));
+    ok(/Daily Five is waiting/.test(c.lede), 'and the masthead no longer says today\'s puzzle is done: ' + c.lede);
+    const count = await page.evaluate(() => document.querySelector('#menu-screen [data-countdown]').textContent);
+    ok(/^23 h 59 m$/.test(count), 'its countdown runs to the next midnight: ' + count);
     eq(h.errors.length, 0, 'page errors: ' + h.errors.join(' | '));
     await h.close();
   },

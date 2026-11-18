@@ -7,6 +7,8 @@ const S = path.resolve(__dirname, '../../..');
 const { launch } = require(path.join(S, 'harness/atlas-harness.js'));
 const mobile = process.argv.includes('--mobile');
 const only = (process.argv.find(a => a.startsWith('--only=')) || '').slice(7);
+// --root=<dir> serves another copy of the app (to show a check failing on an earlier tree)
+const ROOT = (process.argv.find(a => a.startsWith('--root=')) || '').slice(7) || undefined;
 const readSeed = f => JSON.parse(fs.readFileSync(f, 'utf8'));
 const RICH = path.join(S, 'harness/scratch/seed-rich.json');
 const OLD = path.join(S, 'work/integration/shell/seed-old.json');
@@ -15,7 +17,7 @@ const ok = (cond, what) => { if (cond) passes++; else { fails++; console.log('  
 const eq = (a, b, what) => ok(a === b, what + ' (got ' + JSON.stringify(a) + ', want ' + JSON.stringify(b) + ')');
 
 async function open(seed, tail) {
-  const h = await launch(Object.assign({ seedStorage: seed || {} }, mobile ? { mobile: true } : { width: 1280, height: 800 }));
+  const h = await launch(Object.assign({ seedStorage: seed || {}, root: ROOT }, mobile ? { mobile: true } : { width: 1280, height: 800 }));
   await h.page.goto(h.url + (tail || '#stats'));
   await h.page.waitForFunction(() => window.__atlas && window.__atlas.state.allFeatures.length > 0 && document.querySelector('#stats-content .kpis'), null, { timeout: 30000 });
   // Province maps arrive in the background and redraw the page
@@ -79,7 +81,9 @@ const checks = {
     eq(num(kpi('First-try accuracy').value), got.pct, 'first-try accuracy, last 30 days');
     eq(num(kpi('Day streak').value), got.streak.current, 'day streak');
     ok(kpi('Day streak').sub.indexOf(String(got.streak.longest)) !== -1, 'longest streak printed: ' + kpi('Day streak').sub);
-    eq(num(kpi('Rounds played').value), got.totals.games, 'rounds played');
+    // Every round the stores know of: sessions of the learning history, or full rounds in the records and the pin log, whichever is more
+    const fullRounds = Object.values(JSON.parse(seed['atlas-records'])).reduce((n, e) => n + (e.gamesPlayed || 0), 0) + JSON.parse(seed['atlas-pin'] || '{"games":[]}').games.length;
+    eq(num(kpi('Rounds played').value), Math.max(got.totals.games, fullRounds), 'rounds played (history ' + got.totals.games + ', records and pin log ' + fullRounds + ')');
     const mins = Math.round(got.totals.seconds / 60);
     eq(kpi('Time played').value, Math.floor(mins / 60) + 'h' + String(mins % 60).padStart(2, '0') + 'm', 'time played');
 
@@ -240,6 +244,12 @@ const checks = {
     ok(got.strip > 0, 'old daily attempts fill the strip: ' + got.strip);
     ok(got.pin > 0, 'old pin games fill the regions: ' + got.pin);
     eq(got.kpis[0], '—', 'no mastery yet: the headline stays a dash');
+    // The rounds in the old records and the pin log are rounds played, though no learning history counted them
+    const oldRounds = keys.reduce((n, k) => n + (JSON.parse(seed['atlas-records'])[k].gamesPlayed || 0), 0) + JSON.parse(seed['atlas-pin'] || '{"games":[]}').games.length;
+    const labels = await h.page.evaluate(() => Array.from(document.querySelectorAll('.kpi')).map(k => k.querySelector('dt').textContent + '=' + k.querySelector('dd').textContent + '/' + k.querySelector('.kpi-sub').textContent));
+    const rounds = labels.find(l => /^Rounds played/.test(l)), time = labels.find(l => /^Time played/.test(l));
+    ok(oldRounds > 0 && num(rounds.split('=')[1].split('/')[0]) === oldRounds && !/none yet/.test(rounds), 'Rounds played counts the rounds of the old records (' + oldRounds + '): ' + rounds);
+    ok(!/none yet/.test(time), 'Time played does not say "none yet" beside them: ' + time);
     ok(!got.lead, 'not treated as a brand-new player');
     eq(h.errors.length, 0, 'page errors: ' + h.errors.join(' | '));
     await h.close();

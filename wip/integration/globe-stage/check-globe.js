@@ -13,9 +13,11 @@ const args = process.argv.slice(2);
 const mobile = args.includes('--mobile');
 const onlyArg = args.find(a => a.startsWith('--only='));
 const only = onlyArg ? onlyArg.slice(7).split(',') : null;
+// --root=<dir> serves another copy of the app (to show a check failing on an earlier tree)
+const ROOT = (args.find(a => a.startsWith('--root=')) || '').slice(7) || undefined;
 const r = lib.reporter('globe checks' + (mobile ? ' (phone)' : ''));
 
-const open = (opts) => lib.launchApp(Object.assign(mobile ? { mobile: true, dpr: 2, width: 390, height: 844 } : { width: 1280, height: 800 }, opts || {}));
+const open = (opts) => lib.launchApp(Object.assign(mobile ? { mobile: true, dpr: 2, width: 390, height: 844 } : { width: 1280, height: 800 }, { root: ROOT }, opts || {}));
 const st = (page) => page.evaluate(() => {
   const s = window.__atlas.state, m = window.__atlas.map;
   return { current: s.current, attempts: s.attempts, locked: s.interactionLocked, picks: s.picks.slice(), correct: s.correct, wrong: s.wrong,
@@ -239,9 +241,13 @@ groups.view = async () => {
   r.eq('view: M again turns it off', [await page.evaluate(() => document.getElementById('map-wrap').classList.contains('sat-on')), await page.evaluate(() => window.__atlas.globe.stats().imagery)], [false, null]);
   // A new window shape: marks stay; a view that was moved is kept, one at home is fitted again
   await page.keyboard.press('0');
+  // The flight home has to land first: a window that changes shape while the globe is still on its way leaves the view alone
+  await page.waitForFunction(() => { const A = window.__atlas, v = A.globe.getView(), hm = A.map.home; return Math.abs(v.lon - hm.lon) < 1e-6 && Math.abs(v.lat - hm.lat) < 1e-6 && Math.abs(v.k - hm.k) < 1e-6; }, null, { timeout: 10000 });
   const size = mobile ? { width: 844, height: 390 } : { width: 900, height: 700 };
   await page.setViewportSize(size);
-  await page.waitForTimeout(600);
+  // The refit follows the resize after a pause, and after whatever the browser has to redraw first: up to 5 s for it
+  await page.waitForFunction(k => Math.abs(window.__atlas.map.home.k - k) > 1e-3, s0.home.k, { timeout: 5000 }).catch(() => {});
+  await page.waitForTimeout(300);
   s = await st(page);
   r.eq('view: marks survive a new window shape', s.marks.length, 1);
   r.check('view: a view left at home is fitted to the new shape', Math.abs(s.view.k - s.home.k) < 1e-6 && Math.abs(s.home.k - s0.home.k) > 1e-3, [s0.home, s.home]);
@@ -305,9 +311,11 @@ groups.us = async () => {
   // A tap 2 px on the target's side of the midpoint between it and the dot nearest to it
   const gap = await page.evaluate(n => {
     const A = window.__atlas, g = A.globe, b = document.getElementById('globe-host').getBoundingClientRect();
-    const a = g.project(A.map.dots.find(d => d.name === n).lonlat);
+    // Where the dots are drawn (crowded ones stand a little apart from their cities)
+    const drawn = A.dotPoints ? A.dotPoints() : A.map.dots.map(d => Object.assign({ dot: d }, g.project(d.lonlat)));
+    const a = drawn.find(p => p.dot.name === n);
     let c = null, len = Infinity;
-    A.map.dots.forEach(d => { const q = g.project(d.lonlat), l = Math.hypot(q.x - a.x, q.y - a.y); if (d.name !== n && l < len) { len = l; c = q; } });
+    drawn.forEach(q => { const l = Math.hypot(q.x - a.x, q.y - a.y); if (q.dot.name !== n && l < len) { len = l; c = q; } });
     const t = Math.max(0, len / 2 - 2) / len;
     window.__t.tapAt(b.left + a.x + (c.x - a.x) * t, b.top + a.y + (c.y - a.y) * t);
     return len;
@@ -315,6 +323,37 @@ groups.us = async () => {
   let s = await st(page);
   r.eq('us: of two crowded dots (' + gap.toFixed(1) + ' px apart) the nearer takes the tap', [s.seq, s.picks], [[2], []]);
   r.eq('us: the found dot is marked', await page.evaluate(() => Array.from(window.__atlas.map.dotMarks.entries())), [[first, 'found']]);
+  // Cities that nearly coincide at the opening view (New York and Jersey City are under 2 px apart)
+  await start(page, 'northeast-cities', { practice: ['New York', 'Jersey City'] });
+  const pair = await page.evaluate(() => {
+    const A = window.__atlas, g = A.globe;
+    const a = g.project(A.map.dots.find(d => d.name === 'New York').lonlat), b = g.project(A.map.dots.find(d => d.name === 'Jersey City').lonlat);
+    const drawn = A.dotPoints ? A.dotPoints().filter(p => p.visible) : null;
+    let least = Infinity;
+    if (drawn) for (let i = 0; i < drawn.length; i++) for (let j = i + 1; j < drawn.length; j++) least = Math.min(least, Math.hypot(drawn[i].x - drawn[j].x, drawn[i].y - drawn[j].y));
+    const at = n => { const d = drawn && drawn.find(p => p.dot.name === n); return d ? [d.x, d.y] : null; };
+    return { apart: Math.hypot(a.x - b.x, a.y - b.y), ny: at('New York'), jc: at('Jersey City'), least: least, atHome: Math.abs(g.getView().k - A.map.home.k) < 1e-9 };
+  });
+  r.check('us: the two cities stand ' + pair.apart.toFixed(1) + ' px apart at the opening view, and their dots are drawn apart' + (mobile ? '' : ', as are all the others'),
+    pair.atHome && pair.apart < 4 && !!pair.ny && Math.hypot(pair.ny[0] - pair.jc[0], pair.ny[1] - pair.jc[1]) >= 9.9 && (mobile || pair.least >= 9), pair);
+  // Once one of the two is answered, a tap on its dot is not swallowed: the nearest dot still to be found takes it
+  {
+    const asked = (await st(page)).current;
+    const tapOn = () => page.evaluate(n => {
+      const A = window.__atlas, g = A.globe, box = document.getElementById('globe-host').getBoundingClientRect();
+      const drawn = A.dotPoints ? A.dotPoints() : A.map.dots.map(d => Object.assign({ dot: d }, g.project(d.lonlat)));
+      const a = drawn.find(p => p.dot.name === n);
+      window.__t.tapAt(box.left + a.x, box.top + a.y);
+    }, asked);
+    await tapOn();
+    await page.waitForFunction(n => window.__atlas.state.current && window.__atlas.state.current !== n && !window.__atlas.state.interactionLocked, asked, { timeout: 15000 });
+    s = await st(page);
+    r.eq('us: a tap on the asked city\'s own dot answers it', s.seq, [2]);
+    await tapOn();
+    await page.waitForTimeout(300);
+    s = await st(page);
+    r.check('us: a second tap on that dot, now answered, goes to a dot still to be found beside it', s.seq.length === 2 || (s.attempts === 1 && s.picks.length === 1 && s.picks[0] !== asked), [s.seq, s.picks, s.attempts]);
+  }
   await h.close();
 };
 

@@ -61,6 +61,18 @@ Sizes: d1280 = 1280x800 mouse, d1024 = 1024x768 mouse, t768 = 768x1024 touch, p3
   - Flags of Oceania at 360x640: Fiji under `#zoom-in-btn`.
 - Seen: shots/na-p390.png (the eastern Caribbean is exactly under the + / - / recentre column; the one-time
   "Pinch to zoom" pill also lies over Central America), shots/india-p360.png (India's south under the tally and pill).
+- The same corner takes part of a country a question SHOWS (second reviewer, `node misc.js --parts=A`, out/misc.log):
+  Capitals of Africa at 390x844, "Which city is the capital of Madagascar": 107 of Madagascar's 266 outline points
+  are under the + / - buttons after the globe has turned to it (shots/shown-p390-Madagascar.png: the island's
+  right half is behind the column). The previous reviewer's play-through log (out/frame-p390.log) has the same
+  figure, and Mississippi 148 of 245 points under the tally in States -> Capitals (not reproduced in a practice
+  round of eight states: it depends on where the globe stood before the question).
+- Pin the City, where the player has to tap the city's spot (second reviewer, `node pin-open.js`, out/pin-open.log,
+  elementFromPoint at each city's true position at the opening view, hint gone): Pin Africa: Antananarivo is under
+  the recentre button at 360x640 (303,461) and under the controls column at 390x844 (365,596); Pin North America:
+  Santo Domingo under the controls column at 360x640 (302,432). shots/pinopen-p360-pin-africa.png: Madagascar is
+  behind the + / - / recentre column except for its western edge. The other four continents are clear at both sizes.
+  (frame-play at p360, out/frame2-p360.log: after a skip the revealed city is under the same buttons for these two.)
 - The places can be reached by dragging the globe, so nothing is unanswerable; but a tap where the island is presses
   Zoom out instead, and the player cannot see them at the opening view.
 - Fix idea: on a narrow stage keep the frame clear of the controls column / tally (shift the centre, or inset the
@@ -114,3 +126,100 @@ Sizes: d1280 = 1280x800 mouse, d1024 = 1024x768 mouse, t768 = 768x1024 touch, p3
   listeners 64 + 4 per capital question asked (the choice buttons, dropped with their DOM, not a leak), no intervals
   off the game screen, 0 rAF callbacks and 0 engine frames in 3 s on Home, Stats, Settings, Explore (at rest),
   results, and in a round at rest.
+
+## Second reviewer (resumed 08:05 UTC, 18 Nov) — what is being done
+- [running] perf-copy.js (stock flags): load + link + start for new and old, 5-6 runs each -> out/perf-*.log, perf-results.jsonl
+- [todo] Learn label placement cost (Russia in Europe's ladder) when a zoom settles
+
+### F5 (minor) Cold start is slower than the old app's (1c74e1d) when the network costs nothing: Home and a level link
+- Tool: `node perf-copy.js --only=load,link --runs=5 --tag=review` (the polish stage's perf.js; stock harness flags, local
+  server, fonts from memory). Raw rows: perf-results.jsonl (tag review), out/perf-loadlink.log.
+- Home usable (level cards / menu buttons in the page), ms after navigation, 5 runs:
+  new desktop 216,269,203,235,217 (median 217) | old desktop 194,146,149,161,150 (150)
+  new phone   229,228,255,202,240 (229)        | old phone   153,175,169,181,174 (174)
+- Level link `?play=world`, cold, navigation -> a question that can be answered, 5 runs:
+  new desktop 700,714,712,732,643 (712) | old desktop 573,554,662,530,558 (558)
+  new phone   725,746,768,737,745 (745) | old phone   535,540,641,556,536 (540)
+- Cold load of Home: new 10 requests, 1,693,833 B raw / 510,122 B as brotli; old 9 requests, 1,518,178 B / 494,320 B.
+  The document itself is 744,103 B (172,190 brotli) against 299,997 B (63,756); the old app's d3 bundle (279,633 /
+  77,575) is gone, four vendor files (67,913 / 22,157) replace it.
+- Same direction under software compositing (previous reviewer's measure-copy.js, 3 runs, measure-results-review.json):
+  `?play=world` first question new 1250 / 1358 (satellite) desktop, 1142 / 1844 phone; old 702 / 726, 661 / 657 (there
+  every WebGL frame is CPU-drawn, so this overstates it).
+- Caveat: in the harness the old app's three extra origins (cdnjs, jsdelivr) answer at once from disk; on the real
+  network the new app's same-origin files save those connections. So: slower in CPU terms (a 2.5x larger document
+  to parse, engine build of the 50m world ~150-170 ms before the first question), not necessarily on a real line.
+
+## Coverage (second reviewer)
+- [done] perf-copy load + link, both apps, both sizes (above).
+- [done] perf-copy start (stock flags; new 6 runs, old 5 runs; out/perf-start-new.log, perf-start-old.log). NOT slower anywhere:
+  Europe chart new 59 desktop / 72 phone vs old 399 / 402; States 62 / 65 vs 708 / 681; Europe satellite 112 / 103
+  (runs 86,112,115,270,109,93 and 97,103,108,243,98,89: the slow group is one run in six) vs 416 / 438; India 108 / 85
+  (old: chooser, not comparable). Painted two frames later: new 64-128, old 405-718.
+- [done] per frame (previous reviewer's measure-copy.js run, software compositing, measure-results-review.json): script per
+  frame new 0.39-0.47 ms vs old 0.26-0.41 ms (both far under a frame); engine draw median 0.2-0.3 ms; after a gesture
+  new 2-3 ms of script vs old 14-41 ms. Frame intervals 200-316 ms (new) vs 16.7-33 ms (old) there are the CPU-drawn
+  WebGL canvas of this sandbox (no GPU), a known limit, not reported.
+
+### F6 (major) Europe's Learn ladder freezes the page for about a second (several on a phone) when Russia's name is first placed
+- Where: `learnAnchor()` -> `anchorInBox()` (index.html 14259-14307): for a country whose anchor lies outside the
+  continent's frame it runs `d3.geoContains(feature, point)` on a 30x30 grid, 900 calls against the whole 50m
+  feature, synchronously, inside `placeLearnLabels()` (called from `drawLearnStudy()` / `startLearnLevel()`). Russia's
+  50m shape costs ~1.1 ms a call here. The result is cached in `run.anchors`, but the run is made anew by
+  `createLearnRun()` every time the ladder is opened, so it is paid once per visit: at Start when Russia is already
+  among the names shown, otherwise at the moment the level that adds Russia comes up.
+- Evidence: `node learn-cost2.js --size=d1280 --runs=3` (seeds atlas-learn for europe with Russia last in the order;
+  out/learn-cost2.log). Level 38 (Russia not yet shown): study view up after 1171-1272 ms, 0 geoContains calls,
+  longest task 496-558 ms (the sandbox's CPU-drawn frames). Level 39 (Russia shown): up after 2113-2259 ms, 900
+  calls over 961-1072 ms, one task of 1018-1115 ms. `--size=p390 --throttle=4` (CDP CPU throttle x4, a mid-range
+  phone): 900 calls over 4347-4617 ms, one task of 4517-4822 ms, study view up after 6.0-6.4 s instead of 1.7 s.
+  CPU profile (learn-cost.js, out/learn-cost-d1280.log): anchorInBox 1039 ms inclusive of placeLearnLabels' 1107 ms.
+  Africa's ladder also runs it for Cabo Verde (22 ms) and Mauritius (4 ms): cheap, small shapes. No other continent.
+- When a zoom settles (the item asked about): nothing is repeated. learn-cost.js: after wheel zooms, 0 geoContains
+  calls, placeLearnLabels 0.2-1.6 ms inclusive per ladder (all six continents, every name on the map).
+- Fix idea: test the grid against only the polygons of the feature whose bounding box meets the frame box (most of
+  Russia's pieces are Arctic islands and Siberia), or against the 110m shape, or ask the engine's own picker; or
+  keep the anchors per level key for the visit/page rather than per run; or do the search in idle time before the
+  level that needs it.
+- [done] Learn label cost (learn-cost.js, learn-cost2.js): F6; nothing repeated when a zoom settles.
+- [done] misc.js: (B) a flight to the next country in Capitals of the World is one view change under Reduce motion from
+  the OS and from Settings (motion allowed: eased over ~290 ms here); the glide after a drag is switched off in
+  `startInertia()` by the same flag (read; a glide could not be produced here even with motion allowed, the
+  sandbox's 250 ms frames). (C) the hand cursor is worked out again when the globe turns under a resting mouse.
+- [done] frame-play at the sizes the first pass left (out/frame2-p360.log, frame2-t768.log, frame2-d1024.log): pin-europe,
+  pin-oceania, pin-world, capitals-europe, name-africa/name-asia, us-state-to-capital at 768x1024 and 1024x768: shown
+  places and reveals clear (only the toast over Norway's north, and a city name under the toast for 3 cities);
+  p360: pins all seven levels, capitals-africa, capitals-north-america, us-state-to-capital, name-europe: nothing
+  beyond F2's corner (Antananarivo, Santo Domingo; pin name labels partly under the controls for 8 cities).
+- [running] overlay-cost.js: script per frame of the overlay while a question outlines a large country (d3 path every frame).
+
+### F7 (major) An outlined country is run through a d3 path on every frame: Canada costs ~15 ms of script a frame on a desktop CPU
+- Where: `drawMapOverlay()` (index.html 8033-8055) calls the engine's `draw.outline()` (11469-11490) for every entry of
+  `map.outlines` on every frame the globe draws; `draw.outline` pushes each part of the 50m feature through
+  `d3.geoPath(d3.geoOrthographic().clipAngle(90).precision(0.3))` (rotation, limb clipping, adaptive resampling).
+  Outlines that stay for many frames: 'prompt' (the country a Name It / Capitals / States -> Capitals question shows,
+  for the whole question), 'learn' (the newest place of a Learn level) and 'reveal' (2.6 s, redrawn every frame for
+  its "breathing" alpha, with a 10 px shadowBlur on top).
+- Evidence: `node overlay-cost.js` (CDP CPU profile, inclusive time / frames drawn while dragging; out/overlay-cost.log,
+  overlay-cost2.log). Name the Countries of the World, practice round of one country, 1280x800, no throttle, per frame:
+  Canada (11,573 points) overlay 14.7 ms, all script 15.5 ms; Russia (7,427) 9.6 / 10.4; Indonesia (3,717) 4.7 / 5.6;
+  Norway (1,985) 2.4 / 3.5; Chad (291) 0.6 / 1.7. Capitals of the World, Canada: 14.5 / 15.0.
+  390x844 with the CPU throttled x4: Canada 75.1 ms overlay (78.2 all script) per frame, Russia 37.3 (40.4), Chad 2.6 (5.7).
+  The reveal after a skip in The World (`--level=world --reveal`): Canada 15.2 ms overlay per frame for each of the
+  frames of the 2.5 s reveal (18.2 all script), Chad 1.3 (2.6). Learn, Europe with Russia newest (learn-cost.js):
+  drawMapOverlay 404 ms over the frames of three zooms, against 21-103 ms on the other continents.
+  For comparison the stages' own per-frame figure (0.5-0.9 ms of script) was taken on `?play=world`, which outlines nothing.
+- Effect: while such a question is up, turning or zooming the globe cannot hold the display rate even on a desktop
+  (15.5 ms of script in a 16.7 ms frame before the engine and the browser do anything), and on a phone it is a few
+  frames a second; every missed or skipped large country costs the same for 2.6 s.
+- Fix idea: draw these outlines on the GPU with the engine's border lines (a per-feature line style), or give
+  `draw.outline` a cheap path while the view is moving (no adaptive resampling, skip parts smaller than a pixel,
+  a coarser copy of the rings: the 2D renderer already does this, see the comment at ~10220), and keep the exact one
+  for the settled frame.
+
+## Coverage (second reviewer, end)
+- [done] overlay-cost.js (F7). The "United States of America" row of overlay-cost2.log is not the
+  US: the level's name is "United States", an unknown practice name starts a full round (usa.js: it asked Syria), so
+  that row is left out of the evidence.
+- Everything in the lens list is now marked; what was not done is listed in the final report's notChecked.
+- [done] final report returned by the second reviewer (7 findings: F6, F1, F2, F7 major; F3, F4, F5 minor).

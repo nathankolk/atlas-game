@@ -13,6 +13,8 @@ const { launch } = require(path.join(S, 'harness/atlas-harness.js'));
 const onlyArg = process.argv.find(a => a.startsWith('--only='));
 const ONLY = onlyArg ? onlyArg.slice(7).split(',') : null;
 const want = g => !ONLY || ONLY.includes(g);
+// --root=<dir> serves another copy of the app (to show a check failing on an earlier tree)
+const ROOT = (process.argv.find(a => a.startsWith('--root=')) || '').slice(7) || undefined;
 
 let passed = 0, failed = 0;
 function check(name, ok, detail) {
@@ -22,7 +24,7 @@ function check(name, ok, detail) {
 const eq = (name, got, wanted) => check(name, JSON.stringify(got) === JSON.stringify(wanted), { got, wanted });
 
 async function open(opts, seed) {
-  const h = await launch(Object.assign({ seedStorage: Object.assign({ 'atlas-theme': 'light' }, seed || {}) }, opts || {}));
+  const h = await launch(Object.assign({ seedStorage: Object.assign({ 'atlas-theme': 'light' }, seed || {}), root: ROOT }, opts || {}));
   if (opts && opts.size) await h.page.setViewportSize(opts.size);
   return h;
 }
@@ -129,6 +131,14 @@ async function perf() {
 }
 
 /* ===== The frames a round opens on ===== */
+// Pin the City's cities, read from the page's source: name -> { region, lat, lon }
+const PIN_CITY_TABLE = (() => {
+  const src = require('fs').readFileSync(path.join(ROOT || '/home/user/atlas-game/public', 'index.html'), 'utf8');
+  const table = eval('(' + src.match(/const PIN_CITIES = (\{[\s\S]*?\n  \});/)[1] + ')');
+  const out = {};
+  Object.keys(table).forEach(region => table[region].forEach(c => { out[c[0]] = { region: region, lat: c[2], lon: c[3] }; }));
+  return out;
+})();
 const frameOf = (page, places) => page.evaluate(names => {
   const A = window.__atlas, g = A.globe, c = A.map.clear, host = document.getElementById('globe-host');
   const stage = document.getElementById('map-wrap').getBoundingClientRect(), hr = host.getBoundingClientRect();
@@ -177,6 +187,50 @@ async function frames() {
   eq('frames (phone): no page errors', h.errors, []);
   await h.close();
 
+  // Phones: at the opening view nothing a round asks for lies under the map controls or the tally
+  for (const size of [{ width: 390, height: 844 }, { width: 360, height: 640 }]) {
+    const tag = 'frames (phone ' + size.width + 'x' + size.height + '): ';
+    h = await open({ mobile: true, dpr: 2, size: size }, { 'atlas-hint-seen': '1' });
+    await home(h);
+    for (const key of ['north-america', 'africa', 'flags-africa', 'flags-oceania', 'india-states', 'russia-south', 'europe', 'pin-africa', 'pin-north-america']) {
+      await start(h.page, await h.page.evaluate(k => window.__atlas.levelByKey(k).arg, key));
+      await h.page.waitForTimeout(500);
+      const res = await h.page.evaluate((cities) => {
+        const A = window.__atlas, g = A.globe, m = A.map, st = A.state;
+        const host = document.getElementById('globe-host'), hr = host.getBoundingClientRect();
+        let spots = [];
+        if (st.pin) spots = Object.keys(cities).filter(n => cities[n].region === st.currentContinent).map(n => [n, [cities[n].lon, cities[n].lat]]);
+        else m.eligible.forEach(k => { const at = g.anchor(m.layer, k); if (at) spots.push([k.slice(5), at]); });
+        const under = [], outside = [];
+        spots.forEach(([name, at]) => {
+          const p = g.project(at);
+          const el = p.visible ? document.elementFromPoint(hr.left + p.x, hr.top + p.y) : null;
+          if (!p.visible || !el) { outside.push(name); return; }
+          if (!host.contains(el) && !el.closest('.map-hint')) under.push(name);
+        });
+        const v = g.getView();
+        return { n: spots.length, under: under, outside: outside, home: Math.abs(v.k - m.home.k) < 1e-6 && Math.abs(v.lon - m.home.lon) < 1e-6 };
+      }, PIN_CITY_TABLE);
+      check(tag + key + ': every place it asks for can be seen and tapped at the opening view (none under the controls or the tally)', res.home && res.n >= 7 && res.under.length === 0 && res.outside.join() === (key === 'europe' ? 'Russia' : ''), res);   // Russia's anchor is in Siberia, off Europe's frame: it is tapped on European Russia
+      await h.page.evaluate(() => document.getElementById('back-btn').click());
+      await h.page.waitForFunction(() => document.body.dataset.screen === 'menu');
+    }
+    // A country that a question shows is clear of them too, once the globe has turned to it
+    await start(h.page, 'capitals-africa', { practice: ['Madagascar'] });
+    await h.page.waitForTimeout(1500);
+    const shown = await h.page.evaluate(() => {
+      const A = window.__atlas, g = A.globe, host = document.getElementById('globe-host'), hr = host.getBoundingClientRect();
+      const f = A.state.featureByCanonical.get('Madagascar');
+      let n = 0, under = 0;
+      const walk = a => { if (typeof a[0] === 'number') { n++; const p = g.project(a); const el = p.visible ? document.elementFromPoint(hr.left + p.x, hr.top + p.y) : null; if (!el || (!host.contains(el) && !el.closest('.map-hint'))) under++; } else a.forEach(walk); };
+      walk(f.geometry.coordinates);
+      return { points: n, under: under };
+    });
+    check(tag + 'Capitals of Africa, Madagascar: the country the question shows is not under the HUD', shown.points > 100 && shown.under === 0, shown);
+    eq(tag + 'no page errors', h.errors, []);
+    await h.close();
+  }
+
   // Desktop: the box as before, and Pin the City centred on what the HUD leaves clear
   h = await open();
   await home(h);
@@ -184,6 +238,20 @@ async function frames() {
   await h.page.waitForTimeout(500);
   f = await frameOf(h.page, [[-25, 34], [45, 34], [-25, 72], [45, 72], [10, 34], [10, 72]]);
   check('frames (desktop): Europe\'s whole box is inside the clear area', Object.keys(f.pts).every(k => inside(f.pts[k], f.clear, 2)), [f.pts, f.clear]);
+  // The window changes size while the player has the globe somewhere else: their view stays, and Recentre goes to a frame made for the new size
+  const EUROPE_BOX = [[-25, 34], [45, 34], [-25, 72], [45, 72], [10, 34], [10, 72], [-25, 53], [45, 53]];
+  await h.page.evaluate(() => { const g = window.__atlas.globe; g.setView({ lon: 60, lat: 20, k: g.getView().k * 1.8 }); });
+  const mine = await h.page.evaluate(() => window.__atlas.globe.getView());
+  await h.page.setViewportSize({ width: 900, height: 620 });
+  await h.page.waitForTimeout(700);
+  const kept = await h.page.evaluate(() => window.__atlas.globe.getView());
+  check('frames (resize): a view the player made is kept when the window changes size', Math.abs(kept.lon - mine.lon) < 1e-6 && Math.abs(kept.lat - mine.lat) < 1e-6 && Math.abs(kept.k - mine.k) < 1e-6, [mine, kept]);
+  await h.page.keyboard.press('0');
+  await h.page.waitForTimeout(1200);
+  f = await frameOf(h.page, EUROPE_BOX);
+  check('frames (resize): and Recentre then shows Europe\'s whole box inside the clear area of the new window', Object.keys(f.pts).every(k => inside(f.pts[k], f.clear, 2)) && f.stage[0] === 900, [f.pts, f.clear]);
+  await h.page.setViewportSize({ width: 1280, height: 800 });
+  await h.page.waitForTimeout(700);
   eq('frames (desktop): the globe\'s host is as wide as the stage', [f.host[0], f.host[2]], [0, f.stage[0]]);
   await h.page.evaluate(() => document.getElementById('back-btn').click());
   await h.page.waitForFunction(() => document.body.dataset.screen === 'menu');
@@ -403,6 +471,21 @@ async function a11y() {
     return { released, later: g.getView().lon };
   });
   check('a11y (reduce motion): the globe stops where a drag lets go of it (no glide)', Math.abs(glide.later - glide.released) < 1e-6, glide);
+  // The opening frame is measured from the round's own prompt card: a taller card (a flag) after a shorter one, and back
+  const framed = () => h.page.evaluate(() => {
+    const A = window.__atlas, stage = document.getElementById('map-wrap').getBoundingClientRect(), host = document.getElementById('globe-host').getBoundingClientRect();
+    const card = document.getElementById('prompt').getBoundingClientRect();
+    return { clearTop: Math.round(host.top - stage.top + A.map.clear.top), cardBottom: Math.round(card.bottom - stage.top), flag: document.getElementById('prompt-country').classList.contains('is-flag') };
+  });
+  const under = f => f.clearTop >= f.cardBottom && f.clearTop <= f.cardBottom + 14;
+  await start(h.page, 'flags-world');
+  await h.page.waitForTimeout(300);
+  const tall = await framed();
+  check('a11y (reduce motion): a flag round after a country round is framed under the flag card', tall.flag && under(tall), tall);
+  await start(h.page, 'World');
+  await h.page.waitForTimeout(300);
+  const short = await framed();
+  check('a11y (reduce motion): and a country round after it under the shorter card again', !short.flag && short.cardBottom < tall.cardBottom - 20 && under(short), [short, tall]);
   await h.close();
 }
 
