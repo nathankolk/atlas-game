@@ -6815,6 +6815,8 @@
     const form = document.getElementById('answer-form');
     form.classList.remove('is-found', 'is-missed', 'shake');
     document.getElementById('answer-input').value = '';
+    // No key came while the last answer was on show: nothing is trailing
+    if (typedRun.trail === 1) typedRun.trail = 0;
   }
 
   // Puts the cursor in the field. It stays there from question to question,
@@ -6893,18 +6895,43 @@
     }
   }
 
+  // Typing that runs on past a name taken as it was typed ("United States"
+  // on its way to "United States of America") belongs to that answer, not
+  // to the next question. trail: 0 nothing to drop; 1 a name has just been
+  // taken as typed; 2 the typing has carried on since, and keys are
+  // dropped until it pauses.
+  const typedRun = { trail: 0, timer: 0 };
+  const TYPING_PAUSE = 1000;
+
+  // A key of the run of typing that the answer just taken ended
+  function dropTypedKey() {
+    typedRun.trail = 2;
+    clearTimeout(typedRun.timer);
+    typedRun.timer = setTimeout(() => { typedRun.trail = 0; }, TYPING_PAUSE);
+  }
+
   // The field changed. A complete, exactly spelled name is taken at once;
-  // anything less waits for Enter ("Niger" may be on its way to "Nigeria").
+  // anything less waits for Enter ("Niger" may be on its way to "Nigeria",
+  // "Bosnia" to "Bosnia and Herzegovina").
   function onAnswerInput() {
     const input = document.getElementById('answer-input');
     if (state.gameMode !== 'name-it' || !state.current) return;
     if (state.interactionLocked) {
       // Nothing is typed over an answer that is on show
       input.value = state.current;
+      if (typedRun.trail) dropTypedKey();
+      return;
+    }
+    if (typedRun.trail === 2) {
+      input.value = '';
+      dropTypedKey();
       return;
     }
     const result = state.quiz.matcher.match(input.value);
-    if (result && result.exact && !result.partial && result.name === state.current) acceptTypedAnswer(result);
+    if (result && result.exact && !result.partial && !result.short && result.name === state.current) {
+      typedRun.trail = 1;
+      acceptTypedAnswer(result);
+    }
   }
 
   // Shows a missed answer on the map for a while: its shape in gold with a
@@ -13274,7 +13301,8 @@ const Quiz = (function () {
 
     // Resolves a typed answer to an entry: { name, exact, via } for an answer, { name, outside: true }
     // for an exact name outside restrictTo, null otherwise. partial: true marks an exact match that is
-    // also the start of another entry's name.
+    // also the start of another entry's name. short: true marks an answer given by an alias that is
+    // the start of a longer spelling of its own entry ("bosnia", of "bosnia and herzegovina").
     function match(text) {
       if (!isString(text) || text.length > MAX_INPUT) return null;
       const f = fold(text);
@@ -13286,6 +13314,7 @@ const Quiz = (function () {
           ? { name: names[hit.entry], outside: true }
           : { name: names[hit.entry], exact: true, via: hit.via };
         if (startsAnother(f, hit.entry)) res.partial = true;
+        if (res.exact && hit.via !== 'name' && prefixOwner.get(f) === hit.entry) res.short = true;
         return res;
       }
       const e = nearest(f);

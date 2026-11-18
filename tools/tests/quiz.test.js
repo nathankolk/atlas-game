@@ -418,6 +418,32 @@ group('matcher: while a name is being typed, no prefix is taken for another coun
   return nearOnPrefix + ' prefixes near-match their own country early; ' + partials.size + ' prefix/other-country pairs carry partial';
 });
 
+group('matcher: an alias that begins a longer spelling of its own country carries short; a full name is not taken before its last key', () => {
+  const shorts = new Set();
+  for (const [f, c, raw] of SPELLINGS) {
+    const r = M.match(raw);
+    const longer = SPELLINGS.some(s => s[1] === c && s[0].length > f.length && s[0].startsWith(f));
+    if (f !== fold(c) && longer) assert(r.short === true || r.partial === true, raw + ' is taken as a whole answer: ' + show(r));
+    else assert.strictEqual(r.short, undefined, raw);
+    if (r.short) shorts.add(f);
+  }
+  for (const typed of ['Bosnia', 'Trinidad', 'Antigua', 'Saint Kitts', 'St Kitts', 'Saint Vincent', 'St. Vincent', 'US']) {
+    assert.deepStrictEqual(M.match(typed), { name: M.match(typed).name, exact: true, via: 'alias', short: true }, typed);
+  }
+  for (const typed of ['Bosnia and Herzegovina', 'Trinidad and Tobago', 'United States', 'Russia', 'Brunei', 'USA', 'Holland']) {
+    assert.strictEqual(M.match(typed).short, undefined, typed);
+  }
+  // Key by key: nothing on the way to a full name is an answer the game takes as typed
+  const takenAsTyped = r => !!r && r.exact === true && !r.partial && !r.short;
+  for (const full of ['Bosnia and Herzegovina', 'Antigua and Barbuda', 'Saint Kitts and Nevis', 'St Kitts and Nevis', 'Saint Vincent and the Grenadines', 'Trinidad and Tobago', 'Burkina Faso', 'USA', 'Suriname']) {
+    for (let k = 1; k < full.length; k++) assert(!takenAsTyped(M.match(full.slice(0, k))), 'typing ' + show(full) + ' is taken at ' + show(full.slice(0, k)));
+    assert(takenAsTyped(M.match(full)), full + ' is not taken when complete');
+  }
+  // Outside the level, the name is what matters, not how it was typed
+  assert.deepStrictEqual(Quiz.matcher(ENTRIES, { restrictTo: CONTINENTS.Asia }).match('Bosnia'), { name: 'Bosnia and Herzegovina', outside: true });
+  return shorts.size + ' short forms: ' + [...shorts].join(', ');
+});
+
 /* ===== 9. What a real player types ===== */
 // [input, expected]: a name = must resolve to it; null = must resolve to nothing;
 // [name] = a misspelling of that country: resolving to it or to nothing is fine, anything else fails.
