@@ -4690,9 +4690,9 @@
     const eyebrow = '<span class="eyebrow">Puzzle <b>No. ' + dailyPuzzleNumber(dateKey) + '</b></span>';
 
     if (!attempt) {
-      return '<article class="daily" data-daily="unplayed" data-action="play-daily">' + art +
+      return '<article class="daily" data-daily="unplayed" data-date="' + dateKey + '" data-action="play-daily">' + art +
         '<div class="daily-top">' + eyebrow +
-          '<span class="daily-count">' + icon('clock', 'icon--sm') + 'Resets in <span data-countdown="words"></span></span>' +
+          '<span class="daily-count">' + icon('clock', 'icon--sm') + 'Resets in <span data-countdown="words" data-day="' + dateKey + '"></span></span>' +
         '</div>' +
         '<div class="daily-body">' +
           '<h3 class="daily-title">The Daily Five</h3>' +
@@ -4705,9 +4705,9 @@
     }
 
     const pct = attempt.total > 0 ? Math.round((attempt.correct / attempt.total) * 100) : 0;
-    return '<article class="daily is-done" data-daily="played">' + art +
+    return '<article class="daily is-done" data-daily="played" data-date="' + dateKey + '">' + art +
       '<div class="daily-top">' + eyebrow +
-        '<span class="daily-count">' + icon('clock', 'icon--sm') + 'Next puzzle in <span data-countdown="clock"></span></span>' +
+        '<span class="daily-count">' + icon('clock', 'icon--sm') + 'Next puzzle in <span data-countdown="clock" data-day="' + dateKey + '"></span></span>' +
       '</div>' +
       '<div class="daily-body">' +
         '<h3 class="daily-title">Today’s puzzle complete</h3>' +
@@ -4727,18 +4727,29 @@
 
   // Keeps every countdown to the next Daily Five (UTC midnight) current:
   // "5 h 12 m" on the card still to play, HH:MM:SS once played and on the
-  // results screen. Each redraw restarts it; it stops when the screen
-  // that is showing has none (Home and the results draw again on the way in).
+  // results screen. Each counts from the day in its data-day. Each redraw
+  // restarts it; it stops when the screen that is showing has none (Home
+  // and the results draw again on the way in).
   function startDailyCountdown() {
     clearTimeout(startDailyCountdown._t);
     function tick() {
       const els = document.querySelectorAll('.screen.active [data-countdown]');
       if (!els.length) return;
+      const today = todayUtcKey();
+      if (Array.from(els).some(el => el.dataset.day !== today)) {
+        // The day rolled over while the page sat open: Home shows the new
+        // day and its puzzle; a finished puzzle's results stop at zero
+        if (document.body.dataset.screen === 'menu') {
+          renderMasthead();
+          renderToday();
+        } else {
+          els.forEach(el => { el.textContent = el.dataset.countdown === 'words' ? '0 m' : '00:00:00'; });
+        }
+        return;
+      }
       const next = new Date();
       next.setUTCHours(24, 0, 0, 0);
       const ms = next - new Date();
-      // The day rolled over while the page sat open: show the new puzzle
-      if (ms <= 0) { renderToday(); return; }
       const hrs = Math.floor(ms / 3600000);
       const mins = Math.floor((ms % 3600000) / 60000);
       const secs = Math.floor((ms % 60000) / 1000);
@@ -6280,6 +6291,12 @@
       : (level ? level.title : 'That level') + ' isn’t ready to play yet.');
   }
 
+  // The day of the Daily Five card a control sits in
+  function dailyCardDate(el) {
+    const card = el.closest('.daily');
+    return (card && card.dataset.date) || todayUtcKey();
+  }
+
   // Allow replaying a past daily puzzle without affecting today's record.
   // Used by the "Replay this puzzle" link on the already-played view.
   function startDailyReplay(dateKey) {
@@ -6603,7 +6620,7 @@
       return;
     }
     const skill = roundSkill();
-    if (skill) mastery.record(skill, state.current, Mastery.OUTCOMES[points]);
+    if (skill) recordAnswer(skill, state.current, Mastery.OUTCOMES[points]);
   }
 
   // True when the round in play is answered by picking one of four capitals on the card
@@ -7091,7 +7108,7 @@
     // What this round says to work on next: misses first, then second tries
     state.roundNeedsWork = state.missed.concat(state.secondTry);
 
-    mastery.recordSession({
+    recordRound({
       questions: state.sequence.length,
       firstTry: state.sequence.filter(points => points === 2).length,
       seconds: elapsed
@@ -7113,7 +7130,7 @@
       // show the user what they beat (or how close they came).
       const priorRecords = getRecords(state.currentContinent, state.difficulty, state.gameMode);
 
-      const commitResult = commitSessionRecords({
+      const session = {
         region: state.currentContinent,
         difficulty: state.difficulty,
         gameMode: state.gameMode,
@@ -7121,7 +7138,9 @@
         correct: state.correct,
         totalQuestions: state.totalQuestions,
         timeSeconds: elapsed
-      });
+      };
+      const commitResult = commitSessionRecords(session);
+      syncNote('r', [session]);
       state.brokenRecords = commitResult.broken;
       state.priorRecords = priorRecords;
       state.currentRecords = commitResult.records;
@@ -7430,7 +7449,7 @@
     if (r.gain) detail += renderGain();
     if (r.daily) {
       detail += '<div class="daily-recap">' + dailyMarks(r.daily.sequence) +
-        '<span class="daily-recap-next">' + icon('clock', 'icon--sm') + 'Next puzzle in <b data-countdown="clock"></b></span>' +
+        '<span class="daily-recap-next">' + icon('clock', 'icon--sm') + 'Next puzzle in <b data-countdown="clock" data-day="' + (state.dailyDateKey || todayUtcKey()) + '"></b></span>' +
         (r.daily.share
           ? '<button type="button" class="btn btn--primary" data-action="share-results">' + icon('share') + '<span>Share result</span></button>'
           : '') +
@@ -13559,6 +13578,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
 
   const mastery = Mastery.create();
 
+  // Every answer and every finished round enters the learning history
+  // through these two, which also note it for sync (see "Since the last
+  // pull" in the SYNC section)
+  function recordAnswer(skill, name, outcome) {
+    mastery.record(skill, name, outcome);
+    syncNote('a', [skill, name, outcome]);
+  }
+
+  function recordRound(session) {
+    mastery.recordSession(session);
+    syncNote('s', [session.questions, session.firstTry, session.seconds]);
+  }
+
   // Pin the City scores by distance, so points stand in for tries
   function pinOutcome(points) {
     return points >= 80 ? 'first' : points >= 40 ? 'second' : 'miss';
@@ -13627,12 +13659,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
 
   // Commit the session's results against the stored records for this
   // region × mode. Returns an object indicating which records were broken
-  // so the results screen can celebrate them.
+  // so the results screen can celebrate them. session.at (ms) dates a
+  // round that ended earlier; without it the round ended now.
   function commitSessionRecords(session) {
     const all = loadAllRecords();
     const key = recordsKeyFor(session.region, session.difficulty, session.gameMode);
     const existing = all[key] || { gamesPlayed: 0 };
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date(session.at || Date.now()).toISOString().slice(0, 10);
     const maxScore = session.totalQuestions * 2;
     const pct = session.totalQuestions > 0
       ? Math.round((session.correct / session.totalQuestions) * 100)
@@ -13791,7 +13824,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     const pts = guess ? pinPoints(km) : 0;
     state.score += pts;
     state.pin.results.push({ name: city.name, km: km, pts: pts });
-    mastery.record(roundSkill(), city.name, pinOutcome(pts));
+    recordAnswer(roundSkill(), city.name, pinOutcome(pts));
     state.pin.phase = 'reveal';
     showPinMiss(guess, truth);
 
@@ -13921,7 +13954,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     const kms = results.filter(r => r.km != null).map(r => r.km);
     const avgKm = kms.length ? kms.reduce((a, b) => a + b, 0) / kms.length : null;
 
-    mastery.recordSession({
+    recordRound({
       questions: results.length,
       firstTry: results.filter(r => pinOutcome(r.pts) === 'first').length,
       seconds: elapsed
@@ -14484,7 +14517,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     const run = state.learn;
     // A cleared level is one session: every quiz answer it took, failed
     // passes included
-    mastery.recordSession({
+    recordRound({
       questions: run.asked,
       firstTry: run.found,
       seconds: Math.round((Date.now() - run.levelStart) / 1000)
@@ -14733,9 +14766,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     ].join('\n');
   }
 
-  // Share today's finished Daily Five from its card on Home
+  // Share a finished Daily Five from its card on Home: the puzzle of the
+  // day the card was drawn for
   async function shareDailyResultFromMenu(btn) {
-    const dateKey = todayUtcKey();
+    const dateKey = dailyCardDate(btn);
     const attempt = getDailyAttempt(dateKey);
     if (!attempt) return;
     const text = buildDailyShareText({
@@ -15267,7 +15301,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     },
     'play-daily': () => startGame('daily-five'),
     'share-daily': (el) => shareDailyResultFromMenu(el),
-    'replay-daily': () => startDailyReplay(todayUtcKey()),
+    'replay-daily': (el) => startDailyReplay(dailyCardDate(el)),
     'start-review': () => startReview(),
     'practice-weak': () => startWeakPractice(),
     'toggle-stats-group': (el) => toggleStatsGroup(el),
@@ -15536,10 +15570,49 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     mastery.reset();
   }
 
+  // Empties the stores of everything from before `at`, the time of a reset
+  // made on another device, and keeps what this device has played since:
+  // dated entries by their own time, records and the learning history by
+  // playing the notes of that time back onto the emptied stores (which
+  // dates them today).
+  function eraseProgressBefore(at) {
+    const since = ms => typeof ms === 'number' && ms >= at;
+    const kept = (all, when) => {
+      const out = {};
+      Object.keys(all).forEach(k => {
+        if (all[k] && since(all[k][when])) out[k] = all[k];
+      });
+      return out;
+    };
+    const daily = kept(loadDailyAttempts(), 'completedAt');
+    const focus = kept(loadFocusLists(), 'savedAt');
+    const learn = kept(loadLearnAll(), 'savedAt');
+    const pin = loadPinStore();
+    const games = pin.games.filter(g => g && since(g.at));
+    const cities = {};
+    Object.keys(pin.cities).forEach(name => {
+      const tries = Array.isArray(pin.cities[name]) ? pin.cities[name].filter(t => Array.isArray(t) && since(t[0])) : [];
+      if (tries.length) cities[name] = tries;
+    });
+    const notes = syncLoadNotes().filter(n => since(n[1]));
+
+    eraseProgress();
+    if (Object.keys(daily).length) saveDailyAttempts(daily);
+    if (Object.keys(focus).length) saveFocusLists(focus);
+    if (Object.keys(learn).length) saveLearnAll(learn);
+    if (games.length || Object.keys(cities).length) savePinStore({ games: games, cities: cities });
+    notes.forEach(n => {
+      if (n[0] === 'a') mastery.record(n[2], n[3], n[4]);
+      else if (n[0] === 's') mastery.recordSession({ questions: n[2], firstTry: n[3], seconds: n[4] });
+      else if (n[0] === 'r' && n[2] && typeof n[2] === 'object') commitSessionRecords(Object.assign({}, n[2], { at: n[1] }));
+    });
+  }
+
   // Erase all progress, here and (through sync) on every linked device.
   // Resolves with the push result, or straight away when sync isn't set up.
   function resetProgress() {
     eraseProgress();
+    syncForgetNotes();
     // Later than any reset this device has seen, even if its clock runs slow
     saveResetAt(Math.max(Date.now(), loadResetAt() + 1));
     refreshView();
@@ -15556,8 +15629,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
    *     another device, paste the same token there (no accounts).
    *
    * Triggers:
-   *   - On app load: if a token exists, pull from server and merge.
-   *   - On round end: push to server (fire-and-forget).
+   *   - On app load: if a token exists, pull from server and merge; then
+   *     push if an earlier push never got through.
+   *   - On round end: pull + push (fire-and-forget), so the server's copy
+   *     is every device's work, not the last device's.
    *   - Manual "Sync Now" button: pull + push.
    *
    * Payload: { version, username, lastUpdated } plus progressSnapshot():
@@ -15571,6 +15646,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   const SYNC_KEY_TOKEN = 'atlas-sync-token';
   const SYNC_KEY_USERNAME = 'atlas-sync-username';
   const SYNC_KEY_META = 'atlas-sync-meta';
+  const SYNC_KEY_NOTES = 'atlas-sync-notes';
+  const SYNC_NOTES_MAX = 4000;
 
   // ---- Storage helpers ----
 
@@ -15585,6 +15662,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
       localStorage.removeItem(SYNC_KEY_TOKEN);
       localStorage.removeItem(SYNC_KEY_USERNAME);
       localStorage.removeItem(SYNC_KEY_META);
+      localStorage.removeItem(SYNC_KEY_NOTES);
     } catch (e) {}
   }
   function syncGetUsername() {
@@ -15593,6 +15671,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
   function syncSetUsername(name) {
     try { localStorage.setItem(SYNC_KEY_USERNAME, name || ''); } catch (e) {}
   }
+  // { lastSyncAt, lastError, unsent }: unsent is set while this device
+  // holds progress that no push has delivered yet
   function syncGetMeta() {
     try {
       const raw = localStorage.getItem(SYNC_KEY_META);
@@ -15604,6 +15684,38 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     try { localStorage.setItem(SYNC_KEY_META, JSON.stringify(next)); } catch (e) {}
     syncRefreshEntry();
     return next;
+  }
+
+  // ---- Since the last pull ----
+  //
+  // Records and the learning history are tallies: once a round has been
+  // added in, nothing says when. So that a reset made on another device
+  // can erase what was played before it and no more (eraseProgressBefore),
+  // every answer, finished round and record entry of a linked device is
+  // also noted here with its time. A pull that sets this device's stores
+  // beside the server's copy settles the notes and drops them, so they
+  // hold a round or two, or whatever was played offline.
+  // Rows: ['a', ms, skill, name, outcome], ['s', ms, questions, firstTry,
+  // seconds], ['r', ms, session].
+
+  function syncLoadNotes() {
+    try {
+      const notes = JSON.parse(localStorage.getItem(SYNC_KEY_NOTES));
+      return Array.isArray(notes) ? notes.filter(Array.isArray) : [];
+    } catch (e) { return []; }
+  }
+
+  function syncNote(kind, data) {
+    if (!syncGetToken()) return;
+    const notes = syncLoadNotes();
+    notes.push([kind, Date.now()].concat(data));
+    try {
+      localStorage.setItem(SYNC_KEY_NOTES, JSON.stringify(notes.slice(-SYNC_NOTES_MAX)));
+    } catch (e) {}
+  }
+
+  function syncForgetNotes() {
+    try { localStorage.removeItem(SYNC_KEY_NOTES); } catch (e) {}
   }
 
   // ---- Token generation / normalization ----
@@ -15655,8 +15767,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
       return false;
     } else if (remoteReset > localReset) {
       // Progress was reset on another device after this one last synced:
-      // the local copy is what that reset erased
-      eraseProgress();
+      // what this device holds from before that moment is what the reset
+      // erased
+      eraseProgressBefore(remoteReset);
       saveResetAt(remoteReset);
     }
 
@@ -15746,13 +15859,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
         body: JSON.stringify(syncBuildPayload())
       });
       if (!res.ok) {
-        syncSetMeta({ lastError: 'push_' + res.status });
+        syncSetMeta({ lastError: 'push_' + res.status, unsent: true });
         return { ok: false, reason: 'push_' + res.status };
       }
-      syncSetMeta({ lastSyncAt: Date.now(), lastError: null });
+      syncSetMeta({ lastSyncAt: Date.now(), lastError: null, unsent: false });
       return { ok: true };
     } catch (e) {
-      syncSetMeta({ lastError: 'network' });
+      syncSetMeta({ lastError: 'network', unsent: true });
       return { ok: false, reason: 'network' };
     }
   }
@@ -15770,7 +15883,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
       }
       const data = await res.json();
       const merged = syncApplyRemote(data, opts);
-      syncSetMeta({ lastSyncAt: Date.now(), lastError: null });
+      if (merged) syncForgetNotes();
+      // While a push is owed, what went wrong with it stays on show: the
+      // caller sends next, and that result replaces it
+      syncSetMeta(Object.assign({ lastSyncAt: Date.now() }, syncGetMeta().unsent ? null : { lastError: null }));
       return { ok: true, hadData: !!data, stale: !merged };
     } catch (e) {
       syncSetMeta({ lastError: 'network' });
@@ -15792,11 +15908,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     const result = await syncPull();
     if (!result.ok) return;
     refreshView();
-    if (result.stale) syncPush().catch(() => {});
+    // The server's copy is replaced when it predates a reset made here,
+    // and completed when an earlier push failed
+    if (result.stale || syncGetMeta().unsent) syncPush().catch(() => {});
   }
+  // A finished round: take in what other devices have sent, then send the
+  // whole snapshot. The push is owed from here until one goes through, so
+  // a failure now is made good on the next visit.
   function syncAfterGameEnd() {
     if (!syncGetToken()) return;
-    syncPush().catch(() => {});
+    syncSetMeta({ unsent: true });
+    syncFullSync().then(refreshView).catch(() => {});
   }
 
   // ---- Where sync stands: the Settings card and the navigation light ----
@@ -15930,20 +16052,32 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
 
   // ---- Sync actions and their dialogs ----
 
+  // Said when a sync code cannot be saved (storage blocked or full)
+  const SYNC_NO_STORAGE = 'This browser isn’t keeping what the Atlas saves, so sync can’t be set up here. ' +
+    'Private windows and blocked site data do this.';
+
   function syncCreateDialog() {
     openDialog(dialogContent('Create a sync code',
       '<p>A sync code links your devices. This device makes one, and you enter it on the others. There is no account and no password, so keep the code to yourself.</p>' +
       '<label class="field-label" for="sync-username-new">Username <span>(optional)</span></label>' +
-      '<input class="input" id="sync-username-new" placeholder="Cartographer" autocomplete="off" maxlength="40" data-autofocus />',
+      '<input class="input" id="sync-username-new" placeholder="Cartographer" autocomplete="off" maxlength="40" data-autofocus />' +
+      '<p class="dialog-note" id="sync-create-status" role="status"></p>',
       '<button type="button" class="btn btn--secondary" data-action="dialog-close">Cancel</button>' +
       '<button type="button" class="btn btn--primary" id="sync-create-btn" data-action="sync-create-go" data-submit>Create sync code</button>'));
   }
 
   async function syncCreate(button) {
     const username = document.getElementById('sync-username-new').value.trim();
+    const token = syncGenerateToken();
+    syncSetToken(token);
+    if (syncGetToken() !== token) {
+      const status = document.getElementById('sync-create-status');
+      status.textContent = SYNC_NO_STORAGE;
+      status.classList.add('is-error');
+      return;
+    }
     button.disabled = true;
     button.textContent = 'Creating…';
-    syncSetToken(syncGenerateToken());
     if (username) syncSetUsername(username);
     const push = await syncPush();
     refreshView();
@@ -15993,10 +16127,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
       input.focus();
       return;
     }
+    syncSetToken(candidate);
+    if (syncGetToken() !== candidate) {
+      say(SYNC_NO_STORAGE);
+      return;
+    }
     button.disabled = true;
     button.textContent = 'Linking…';
     say('');
-    syncSetToken(candidate);
     const pull = await syncPull({ linking: true });
     if (!pull.ok) {
       syncClearToken();
