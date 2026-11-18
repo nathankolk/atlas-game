@@ -984,6 +984,7 @@
   .bests th:nth-child(n+2), .bests td { width: 17%; }
   .bests .is-current th::after { content: ''; display: inline-block; width: 5px; height: 5px; margin-left: 8px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
   .sheet-note { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--text-3); }
+  .sheet-note b { font-weight: 600; color: var(--text-2); }
 
   .sheet-play > div > .eyebrow { margin-bottom: 12px; }
   .modes { display: grid; gap: 8px; }
@@ -5340,6 +5341,7 @@
             step(summary.mastered, 'm3', 'Mastered') + step(summary.familiar, 'm2', 'Familiar') +
             step(summary.learning, 'm1', 'Learning') + step(summary.new, '', 'New') +
           '</dl>' +
+          '<p class="sheet-note">' + masteryRuleText(level, summary) + '</p>' +
         '</div>';
     }
 
@@ -5359,7 +5361,7 @@
         const rec = levelRecord(level, d);
         if (rec) {
           games += rec.gamesPlayed || 0;
-          last = Math.max(last, new Date(rec.lastPlayed).getTime() || 0);
+          last = Math.max(last, rec.lastPlayed ? dateFromKey(rec.lastPlayed).getTime() || 0 : 0);
         }
         cells = rec && rec.bestAccuracy
           ? '<td class="is-strong">' + rec.bestAccuracy.correct + ' / ' + rec.bestAccuracy.total + '</td><td>' +
@@ -5402,6 +5404,24 @@
       '</div>';
   }
 
+  // How a place climbs the steps (the MASTERY module's rule: one box a
+  // day for a first-try answer; Familiar from box 2, Mastered from box 4),
+  // and, when some of this level's places were answered today, that they
+  // can climb again only tomorrow
+  function masteryRuleText(level, summary) {
+    let text = 'Each day you get a place right first try, it moves up a step: Familiar after two days, Mastered after four. ' +
+      'A miss sends it back to Learning. Learn rounds don’t count.';
+    if (level.ready() && summary.seen) {
+      const today = mastery.today();
+      const done = level.names().filter(name => mastery.get(level.skill, name).last === today).length;
+      if (done) {
+        text += ' <b>' + (done === summary.total ? 'All ' + done + ' were' : done + (done === 1 ? ' was' : ' were')) +
+          ' answered today: their next step comes tomorrow.</b>';
+      }
+    }
+    return text;
+  }
+
   // The ways to play this level: [{ key, icon, title, desc, count }]
   function sheetWays(level) {
     const count = level.count();
@@ -5409,7 +5429,7 @@
     const ways = [{
       key: 'play', icon: 'play', title: 'Play',
       desc: (drawn ? capitalize(numberWord(PIN_ROUND_SIZE)) + ' cities drawn from ' + count : 'All ' + countNoun(count, level.noun) + ', in random order') +
-        ' · counts toward your records'
+        ' · counts toward your records and mastery'
     }];
     const focus = levelFocusList(level);
     if (focus) {
@@ -5418,7 +5438,7 @@
       ways.push({
         key: 'focus', icon: 'focus', title: 'Focus Practice', count: n,
         desc: (n === 1 ? 'The one' : 'The ' + numberWord(n)) + ' you missed or needed two tries for in your last full game (' + savedOn +
-          ') · practice only'
+          ') · counts toward mastery, not records'
       });
     }
     if (level.learn) {
@@ -5426,7 +5446,7 @@
       ways.push({
         key: 'learn', icon: 'learn', title: ladder ? 'Keep Learning' : 'Learn Them',
         desc: (ladder ? 'Pick up at level ' + ladder.level + ' of ' + ladder.order.length + ' · ' : '') +
-          'Start with one, add one each level. A miss restarts the level · practice only'
+          'Start with one, add one each level. A miss restarts the level · for study: no records, no mastery'
       });
     }
     return ways;
@@ -5619,6 +5639,12 @@
   function dateFromKey(key) {
     const parts = String(key).slice(0, 10).split('-');
     return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  }
+
+  // The local calendar day of a moment as 'YYYY-MM-DD', the form records store
+  function localDateKey(ms) {
+    const d = new Date(ms);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
   // Totals over rows of mastery.activity()
@@ -14049,7 +14075,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     const all = loadAllRecords();
     const key = recordsKeyFor(session.region, session.difficulty, session.gameMode);
     const existing = all[key] || { gamesPlayed: 0 };
-    const today = new Date(session.at || Date.now()).toISOString().slice(0, 10);
+    const today = localDateKey(session.at || Date.now());
     const maxScore = session.totalQuestions * 2;
     const pct = session.totalQuestions > 0
       ? Math.round((session.correct / session.totalQuestions) * 100)
