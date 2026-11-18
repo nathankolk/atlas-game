@@ -1172,7 +1172,8 @@
      that the globe's middle is the middle of what the HUD leaves clear
      (see placeGlobeHost). Its colours are the --g-* tokens as they stand
      on the stage, handed over by applyMapLook(). */
-  .globe-host { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+  /* A long press on the globe is a held drag: no text selection, no callout (on iOS either can take the touch) */
+  .globe-host { position: absolute; left: 0; right: 0; top: 0; bottom: 0; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   /* A level link's first moments: the globe alone, while its map loads */
   #game-screen.is-opening > :not(.stage) { visibility: hidden; }
   .stage.no-borders .globe-host, #game-screen.pin-mode .globe-host { --globe-cursor: crosshair; }
@@ -10808,7 +10809,7 @@ const Globe = (function () {
     const zoom = { active: false, target: 1, anchored: false, gx: 0, gy: 0, gz: 0, x: 0, y: 0 };
     const inertia = { active: false, vx: 0, vy: 0 };
     let spinRate = 0;               // degrees per second
-    const pointers = [];            // pointers currently down: { id, x, y }
+    const pointers = [];            // pointers currently down: { id, type, x, y }
 
     function endFly(completed) {
       if (!fly) return;
@@ -11558,12 +11559,35 @@ const Globe = (function () {
       press.pinched = true;
     }
 
+    // A press is proof that pointers still listed as down have come up,
+    // whatever the browser did or did not report (a release outside the
+    // window, a touch a system gesture took): the same pointer cannot go
+    // down twice, and a primary pointer goes down only when no other of its
+    // kind is down (the first finger on the screen, any mouse press).
+    // Left listed, one would turn the next finger into a pinch.
+    function dropStalePointers(e) {
+      for (let i = pointers.length - 1; i >= 0; i--) {
+        const p = pointers[i];
+        if (p.id === e.pointerId || (e.isPrimary && p.type === e.pointerType)) pointers.splice(i, 1);
+      }
+    }
+
+    // Takes a pointer off the list without a click or a glide
+    function forgetPointer(p) {
+      pointers.splice(pointers.indexOf(p), 1);
+      if (pointers.length) { press.moved = true; trackCount = 0; return; }
+      sceneCanvas.style.cursor = 'var(--globe-cursor, grab)';
+      hostRect = null;
+    }
+
     function onPointerDown(e) {
-      if (paused || (e.pointerType === 'mouse' && e.button !== 0) || pointers.length >= 2) return;
+      if (paused) return;
+      dropStalePointers(e);
+      if ((e.pointerType === 'mouse' && e.button !== 0) || pointers.length >= 2) return;
       stopMotion();
       hostRect = host.getBoundingClientRect();
       localPoint(e, point);
-      pointers.push({ id: e.pointerId, x: point.x, y: point.y });
+      pointers.push({ id: e.pointerId, type: e.pointerType, x: point.x, y: point.y });
       try { host.setPointerCapture(e.pointerId); } catch (gone) { /* the pointer was released already */ }
       if (pointers.length === 1) {
         press.x = point.x; press.y = point.y; press.moved = false; press.pinched = false;
@@ -11584,6 +11608,12 @@ const Globe = (function () {
           mouseOver = hoverPending = true;
           requestFrame();
         }
+        return;
+      }
+      // The button came up where the page could not see it: this is a hover, not a drag
+      if (e.pointerType === 'mouse' && !(e.buttons & 1)) {
+        forgetPointer(p);
+        onPointerMove(e);
         return;
       }
       localPoint(e, point);

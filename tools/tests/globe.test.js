@@ -773,6 +773,70 @@ group('pinch', async ({ page }) => {
   check('touch: a double tap zooms ×2', Math.abs(zoomed.k - 2 * dragged.k) < 0.05, 'k ' + fmt(dragged.k) + ' → ' + fmt(zoomed.k));
 });
 
+group('lost-release', async ({ page }) => {
+  // A press whose release the browser never delivers (a system gesture took the touch, the mouse
+  // was let go while another window had focus) must not leave the globe thinking it is still down
+  await inputSetup(page, { lon: 20, lat: 10, k: 1.5 });
+  const client = await page.context().newCDPSession(page);
+  const touch = (type, points) => client.send('Input.dispatchTouchEvent', { type, touchPoints: points.map((p, id) => ({ x: p[0], y: p[1], id })) });
+  // A press that reaches the globe and is never released
+  const ghost = (o) => page.evaluate(o => {
+    document.querySelector('.globe-gl').dispatchEvent(new PointerEvent('pointerdown', Object.assign({ clientX: 250, clientY: 300, button: 0, buttons: 1, bubbles: true, cancelable: true }, o)));
+  }, o);
+
+  // Touch: a finger that never lifted, then one finger swiping sideways
+  await ghost({ pointerId: 901, pointerType: 'touch', isPrimary: true });
+  const before = await getView(page);
+  await touch('touchStart', [[400, 300]]);
+  for (let i = 1; i <= 8; i++) await touch('touchMove', [[400 + i * 15, 300]]);
+  await page.waitForTimeout(150);
+  await touch('touchEnd', []);
+  await page.evaluate(() => T.frames(2));
+  const swiped = await getView(page);
+  check('lost release (touch): a one-finger swipe turns the globe and does not zoom', swiped.k === before.k && swiped.lon < before.lon - 3,
+    'k ' + fmt(before.k, 3) + ' → ' + fmt(swiped.k, 3) + ', lon ' + fmt(before.lon) + '° → ' + fmt(swiped.lon) + '°');
+  await page.waitForTimeout(400);
+  await ghost({ pointerId: 902, pointerType: 'touch', isPrimary: true });
+  await touch('touchStart', [[400, 300]]);
+  await touch('touchEnd', []);
+  await page.waitForTimeout(350);
+  check('lost release (touch): a tap is still a click', (await clicks(page)).length === 1, (await clicks(page)).length + ' clicks');
+  // A pinch still zooms after one
+  await ghost({ pointerId: 903, pointerType: 'touch', isPrimary: true });
+  await page.evaluate(() => { globe.setView({ lon: 20, lat: 10, k: 1.5 }); return T.frames(2); });
+  await touch('touchStart', [[300, 300], [500, 300]]);
+  for (let i = 1; i <= 10; i++) await touch('touchMove', [[300 - i * 10, 300], [500 + i * 10, 300]]);
+  await touch('touchEnd', []);
+  await page.evaluate(() => T.frames(2));
+  const pinched = await getView(page);
+  check('lost release (touch): two fingers still pinch to zoom', Math.abs(pinched.k - 3) < 0.05, 'k ' + fmt(pinched.k, 3));
+
+  // Mouse, on a globe of its own: a button that was let go where the page could not see it
+  await page.waitForTimeout(400);
+  await inputSetup(page, { lon: 20, lat: 10, k: 1.5 });
+  await ghost({ pointerId: 1, pointerType: 'mouse', isPrimary: true });
+  const still = await getView(page);
+  for (let i = 1; i <= 8; i++) await page.mouse.move(300 + i * 20, 300);
+  await page.evaluate(() => T.frames(2));
+  const hovered = await getView(page);
+  check('lost release (mouse): moving the mouse with no button down does not drag the globe', hovered.lon === still.lon && hovered.lat === still.lat && hovered.k === still.k,
+    'lon ' + fmt(still.lon) + '° → ' + fmt(hovered.lon) + '°, k ' + fmt(still.k, 3) + ' → ' + fmt(hovered.k, 3));
+  await ghost({ pointerId: 1, pointerType: 'mouse', isPrimary: true });
+  await page.mouse.click(420, 300);
+  await page.waitForTimeout(350);
+  await page.mouse.click(460, 280);
+  check('lost release (mouse): clicks are clicks again, every one of them', (await clicks(page)).length === 2, (await clicks(page)).length + ' clicks');
+  await page.waitForTimeout(400);
+  const v0 = await getView(page);
+  await page.mouse.move(400, 300);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++) await page.mouse.move(400 + i * 12, 300);
+  await page.waitForTimeout(150);
+  await page.mouse.up();
+  const v1 = await getView(page);
+  check('lost release (mouse): a drag with the button down still turns the globe', v1.lon < v0.lon - 3, 'lon ' + fmt(v0.lon) + '° → ' + fmt(v1.lon) + '°');
+});
+
 group('hover', async ({ page }) => {
   await inputSetup(page, { lon: 10, lat: 40, k: 1.5 });
   const r0 = await page.evaluate(() => {
