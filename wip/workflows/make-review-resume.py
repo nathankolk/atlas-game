@@ -3,7 +3,7 @@
 # Usage: make-review-resume.py [key note-file]...   key is review:play, review:globe, fix1
 import json, sys, itertools, os
 B = '/root/.claude/projects/-home-user-atlas-game/7ba1e6a5-1a5b-5e2b-9103-7f072aa14db0/'
-RUNS = ['wf_2728c196-dcd']   # runs of the review pipeline, oldest first; add each new run here
+RUNS = ['wf_2728c196-dcd', 'wf_c60ecef7-42d']   # runs of the review pipeline, oldest first; add each new run here
 label_of, pinned = {}, {'reviews': {}}
 lines = itertools.chain.from_iterable(open(B + 'subagents/workflows/' + r + '/journal.jsonl') for r in RUNS
                                       if os.path.exists(B + 'subagents/workflows/' + r + '/journal.jsonl'))
