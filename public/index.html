@@ -2359,14 +2359,18 @@
     .switch::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
   }
 
-  /* Reduced motion: the OS setting, unless Settings says otherwise */
+  /* Reduced motion: the OS setting, unless Settings says otherwise.
+     Transitions are switched off outright, not shortened: a transition of
+     any length, set on everything, would hold each changed style at its
+     old value until the next frame, and the map is framed from the prompt
+     card's size in the task that changes the card. */
   @media (prefers-reduced-motion: reduce) {
     :root:not([data-motion="full"]) *,
     :root:not([data-motion="full"]) *::before,
     :root:not([data-motion="full"]) *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
+      transition-duration: 0s !important;
       transition-delay: 0s !important;
     }
   }
@@ -2375,7 +2379,7 @@
   [data-motion="reduce"] *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 0s !important;
     transition-delay: 0s !important;
   }
 </style>
