@@ -35,3 +35,14 @@ The owner chose the lean review. atlas-final-review.js now runs two reviewers by
 the scripted fact check and the no-hints check; and globe), then one fix stage in which every fix leaves a
 regression check behind, and stops. The orchestrator re-checks the fixes from the suites. The learning and craft
 lenses stay in the script (args.reviewers) and the Verify phase is behind args.full, should the owner ask later.
+
+## 18 Nov, about 11:00 UTC: stopped at the owner's request before the window ends
+- Review fixes are done and pushed (b42cd1b..5b7c455); docs follow them (ff12e03 and the handoff note after it).
+- My re-check: full suites + `tools/tests/run.js --globe` + three smoke-desktop repeats run by
+  work/review/recheck/run.sh; results in work/review/recheck/status.log and suites.log.
+  One failure seen so far, explore (phone) "learn: a clean pass moves to level 2": order-dependent
+  (Fiji older + Australia newest, 1 of 42 pairs), the same on 84f0c03 (recheck/path-oceania-*.log). Not a regression.
+- Known limit confirmed with logic-tests/x-offline-reset.js and written into atlas_handoff.md: a reset made
+  offline costs a round synced elsewhere in between its records and mastery.
+- Left to do on "resume": read status.log; if the suites are clean (bar the flake above), remove wip/ in a
+  final commit, push, and give the final report. Nothing is scheduled.
