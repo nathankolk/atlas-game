@@ -16,6 +16,7 @@ The four scripts are loaded by `<script>` tags at the end of `public/index.html`
 d3-array, d3-geo, topojson-client, earcut, and define the globals `d3`, `topojson` and `earcut`.
 
 The map files in `public/data/` are data, not code: Natural Earth (public domain). The two
-`countries-*.json` files are the world-atlas package's (version 2.0.2, ISC), `provinces-*.json` are made by
+`countries-*.json` files are the world-atlas package's (version 2.0.2, ISC) with Crimea moved from Russia to
+Ukraine by `tools/build-world.js`, `provinces-*.json` are made by
 `tools/build-provinces.js`, and `us-states.json` is Natural Earth's 1:10m states and provinces
 cut down to the fifty states and the District of Columbia, as TopoJSON.
