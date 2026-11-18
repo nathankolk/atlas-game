@@ -15931,6 +15931,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
    *     push if an earlier push never got through.
    *   - On round end: pull + push (fire-and-forget), so the server's copy
    *     is every device's work, not the last device's.
+   *   - When the page comes back into view: pull, as on app load.
    *   - Manual "Sync Now" button: pull + push.
    *
    * Payload: { version, username, lastUpdated } plus progressSnapshot():
@@ -16218,6 +16219,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Quiz;
     syncSetMeta({ unsent: true });
     syncFullSync().then(refreshView).catch(() => {});
   }
+  // The page comes back into view after a spell away, during which another
+  // device may have played: its rounds are taken in before this one plays
+  // on. (Tallies of one day merge by the larger figure, so they add up only
+  // when each device starts from what the others have done.) Not during a
+  // round, and not when sync has run within the last minute.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !syncGetToken()) return;
+    if (document.body.dataset.screen === 'game') return;
+    if (Date.now() - (syncGetMeta().lastSyncAt || 0) < 60000) return;
+    syncOnAppLoad().catch(() => {});
+  });
 
   // ---- Where sync stands: the Settings card and the navigation light ----
 
