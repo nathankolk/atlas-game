@@ -17,6 +17,7 @@ d3-array, d3-geo, topojson-client, earcut, and define the globals `d3`, `topojso
 
 The map files in `public/data/` are data, not code: Natural Earth (public domain). The two
 `countries-*.json` files are the world-atlas package's (version 2.0.2, ISC) with Crimea moved from Russia to
-Ukraine by `tools/build-world.js`, `provinces-*.json` are made by
+Ukraine and lakes cut out by `tools/build-world.js` (which also cuts the lakes out of the states and
+provinces), `provinces-*.json` are made by
 `tools/build-provinces.js`, and `us-states.json` is Natural Earth's 1:10m states and provinces
 cut down to the fifty states and the District of Columbia, as TopoJSON.

@@ -8581,10 +8581,12 @@
   const EXPLORE_SHIFT = 25;      // degrees: the most the globe is turned to move a country out from under the card
   const EXPLORE_RESULTS = 6;     // how many countries a search lists
 
-  // Land borders the 1:50m shapes are too coarse to draw: Spain's two cities
-  // on the coast of Morocco, and the 150 m of river bank where Botswana
-  // meets Zambia
-  const EXTRA_BORDERS = [['Morocco', 'Spain'], ['Botswana', 'Zambia']];
+  // Borders the map does not draw as a shared line: Spain's two cities on
+  // the coast of Morocco and the 150 m of river bank where Botswana meets
+  // Zambia (too small for the 1:50m shapes), and the Congo–Tanzania border,
+  // which runs down the middle of Lake Tanganyika (lakes are water on the
+  // map, see tools/build-world.js)
+  const EXTRA_BORDERS = [['Morocco', 'Spain'], ['Botswana', 'Zambia'], ['Democratic Republic of the Congo', 'Tanzania']];
   // Countries the map has but this atlas asks nothing about, which a
   // neighbour's list of borders would be wrong without: map name -> name to show
   const BORDER_ONLY = {
