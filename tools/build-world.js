@@ -30,11 +30,13 @@
  * 1:110m lakes, all of them, for countries-110m.json. Australia's salt pans
  * (DRY_LAKES: Eyre, Torrens, Gairdner and the rest) are left as land: they
  * are dry most years.
- *   - Each shape is cut on its own (polygon-clipping). A shape that crosses
- *     the 180th meridian (Russia, the United States, Alaska, Fiji) is cut in
- *     longitudes made continuous (+360 west of Greenwich), then put back: a
- *     flat-map tool given those shapes as they are sees bands round the whole
- *     world, and cuts lakes on the far side of the globe out of them.
+ *   - Each polygon of each shape is cut on its own (polygon-clipping), and
+ *     only if a lake overlaps it. A polygon that crosses the 180th meridian
+ *     (Russia's mainland, Alaska, Chukotka) is cut in longitudes made
+ *     continuous (+360 west of Greenwich), and its original points are then
+ *     put back exactly as they were: a flat-map tool given such a polygon
+ *     as it is sees a band round the whole world, and cuts lakes on the far
+ *     side of the globe out of it.
  *   - Rings are turned the way the files and d3 have them (outer rings
  *     clockwise); shapes no lake touches are left exactly as they were.
  *   - The file is rebuilt with topojson-server at its own quantization, so
@@ -196,7 +198,6 @@ function wraps(polys) {
 
 const mapPoints = (polys, fn) => polys.map(p => p.map(ring => ring.map(fn)));
 const shifted = polys => mapPoints(polys, ([x, y]) => [x < 0 ? x + 360 : x, y]);
-const unshifted = polys => mapPoints(polys, ([x, y]) => [x > 180 ? x - 360 : x, y]);
 
 function boxOf(polys) {
   const b = [Infinity, Infinity, -Infinity, -Infinity];
@@ -296,26 +297,42 @@ function cutLakes(job, dir, write, libs) {
   features.forEach(f => {
     const polys = polysOf(f.geometry);
     if (!polys.length) return;
-    const wrapped = wraps(polys);
-    const shape = wrapped ? shifted(polys) : polys;
-    const box = boxOf(shape);
-    const hits = lakes.filter(l => overlap(box, wrapped ? l.shiftedBox : l.box)).map(l => (wrapped ? l.shifted : l.polys));
-    if (!hits.length) return;
-    let result;
-    try {
-      result = libs.clip.difference(shape, ...hits);
-    } catch (err) {
-      throw new Error(job.file + ': cutting lakes out of ' + f.properties.name + ' failed: ' + err.message);
-    }
-    const before = polysKm2(shape), after = polysKm2(result);
-    // Nothing a lake covers (only the boxes met). Any real overlap is cut,
-    // however small: a lake that pokes across a border must notch both
-    // sides, or the two no longer share the line
-    if (before - after < 1e-6) return;
-    const done = orient(restoreDroppedPoints(result, shape));
-    const back = wrapped ? unshifted(done) : done;
-    f.geometry = back.length === 1 ? { type: 'Polygon', coordinates: back[0] } : { type: 'MultiPolygon', coordinates: back };
-    cut.push([f.properties.name, Math.round(before - after)]);
+    // Polygon by polygon: a piece no lake touches is left exactly as it is,
+    // and pieces are never merged (two pieces of Russia meet along the 180th
+    // meridian, which in continuous longitudes is just a shared edge)
+    let removed = 0;
+    const out = [];
+    polys.forEach(poly => {
+      const wrapped = wraps([poly]);
+      const shape = wrapped ? shifted([poly]) : [poly];
+      const box = boxOf(shape);
+      const hits = lakes.filter(l => overlap(box, wrapped ? l.shiftedBox : l.box)).map(l => (wrapped ? l.shifted : l.polys));
+      if (!hits.length) { out.push(poly); return; }
+      let result;
+      try {
+        result = libs.clip.difference(shape, ...hits);
+      } catch (err) {
+        throw new Error(job.file + ': cutting lakes out of ' + f.properties.name + ' failed: ' + err.message);
+      }
+      const before = polysKm2(shape), after = polysKm2(result);
+      // Nothing a lake covers (only the boxes met). Any real overlap is cut,
+      // however small: a lake that pokes across a border must notch both
+      // sides, or the two no longer share the line
+      if (before - after < 1e-6) { out.push(poly); return; }
+      let done = orient(restoreDroppedPoints(result, shape));
+      if (wrapped) {
+        // Points of the original go back exactly as they were (-180 stays
+        // -180); only the new ones, on lake shores, are shifted back
+        const was = new Map();
+        poly.forEach(ring => ring.forEach(pt => was.set((pt[0] < 0 ? pt[0] + 360 : pt[0]) + ',' + pt[1], pt)));
+        done = done.map(p => p.map(ring => ring.map(pt => was.get(pt[0] + ',' + pt[1]) || (pt[0] > 180 ? [pt[0] - 360, pt[1]] : pt))));
+      }
+      out.push(...done);
+      removed += before - after;
+    });
+    if (!removed) return;
+    f.geometry = out.length === 1 ? { type: 'Polygon', coordinates: out[0] } : { type: 'MultiPolygon', coordinates: out };
+    cut.push([f.properties.name, Math.round(removed)]);
   });
   if (!cut.length) {
     console.log(job.file + ': no lakes left to cut');
