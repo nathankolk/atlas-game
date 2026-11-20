@@ -10,6 +10,7 @@
 //   curl -L -o /tmp/ne_admin1.geojson \
 //     https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson
 //   node tools/build-provinces.js /tmp/ne_admin1.geojson
+//   node tools/build-world.js --lakes <dir>    (then: cuts the lakes out; see its header)
 //
 // Requires npx (ships with npm). mapshaper is fetched on first run — it
 // does the topology-aware simplification (shared borders between provinces
