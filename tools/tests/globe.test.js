@@ -2743,8 +2743,10 @@ group('imagery-align', async ({ page }) => {
       r.blank === 0 && r.land > 2000 && r.iou >= minIou && Math.abs(r.shift[0]) + Math.abs(r.shift[1]) === 0 && r.known >= 100 && r.right === r.known,
       'tile zoom ' + r.zoom + ', IoU ' + fmt(r.iou, 4) + ' (best fit at shift ' + r.shift.join(',') + '), ' + r.right + '/' + r.known + ' known land and sea points right, ' + r.blank + ' px without imagery');
     // (With the whole globe in view a few islands are smaller than a texel of the tiles: their
-    // borders are drawn, but there is no land left in the picture for them to sit on)
-    check('imagery: ' + title + ': the borders sit on the tiles\' coastlines', r.border > 300 && r.onCoast / r.border > (slug === 'world' ? 0.98 : 0.99),
+    // borders are drawn, but there is no land left in the picture for them to sit on. Across
+    // the antimeridian the same goes for lakes: Cedar, Reindeer and Athabasca, water on the map,
+    // are narrower than a texel of the zoom-3 tiles, which show land there)
+    check('imagery: ' + title + ': the borders sit on the tiles\' coastlines', r.border > 300 && r.onCoast / r.border > (slug === 'world' || slug === 'antimeridian' ? 0.98 : 0.99),
       r.onCoast + ' of ' + r.border + ' border px have the coast within 2 px');
     if (slug === 'antimeridian' || slug === 'fiji') {
       const n = Math.pow(2, r.zoom);
